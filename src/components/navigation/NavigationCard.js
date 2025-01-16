@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import tw from "twin.macro";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import SocialLinksModal from "../modals/SocialLinksModal";
 import AppDownloadModal from "../modals/AppDownloadModal";
+
+// 添加 shine 动画定义
+const shine = keyframes`
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+`;
 
 // 卡片基础样式
 const Card = styled.div`
@@ -197,7 +203,27 @@ const AppButton = styled(ActionButton)`
 // 添加 SocialButton 样式定义
 const SocialButton = styled(ActionButton)`
   ${tw`text-white`}
-  background: linear-gradient(45deg, #2196F3, #1976D2);
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    #FFD700,
+    #FFA500,
+    #66BB6A,
+    #4CAF50,
+    #FFD700
+  );
+  background-size: 200% auto;
+  animation: ${shine} 5s linear infinite;
+  border: none;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 `;
 
 // 检测设备类型的函数
@@ -240,6 +266,51 @@ const CustomModal = ({ isOpen, onClose, children }) => {
     </ModalOverlay>
   );
 };
+
+// 创建一个新的包装组件
+const FollowButtonWrapper = styled.div`
+  display: inline-block;
+`;
+
+const FollowButton = styled.button.attrs({
+  className: 'follow-btn' // 添加一个唯一的类名
+})`
+  ${tw`px-3 py-1 rounded text-sm transition-all duration-300`}
+  position: relative;
+  z-index: 1;
+  color: white;
+  border: none;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    background: linear-gradient(
+      90deg,
+      #FFD700,
+      #FFA500,
+      #66BB6A,
+      #4CAF50,
+      #FFD700
+    );
+    background-size: 200% auto;
+    animation: ${shine} 5s linear infinite;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
 
 const NavigationCard = ({ category, subCategories }) => {
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);

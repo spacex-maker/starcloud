@@ -58,6 +58,19 @@
     />
     <meta name="twitter:image"
     content="https://treact.owaiskhan.me/react-landing-pages-and-components-free-tailwindcss-twitter.png" />
+    <script>
+      // 在页面加载前检查暗黑模式
+      (function() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

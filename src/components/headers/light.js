@@ -9,49 +9,67 @@ import useAnimatedNavToggler from "../../helpers/useAnimatedNavToggler.js";
 import logo from "../../images/logo.svg";
 import { ReactComponent as MenuIcon } from "feather-icons/dist/icons/menu.svg";
 import { ReactComponent as CloseIcon } from "feather-icons/dist/icons/x.svg";
+import { ReactComponent as SunIcon } from "feather-icons/dist/icons/sun.svg";
+import { ReactComponent as MoonIcon } from "feather-icons/dist/icons/moon.svg";
 
 const Header = styled.header`
   ${tw`
     fixed top-0 left-0 right-0
     w-full
-    transition-all duration-200
+    transition-all duration-300
     z-50
+    bg-white dark:bg-gray-900
+    text-gray-900 dark:text-gray-100
   `}
-  background: ${props => props.isScrolled ? `rgba(255, 255, 255, 0.1)` : 'transparent'};
-  backdrop-filter: ${props => props.isScrolled ? `blur(10px)` : 'none'};
-  box-shadow: ${props => props.isScrolled ? `0 2px 10px rgba(0,0,0,0.1)` : 'none'};
+  background: ${props => props.isScrolled ? `rgba(255, 255, 255, 0.9)` : 'transparent'};
+  backdrop-filter: ${props => props.isScrolled ? `blur(8px)` : 'none'};
+  box-shadow: ${props => props.isScrolled ? `0 4px 20px rgba(0,0,0,0.05)` : 'none'};
 `;
 
 const HeaderContent = tw.div`
   flex justify-between items-center
   max-w-screen-xl mx-auto
   py-5 px-8
+  bg-transparent dark:bg-transparent
 `;
 
 export const NavLinks = tw.div`inline-block`;
 
-export const NavLink = tw(Link)`
-  text-lg my-2 lg:text-sm lg:mx-6 lg:my-0
-  font-semibold tracking-wide transition duration-300
-  text-white hover:text-primary-100
-  pb-1 border-b-2 border-transparent hover:border-primary-100
+export const NavLink = styled(Link)`
+  ${tw`
+    text-sm lg:text-base 
+    my-2 lg:mx-6 lg:my-0
+    font-medium tracking-wide 
+    transition duration-300
+    text-gray-700 dark:text-gray-300
+    hover:text-primary-500 dark:hover:text-primary-400
+  `}
 `;
 
-export const PrimaryLink = tw(Link)`
-  lg:mx-0
-  px-8 py-3 rounded-full
-  bg-primary-500 text-gray-100
-  hocus:bg-primary-700 hocus:text-gray-200
-  border-2 border-primary-500
-  transition duration-300
-  shadow-lg hover:shadow-xl
+export const PrimaryLink = styled(NavLink)`
+  ${tw`
+    lg:mx-0 
+    px-6 py-2 
+    rounded-full
+    bg-primary-500 dark:bg-primary-600
+    hover:bg-primary-600 dark:hover:bg-primary-500
+    text-gray-100 dark:text-white
+    hocus:text-gray-100 dark:hocus:text-white
+    focus:shadow-outline
+    border-b-0
+  `}
 `;
 
 export const LogoLink = styled(Link)`
-  ${tw`flex items-center font-black border-b-0 text-2xl! ml-0! text-white`};
-
+  ${tw`
+    flex items-center 
+    font-black border-b-0 
+    text-2xl! ml-0!
+    text-primary-500 dark:text-primary-400
+  `}
+  
   img {
-    ${tw`w-12 mr-3 transition-transform duration-300 hover:scale-110`}
+    ${tw`w-8 h-8 mr-2`}
   }
 `;
 
@@ -61,12 +79,17 @@ export const NavToggle = tw.button`
 `;
 
 export const MobileNavLinks = motion(styled.div`
-  ${tw`lg:hidden z-10 fixed top-0 inset-x-0 mx-4 my-6 p-8 border text-center rounded-lg text-gray-900 bg-white`}
-  background-color: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(8px);
-  ${NavLinks} {
-    ${tw`flex flex-col items-center`}
-  }
+  ${tw`
+    lg:hidden z-10 
+    fixed top-0 inset-x-0 
+    mx-4 my-6 p-8 
+    border text-center 
+    rounded-lg 
+    text-gray-900 dark:text-gray-100
+    bg-white dark:bg-gray-900
+  `}
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 `);
 
 export const DesktopNavLinks = tw.nav`
@@ -74,11 +97,35 @@ export const DesktopNavLinks = tw.nav`
 `;
 
 const NavGroup = tw.div`
-  flex items-center space-x-2
+  flex items-center space-x-6 lg:space-x-8
+`;
+
+const DarkModeButton = tw.button`
+  p-2
+  rounded-lg
+  text-gray-600 dark:text-gray-300
+  hover:bg-gray-100 dark:hover:bg-gray-700
+  focus:outline-none
+  transition duration-300
+  ml-4
+`;
+
+const DarkModeIcon = styled.div`
+  ${tw`
+    w-5 h-5
+    text-gray-600 dark:text-gray-300
+  `}
+  svg {
+    ${tw`w-full h-full`}
+    stroke-width: 2;
+  }
 `;
 
 export default ({ roundedHeaderButton = false, logoLink, links, className, collapseBreakpointClass = "lg" }) => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isDark, setIsDark] = useState(() => 
+    document.documentElement.classList.contains('dark')
+  );
 
   useEffect(() => {
     const handleScroll = () => {
@@ -90,6 +137,24 @@ export default ({ roundedHeaderButton = false, logoLink, links, className, colla
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const toggleDarkMode = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const newIsDark = !isDark;
+    if (newIsDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+    setIsDark(newIsDark);
+    
+    console.log('Theme toggled:', newIsDark ? 'dark' : 'light');
+    console.log('classList:', document.documentElement.classList.toString());
+  };
+
   const defaultLinks = [
     <NavLinks key={1}>
       <NavGroup>
@@ -99,6 +164,15 @@ export default ({ roundedHeaderButton = false, logoLink, links, className, colla
         <NavLink to="/join">入驻申请</NavLink>
         <NavLink to="/login">登录</NavLink>
         <PrimaryLink to="/signup">立即注册</PrimaryLink>
+        <DarkModeButton 
+          type="button"
+          onClick={toggleDarkMode}
+          aria-label={isDark ? "切换到亮色模式" : "切换到暗色模式"}
+        >
+          <DarkModeIcon>
+            {isDark ? <SunIcon /> : <MoonIcon />}
+          </DarkModeIcon>
+        </DarkModeButton>
       </NavGroup>
     </NavLinks>
   ];
@@ -109,7 +183,7 @@ export default ({ roundedHeaderButton = false, logoLink, links, className, colla
   const defaultLogoLink = (
     <LogoLink to="/">
       <img src={logo} alt="logo" />
-      <span>Treact</span>
+      <span>ProTX</span>
     </LogoLink>
   );
 
@@ -121,7 +195,7 @@ export default ({ roundedHeaderButton = false, logoLink, links, className, colla
       <HeaderContent>
         <DesktopNavLinks css={collapseBreakpointCss.desktopNavLinks}>
           {logoLink}
-          {links}
+          {links || defaultLinks}
         </DesktopNavLinks>
 
         <MobileNavLinksContainer css={collapseBreakpointCss.mobileNavLinksContainer}>
@@ -131,7 +205,7 @@ export default ({ roundedHeaderButton = false, logoLink, links, className, colla
             animate={animation} 
             css={collapseBreakpointCss.mobileNavLinks}
           >
-            {links}
+            {links || defaultLinks}
           </MobileNavLinks>
           <NavToggle 
             onClick={toggleNavbar} 

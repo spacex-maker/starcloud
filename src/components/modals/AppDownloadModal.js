@@ -38,29 +38,20 @@ const ModalBody = styled.div`
   ${tw`p-6`}
 `;
 
-const DownloadOptions = styled.div`
-  ${tw`flex flex-col gap-4`}
-`;
-
-const DownloadButton = styled.button`
-  ${tw`flex items-center gap-4 w-full p-4 text-left text-white transition-all duration-300 rounded-xl`}
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-
-  &:not(:disabled):hover {
-    background: rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
-  }
-
-  &:disabled {
-    ${tw`opacity-50 cursor-not-allowed`}
-    transform: none;
-  }
-`;
-
 const PlatformIcon = styled.div`
-  ${tw`w-12 h-12 flex items-center justify-center rounded-xl text-2xl flex-shrink-0`}
+  ${tw`w-12 h-12 flex items-center justify-center rounded-xl text-2xl flex-shrink-0 relative`}
   background: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  z-index: 2;
+
+  i {
+    transition: all 0.5s ease;
+    transform-style: preserve-3d;
+    backface-visibility: visible;
+    transform-origin: center center;
+  }
 
   i.android {
     color: #3DDC84;
@@ -76,7 +67,9 @@ const PlatformIcon = styled.div`
 `;
 
 const PlatformInfo = styled.div`
-  ${tw`flex-1 flex flex-col gap-1`}
+  ${tw`flex-1 flex flex-col gap-1 relative`}
+  z-index: 2;
+  cursor: inherit;
 `;
 
 const PlatformName = styled.span`
@@ -85,16 +78,189 @@ const PlatformName = styled.span`
 
 const PlatformDesc = styled.span`
   ${tw`text-sm opacity-50`}
+  
+  button:disabled & {
+    color: rgba(255, 255, 255, 0.5);
+  }
 `;
 
 const ChevronIcon = styled.i`
-  ${tw`text-xl opacity-50 transition-all duration-300`}
-  
-  ${DownloadButton}:hover & {
-    transform: translateX(4px);
-    opacity: 1;
+  ${tw`text-xl opacity-50 transition-all duration-300 relative`}
+  z-index: 2;
+  cursor: inherit;
+`;
+
+const iconAnimation = `
+  @keyframes iconRotate {
+    0% { 
+      transform: rotateY(0deg) scale(1) translateZ(0);
+      filter: brightness(1);
+    }
+    50% { 
+      transform: rotateY(180deg) scale(1.2) translateZ(20px);
+      filter: brightness(1.5);
+    }
+    100% { 
+      transform: rotateY(360deg) scale(1) translateZ(0);
+      filter: brightness(1);
+    }
+  }
+
+  @keyframes glowPulse {
+    0% { opacity: 0.3; filter: blur(8px); }
+    50% { opacity: 0.6; filter: blur(12px); }
+    100% { opacity: 0.3; filter: blur(8px); }
+  }
+
+  @keyframes hoverGlow {
+    0% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+    100% { opacity: 0.6; transform: scale(1); }
   }
 `;
+
+const DownloadButton = styled.button`
+  ${tw`flex items-center gap-4 w-full p-4 text-left text-white transition-all duration-300 rounded-xl relative overflow-hidden`}
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  cursor: pointer;
+
+  ${iconAnimation}
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: ${props => getPlatformColor(props.className)};
+    opacity: 0;
+    filter: blur(8px);
+    z-index: -2;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at var(--x, 50%) var(--y, 50%),
+      ${props => {
+        const color = getPlatformColor(props.className);
+        return `${color}40`;
+      }} 0%,
+      transparent 70%
+    );
+    opacity: 0;
+    z-index: -1;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    background: rgba(255, 255, 255, 0.05);
+    transform: none;
+    cursor: not-allowed;
+
+    ${PlatformIcon} {
+      opacity: 0.5;
+    }
+
+    ${ChevronIcon} {
+      opacity: 0.3;
+    }
+
+    ${PlatformDesc} {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.1),
+          transparent
+        );
+        animation: disabledGlow 2s ease-in-out infinite;
+      }
+
+      &::after {
+        opacity: 1;
+        animation: glowPulse 2s ease-in-out infinite;
+      }
+
+      ${PlatformIcon} {
+        background: rgba(255, 255, 255, 0.15);
+        transition: background 0.3s ease;
+      }
+    }
+  }
+
+  &:not(:disabled) {
+    &:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px) scale(1.02);
+      border-color: ${props => getPlatformColor(props.className)};
+      box-shadow: 0 0 20px ${props => {
+        const color = getPlatformColor(props.className);
+        return `${color}40`;
+      }};
+
+      &::before {
+        opacity: 1;
+        animation: glowPulse 2s ease-in-out infinite;
+      }
+
+      &::after {
+        opacity: 1;
+        animation: hoverGlow 2s ease-in-out infinite;
+      }
+
+      ${PlatformIcon} {
+        background: rgba(255, 255, 255, 0.2);
+        
+        i {
+          animation: iconRotate 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          will-change: transform;
+        }
+      }
+
+      ${ChevronIcon} {
+        transform: translateX(6px);
+        opacity: 1;
+      }
+    }
+
+    &:active {
+      transform: translateY(0) scale(0.98);
+    }
+  }
+`;
+
+const DownloadOptions = styled.div`
+  ${tw`flex flex-col gap-4`}
+  
+  .particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+`;
+
+const getPlatformColor = (className) => {
+  if (className?.includes('android-button')) return '#3DDC84';
+  if (className?.includes('ios-button')) return '#007AFF';
+  if (className?.includes('harmony-button')) return '#FF0000';
+  return '#FFFFFF';
+};
 
 const AppDownloadModal = ({ show, onClose, urls }) => {
   if (!show) return null;
@@ -106,6 +272,15 @@ const AppDownloadModal = ({ show, onClose, urls }) => {
       window.open(url, '_blank');
       onClose();
     }
+  };
+
+  const handleMouseMove = (e) => {
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    btn.style.setProperty('--x', `${x}%`);
+    btn.style.setProperty('--y', `${y}%`);
   };
 
   // 添加控制台日志来调试
@@ -127,9 +302,12 @@ const AppDownloadModal = ({ show, onClose, urls }) => {
           <ModalBody>
             <DownloadOptions>
               <DownloadButton
+                className="android-button"
                 disabled={!androidUrl}
                 onClick={() => handleDownload(androidUrl)}
+                onMouseMove={handleMouseMove}
               >
+                <div className="particles"></div>
                 <PlatformIcon>
                   <i className="bi bi-android2 android"></i>
                 </PlatformIcon>
@@ -141,9 +319,12 @@ const AppDownloadModal = ({ show, onClose, urls }) => {
               </DownloadButton>
 
               <DownloadButton
+                className="ios-button"
                 disabled={!iosUrl}
                 onClick={() => handleDownload(iosUrl)}
+                onMouseMove={handleMouseMove}
               >
+                <div className="particles"></div>
                 <PlatformIcon>
                   <i className="bi bi-apple ios"></i>
                 </PlatformIcon>
@@ -155,9 +336,12 @@ const AppDownloadModal = ({ show, onClose, urls }) => {
               </DownloadButton>
 
               <DownloadButton
+                className="harmony-button"
                 disabled={!harmonyUrl}
                 onClick={() => handleDownload(harmonyUrl)}
+                onMouseMove={handleMouseMove}
               >
+                <div className="particles"></div>
                 <PlatformIcon>
                   <i className="bi bi-hexagon harmony"></i>
                 </PlatformIcon>

@@ -11,6 +11,7 @@ import AppDownloadModal from "components/modals/AppDownloadModal.js";
 import SocialLinksModal from "components/modals/SocialLinksModal.js";
 import SearchBar from "../components/navigation/SearchBar.js";
 import NavigationCard from "../components/navigation/NavigationCard.js";
+import backgroundImage from "../images/pexels-apasaric-3629227.jpg";
 
 // 工具函数
 const getCountryCodeFromUrl = () => {
@@ -42,10 +43,21 @@ const spin = keyframes`
   }
 `;
 
+const float = keyframes`
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+`;
+
+const shine = keyframes`
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+`;
+
 // 样式定义
 const Container = styled.div`
-  ${tw`min-h-screen bg-[#252525]`}
-  background-image: url("assets/img/pexels-apasaric-3629227.jpg");
+  ${tw`min-h-screen bg-[#252525] flex flex-col`}
+  background-image: url(${backgroundImage});
   background-position: center;
   background-size: cover;
   background-attachment: fixed;
@@ -56,75 +68,136 @@ const Container = styled.div`
 `;
 
 const HeroSection = styled.div`
-  position: relative;
-  padding: 100px 0 60px;
-  text-align: center;
+  ${tw`relative text-center`}
+  padding-top: 120px;
+  padding-bottom: 80px;
+  backdrop-filter: blur(10px);
 `;
 
 const HeroTitle = styled.h1`
-  font-size: 3.5rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  line-height: 1.2;
+  ${tw`text-5xl font-bold relative inline-block`}
+  margin-bottom: 2.5rem;
   
-  .hero-text-dubai {
-    background: linear-gradient(45deg, 
-      #FFD700, #FFA500, #FF8C00, #FF4500
+  .hero-text {
+    background: linear-gradient(
+      90deg,
+      #FFD700, #FFA500, #66BB6A, #4CAF50, #FFD700
     );
+    background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-clip: text;
-    padding: 0 0.2em;
+    animation: ${shine} 5s linear infinite;
   }
 
-  .hero-text-nav {
-    background: linear-gradient(45deg, 
-      #66BB6A, #4CAF50, #43A047, #388E3C
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    padding: 0 0.2em;
+  &::after {
+    content: '';
+    ${tw`absolute bottom-0 left-0 w-full h-1 rounded-full`}
+    background: linear-gradient(90deg, #FFD700, #4CAF50);
+    opacity: 0.5;
+    bottom: -0.75rem;
   }
 `;
 
-const HeroSubtitle = styled.p`
-  font-size: 1.3rem;
-  opacity: 0.9;
-  margin-bottom: 2rem;
-  font-weight: 300;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+const HeroSubtitle = styled.div`
+  ${tw`flex items-center justify-center gap-8 text-lg`}
+  margin-bottom: 3rem;
+`;
 
-  .subtitle-dot {
-    opacity: 0.5;
+const SubtitleItem = styled.div`
+  ${tw`flex items-center gap-2 px-4 py-2 rounded-full`}
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: ${float} 3s ease-in-out infinite;
+  animation-delay: ${props => props.delay || '0s'};
+
+  i {
+    ${tw`text-xl`}
+    color: ${props => props.iconColor || 'white'};
   }
 `;
 
 const SearchBookmarkContainer = styled.div`
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 1rem;
+  ${tw`max-w-4xl mx-auto px-4 flex gap-4 items-center`}
+  
+  .search-wrapper {
+    ${tw`flex-1`}
+  }
 `;
 
 const BookmarkButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1.25rem;
-  border-radius: 0.75rem;
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
+  ${tw`
+    flex items-center gap-2 
+    px-6 h-12 rounded-2xl 
+    text-white dark:text-gray-100
+    transition-all duration-300
+  `}
+  background: ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.2)'};
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
+  border: 1px solid ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)'};
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      #FFD700,
+      #FFA500,
+      #66BB6A,
+      #4CAF50,
+      #FFD700
+    );
+    background-size: 200% auto;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    animation: ${shine} 5s linear infinite;
+  }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
+    border-color: ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)'};
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    
+    &::before {
+      opacity: 0.15;
+    }
+
+    i {
+      transform: scale(1.1);
+    }
   }
+
+  &:active {
+    transform: translateY(0);
+    
+    i {
+      transform: scale(0.95);
+    }
+  }
+
+  i, span {
+    position: relative;
+    z-index: 1;
+  }
+
+  i {
+    ${tw`text-xl transition-transform duration-300`}
+    color: ${props => props.theme.mode === 'dark' ? '#FFD700' : '#FFD700'};
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  }
+
+  span {
+    ${tw`text-sm font-medium`}
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+`;
+
+// 添加 MainContent 样式组件
+const MainContent = styled.main`
+  ${tw`flex-1`}
 `;
 
 // 组件定义
@@ -193,9 +266,28 @@ const Navigation = () => {
     
     const toast = document.createElement('div');
     toast.className = 'bookmark-toast';
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: ${document.documentElement.classList.contains('dark') ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)'};
+      color: ${document.documentElement.classList.contains('dark') ? '#fff' : '#000'};
+      padding: 12px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      backdrop-filter: blur(8px);
+      border: 1px solid ${document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
+    `;
+    
     toast.innerHTML = `
       <div class="toast-content">
-        <i class="bi bi-info-circle"></i>
+        <i class="bi bi-info-circle" style="color: #FFD700; margin-right: 8px;"></i>
         <span>请按 ${isMac ? '⌘ + D' : 'Ctrl + D'} 键添加到收藏夹</span>
       </div>
     `;
@@ -204,44 +296,61 @@ const Navigation = () => {
     setIsBookmarked(true);
     
     setTimeout(() => {
-      toast.remove();
-      setIsBookmarked(false);
+      toast.style.transition = 'opacity 0.3s ease-out';
+      toast.style.opacity = '0';
+      setTimeout(() => {
+        toast.remove();
+        setIsBookmarked(false);
+      }, 300);
     }, 3000);
   };
 
-  return (
-    <Container>
-      <Header />
-      
-      <HeroSection>
-        <div className="container">
-          <HeroTitle>
-            <span className="hero-text-dubai">迪拜</span>
-            <span className="hero-text-nav">综合导航</span>
-          </HeroTitle>
-          <HeroSubtitle>
+  const heroSection = (
+    <HeroSection>
+      <div className="container">
+        <HeroTitle>
+          <span className="hero-text">迪拜综合导航</span>
+        </HeroTitle>
+        
+        <HeroSubtitle>
+          <SubtitleItem iconColor="#FFD700" delay="0s">
+            <i className="bi bi-building"></i>
             <span>政府服务</span>
-            <span className="subtitle-dot">·</span>
+          </SubtitleItem>
+          <SubtitleItem iconColor="#4CAF50" delay="0.2s">
+            <i className="bi bi-briefcase"></i>
             <span>商务信息</span>
-            <span className="subtitle-dot">·</span>
+          </SubtitleItem>
+          <SubtitleItem iconColor="#FFA500" delay="0.4s">
+            <i className="bi bi-compass"></i>
             <span>生活指南</span>
-          </HeroSubtitle>
-          
-          <SearchBookmarkContainer>
+          </SubtitleItem>
+        </HeroSubtitle>
+        
+        <SearchBookmarkContainer>
+          <div className="search-wrapper">
             <SearchBar 
               value={searchTerm}
               onChange={handleSearch}
               onClear={() => setSearchTerm("")}
             />
-            <BookmarkButton onClick={handleBookmark}>
-              <i className="bi bi-bookmark-plus"></i>
-              <span>收藏本站</span>
-            </BookmarkButton>
-          </SearchBookmarkContainer>
-        </div>
-      </HeroSection>
+          </div>
+          <BookmarkButton onClick={handleBookmark}>
+            <i className="bi bi-bookmark-plus"></i>
+            <span>收藏本站</span>
+          </BookmarkButton>
+        </SearchBookmarkContainer>
+      </div>
+    </HeroSection>
+  );
 
-      <main>
+  return (
+    <Container>
+      <Header />
+      
+      {heroSection}
+
+      <MainContent>
         <div className="nav-grid">
           <div className="container">
             {isLoading ? (
@@ -266,7 +375,7 @@ const Navigation = () => {
             )}
           </div>
         </div>
-      </main>
+      </MainContent>
 
       <Footer />
 
