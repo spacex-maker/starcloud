@@ -5,6 +5,8 @@ import Header from "components/headers/light.js";
 import Footer from "components/footers/FiveColumnWithInputForm.js";
 import NavigationCard from "components/navigation/NavigationCard";
 import SearchBar from "components/navigation/SearchBar";
+import AppDownloadModal from "components/modals/AppDownloadModal";
+import SocialLinksModal from "components/modals/SocialLinksModal";
 
 // 基础容器样式
 const Container = tw.div`relative`;
@@ -71,6 +73,8 @@ const NavContainer = tw.div`container mx-auto px-4`;
 const Navigation = () => {
   const [navigationData, setNavigationData] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [appModalData, setAppModalData] = useState({ isOpen: false, urls: {} });
+  const [socialModalData, setSocialModalData] = useState({ isOpen: false, websiteName: '', links: {} });
 
   useEffect(() => {
     fetchNavigationData();
@@ -118,6 +122,23 @@ const Navigation = () => {
     fetchNavigationData(value);
   };
 
+  // 处理 APP 下载
+  const handleAppDownload = (androidUrl, iosUrl, harmonyUrl) => {
+    setAppModalData({
+      isOpen: true,
+      urls: { androidUrl, iosUrl, harmonyUrl }
+    });
+  };
+
+  // 处理社交链接
+  const handleSocialLinks = (websiteName, socialLinks) => {
+    setSocialModalData({
+      isOpen: true,
+      websiteName,
+      links: socialLinks
+    });
+  };
+
   return (
     <Container>
       <Header />
@@ -155,6 +176,20 @@ const Navigation = () => {
         </NavGrid>
       </Content>
       <Footer />
+      
+      {/* 添加模态框组件 */}
+      <AppDownloadModal
+        isOpen={appModalData.isOpen}
+        onClose={() => setAppModalData({ isOpen: false, urls: {} })}
+        {...appModalData.urls}
+      />
+      
+      <SocialLinksModal
+        isOpen={socialModalData.isOpen}
+        onClose={() => setSocialModalData({ isOpen: false, websiteName: '', links: {} })}
+        websiteName={socialModalData.websiteName}
+        socialLinks={socialModalData.links}
+      />
     </Container>
   );
 };

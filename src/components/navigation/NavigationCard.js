@@ -393,14 +393,17 @@ const NavigationCard = ({ category, subCategories }) => {
                             </WebsiteButton>
                             
                             {(website.androidAppUrl || website.iosAppUrl || website.harmonyOSAppUrl) && (
-                              <AppButton onClick={() => showAppDownloadOptions(
-                                website.androidAppUrl,
-                                website.iosAppUrl,
-                                website.harmonyOSAppUrl
-                              )}>
+                              <button 
+                                className="btn-app" 
+                                onClick={() => showAppDownloadOptions(
+                                  website.androidAppUrl,
+                                  website.iosAppUrl,
+                                  website.harmonyOSAppUrl
+                                )}
+                              >
                                 <i className="bi bi-download"></i>
                                 APP
-                              </AppButton>
+                              </button>
                             )}
                           </SiteActions>
                         </SiteInfo>
