@@ -1,8 +1,7 @@
 import React from "react";
-import tw from "twin.macro";
 import styled from "styled-components";
+import tw from "twin.macro";
 
-// 搜索容器样式
 const SearchContainer = styled.div`
   ${tw`w-full max-w-xl relative`}
 `;
@@ -60,7 +59,7 @@ const SearchBar = ({ value, onChange, onClear }) => {
           type="text"
           placeholder="搜索网站、服务或应用..."
           value={value}
-          onChange={(e) => onChange(e)}
+          onChange={onChange}
         />
         {value && (
           <ClearButton onClick={onClear}>

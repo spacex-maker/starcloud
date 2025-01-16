@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import tw from "twin.macro";
 import styled from "styled-components";
+import SocialLinksModal from "../modals/SocialLinksModal";
+import AppDownloadModal from "../modals/AppDownloadModal";
 
 // 卡片基础样式
 const Card = styled.div`
@@ -192,6 +194,12 @@ const AppButton = styled(ActionButton)`
   background: linear-gradient(45deg, #4CAF50, #45a049);
 `;
 
+// 添加 SocialButton 样式定义
+const SocialButton = styled(ActionButton)`
+  ${tw`text-white`}
+  background: linear-gradient(45deg, #2196F3, #1976D2);
+`;
+
 // 检测设备类型的函数
 const detectDevice = () => {
   const userAgent = navigator.userAgent.toLowerCase();
@@ -237,7 +245,10 @@ const NavigationCard = ({ category, subCategories }) => {
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
   const [isSocialModalOpen, setIsSocialModalOpen] = useState(false);
   const [currentAppUrls, setCurrentAppUrls] = useState({});
-  const [currentSocialData, setCurrentSocialData] = useState({});
+  const [socialModalData, setSocialModalData] = useState({
+    websiteName: '',
+    socialLinks: {}
+  });
 
   // 获取分类图标
   const getCategoryIcon = (category) => {
@@ -252,6 +263,8 @@ const NavigationCard = ({ category, subCategories }) => {
 
   // 处理 APP 下载的函数
   const showAppDownloadOptions = (androidUrl, iosUrl, harmonyUrl) => {
+    console.log('showAppDownloadOptions 被调用:', { androidUrl, iosUrl, harmonyUrl });
+    
     const deviceType = detectDevice();
     
     // 根据设备类型直接跳转
@@ -270,22 +283,36 @@ const NavigationCard = ({ category, subCategories }) => {
     
     // 桌面设备显示模态框
     if (deviceType === 'desktop') {
-      setCurrentAppUrls({ androidUrl, iosUrl, harmonyUrl });
+      setCurrentAppUrls({
+        androidUrl,
+        iosUrl,
+        harmonyUrl
+      });
       setIsAppModalOpen(true);
     }
   };
 
   // 处理社交媒体链接的函数
   const showSocialLinks = (websiteName, socialLinksStr) => {
+    console.log('showSocialLinks 被调用:', { websiteName, socialLinksStr });
+    
     try {
-      const socialLinks = typeof socialLinksStr === 'object' ? 
-        socialLinksStr : 
-        JSON.parse(socialLinksStr);
+      // 如果是字符串就解析，否则直接使用对象
+      const socialLinks = typeof socialLinksStr === 'string' ? 
+        JSON.parse(socialLinksStr) : 
+        socialLinksStr;
       
-      setCurrentSocialData({ websiteName, socialLinks });
+      console.log('解析后的 socialLinks:', socialLinks);
+      
+      // 直接设置状态
       setIsSocialModalOpen(true);
+      setSocialModalData({
+        websiteName,
+        socialLinks
+      });
+      
     } catch (error) {
-      console.error('解析社交媒体链接失败:', error, socialLinksStr);
+      console.error('解析社交媒体链接失败:', error);
     }
   };
 
@@ -327,7 +354,7 @@ const NavigationCard = ({ category, subCategories }) => {
 
     return (
       <div className="social-links-container">
-        {Object.entries(currentSocialData.socialLinks || {}).map(([platform, url]) => {
+        {Object.entries(socialModalData.socialLinks || {}).map(([platform, url]) => {
           const config = platformConfigs[platform] || {
             icon: 'bi-link',
             color: '#ffffff',
@@ -393,8 +420,7 @@ const NavigationCard = ({ category, subCategories }) => {
                             </WebsiteButton>
                             
                             {(website.androidAppUrl || website.iosAppUrl || website.harmonyOSAppUrl) && (
-                              <button 
-                                className="btn-app" 
+                              <AppButton 
                                 onClick={() => showAppDownloadOptions(
                                   website.androidAppUrl,
                                   website.iosAppUrl,
@@ -403,7 +429,19 @@ const NavigationCard = ({ category, subCategories }) => {
                               >
                                 <i className="bi bi-download"></i>
                                 APP
-                              </button>
+                              </AppButton>
+                            )}
+                            
+                            {website.socialLinks && (
+                              <SocialButton 
+                                onClick={() => {
+                                  console.log('点击社交按钮:', website.name, website.socialLinks);
+                                  showSocialLinks(website.name, website.socialLinks);
+                                }}
+                              >
+                                <i className="bi bi-share"></i>
+                                关注
+                              </SocialButton>
                             )}
                           </SiteActions>
                         </SiteInfo>
@@ -418,46 +456,29 @@ const NavigationCard = ({ category, subCategories }) => {
       </Card>
 
       {/* APP 下载模态框 */}
-      <CustomModal
-        isOpen={isAppModalOpen}
-        onClose={() => setIsAppModalOpen(false)}
-      >
-        <div className="modal-header">
-          <h5 className="modal-title">
-            <i className="bi bi-download me-2"></i>
-            选择下载版本
-          </h5>
-          <button 
-            type="button" 
-            className="btn-close" 
-            onClick={() => setIsAppModalOpen(false)}
-          />
-        </div>
-        <div className="modal-body">
-          {renderAppModalContent()}
-        </div>
-      </CustomModal>
+      {isAppModalOpen && (
+        <AppDownloadModal
+          show={isAppModalOpen}
+          onClose={() => {
+            setIsAppModalOpen(false);
+            setCurrentAppUrls({});
+          }}
+          urls={currentAppUrls}
+        />
+      )}
 
       {/* 社交媒体模态框 */}
-      <CustomModal
-        isOpen={isSocialModalOpen}
-        onClose={() => setIsSocialModalOpen(false)}
-      >
-        <div className="modal-header">
-          <h5 className="modal-title">
-            <i className="bi bi-share me-2"></i>
-            关注 {currentSocialData.websiteName}
-          </h5>
-          <button 
-            type="button" 
-            className="btn-close" 
-            onClick={() => setIsSocialModalOpen(false)}
-          />
-        </div>
-        <div className="modal-body">
-          {renderSocialModalContent()}
-        </div>
-      </CustomModal>
+      {isSocialModalOpen && (
+        <SocialLinksModal
+          show={isSocialModalOpen}
+          onClose={() => {
+            setIsSocialModalOpen(false);
+            setSocialModalData({ websiteName: '', socialLinks: {} });
+          }}
+          websiteName={socialModalData.websiteName}
+          socialLinks={socialModalData.socialLinks}
+        />
+      )}
     </>
   );
 };
