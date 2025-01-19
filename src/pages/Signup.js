@@ -28,7 +28,7 @@ const Content = styled.div`
   will-change: transform, opacity;
 `;
 const MainContainer = styled.div`
-  ${tw`lg:w-1/2 xl:w-5/12 p-8 backdrop-blur-sm flex flex-col justify-center overflow-y-auto`}
+  ${tw`lg:w-1/2 xl:w-5/12 p-8 backdrop-blur-sm flex flex-col justify-center overflow-hidden`}
   transform: translateX(-100px);
   opacity: 0;
   transition: all 1.2s cubic-bezier(0.165, 0.84, 0.44, 1);
@@ -303,11 +303,16 @@ const VerificationCodeInput = styled(Input)`
 `;
 
 const SendCodeButton = styled.button`
-  ${tw`px-6 rounded-lg font-medium text-sm text-white transition-all duration-300 flex-shrink-0 relative overflow-hidden`}
+  ${tw`px-6 rounded-lg font-medium text-sm text-white flex-shrink-0 relative overflow-hidden`}
   background: linear-gradient(92.88deg, rgb(55, 126, 248) 9.16%, rgb(132, 59, 255) 43.89%, rgb(159, 48, 255) 64.72%);
   min-width: 120px;
   height: 42px;
   
+  transform: translateX(100px);
+  opacity: 0;
+  transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+  will-change: transform, opacity;
+
   &:before {
     content: '';
     ${tw`absolute inset-0 opacity-0 transition-opacity duration-300`}
@@ -323,39 +328,18 @@ const SendCodeButton = styled.button`
 
   &:disabled {
     ${tw`cursor-not-allowed`}
-    opacity: 1;
-    
     &:hover:before {
       ${tw`opacity-0`}
     }
   }
 
   &:not(:disabled):hover {
-    ${tw`transform scale-105 shadow-lg`}
+    ${tw`shadow-lg`}
+    transform: translateX(0) scale(1.05);
     &:before {
       ${tw`opacity-25`}
     }
   }
-
-  .button-content {
-    ${tw`relative flex items-center justify-center w-full h-full`}
-  }
-
-  .countdown-text {
-    ${tw`absolute transform transition-all duration-300 flex items-center`}
-    right: ${props => props.$showCountdown ? '50%' : '0'};
-    translate: ${props => props.$showCountdown ? '50%, 0' : '0, 0'};
-  }
-
-  .send-text {
-    ${tw`absolute transform transition-all duration-300`}
-    opacity: ${props => props.$showCountdown ? '0' : '1'};
-    scale: ${props => props.$showCountdown ? '0.8' : '1'};
-  }
-
-  transform: translateY(${props => props.$index * 10}px);
-  opacity: 0;
-  transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
 `;
 
 const PasswordStrengthIndicator = styled.div`
@@ -454,6 +438,74 @@ const emailSuffixes = [
   "@sohu.com"     // 搜狐邮箱
 ];
 
+// 添加模态框相关样式组件
+const Modal = styled.div`
+  ${tw`fixed inset-0 z-50 flex items-center justify-center p-4`}
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease-in-out;
+  
+  &.show {
+    opacity: 1;
+    visibility: visible;
+  }
+`;
+
+const ModalContent = styled.div`
+  ${tw`relative bg-white bg-opacity-10 backdrop-blur-xl rounded-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto`}
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transform: scale(0.95) translateY(20px);
+  opacity: 0;
+  transition: all 0.3s ease-in-out;
+  
+  &.show {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    ${tw`bg-transparent rounded-full`}
+  }
+
+  &::-webkit-scrollbar-thumb {
+    ${tw`bg-white bg-opacity-25 rounded-full`}
+  }
+`;
+
+const ModalHeader = styled.div`
+  ${tw`flex items-center justify-between mb-4 pb-4 border-b border-white border-opacity-10`}
+`;
+
+const ModalTitle = styled.h2`
+  ${tw`text-xl font-bold text-white`}
+`;
+
+const CloseButton = styled.button`
+  ${tw`text-gray-400 hover:text-white transition-colors duration-200`}
+`;
+
+const ModalBody = styled.div`
+  ${tw`text-gray-300 space-y-4`}
+  
+  h3 {
+    ${tw`text-lg font-semibold text-white mt-6 mb-3`}
+  }
+  
+  p {
+    ${tw`leading-relaxed`}
+  }
+  
+  ul {
+    ${tw`list-disc list-inside space-y-2 ml-4`}
+  }
+`;
+
 export default ({
   logoLinkUrl = "/",
   illustrationImageSrc = illustration,
@@ -546,6 +598,9 @@ export default ({
     letter: false,
     special: false
   });
+  const [modalContent, setModalContent] = React.useState(null);
+  const modalRef = React.useRef(null);
+  const modalContentRef = React.useRef(null);
 
   // 将按钮分组为每行两个
   const socialButtonRows = [];
@@ -638,80 +693,106 @@ export default ({
     });
   }, []);
 
+  // 在组件内添加 playExitAnimation 函数
+  const playExitAnimation = () => {
+    return new Promise(resolve => {
+      // Logo旋转消失
+      if (logoRef.current) {
+        logoRef.current.style.transform = 'translateY(-20px) rotate(180deg)';
+        logoRef.current.style.opacity = '0';
+      }
+
+      // 标题缩小上浮
+      setTimeout(() => {
+        if (headingRef.current) {
+          headingRef.current.style.transform = 'scale(0.8) translateY(-30px)';
+          headingRef.current.style.opacity = '0';
+        }
+      }, 100);
+
+      // 社交按钮向两侧散开
+      setTimeout(() => {
+        socialButtonRefs.current.forEach((ref, index) => {
+          if (ref) {
+            ref.style.transform = `translateX(${index % 2 === 0 ? '-50px' : '50px'})`;
+            ref.style.opacity = '0';
+          }
+        });
+      }, 200);
+
+      // 输入框向两侧旋转消失
+      setTimeout(() => {
+        inputRefs.current.forEach((ref, index) => {
+          if (ref) {
+            ref.style.transform = `translateX(${index % 2 === 0 ? '-100px' : '100px'}) rotate(${index % 2 === 0 ? '-10deg' : '10deg'})`;
+            ref.style.opacity = '0';
+          }
+        });
+
+        // 添加发送验证码按钮的退出动画
+        if (sendCodeButtonRef.current) {
+          sendCodeButtonRef.current.style.transform = 'translateX(100px)';
+          sendCodeButtonRef.current.style.opacity = '0';
+        }
+      }, 300);
+
+      // 提交按钮上浮旋转消失
+      setTimeout(() => {
+        if (submitButtonRef.current) {
+          submitButtonRef.current.style.transform = 'translateY(-30px) rotate(5deg)';
+          submitButtonRef.current.style.opacity = '0';
+        }
+      }, 400);
+
+      // 左右两侧内容消失
+      setTimeout(() => {
+        if (mainContainerRef.current && illustrationRef.current) {
+          mainContainerRef.current.style.transform = 'translateX(-100px)';
+          mainContainerRef.current.style.opacity = '0';
+          illustrationRef.current.style.transform = 'translateX(100px)';
+          illustrationRef.current.style.opacity = '0';
+        }
+      }, 600);
+
+      // 整体内容区域消失
+      setTimeout(() => {
+        if (contentRef.current) {
+          contentRef.current.style.transform = 'scale(0.95) translateY(-20px)';
+          contentRef.current.style.opacity = '0';
+        }
+      }, 900);
+
+      // 背景消失
+      setTimeout(() => {
+        if (containerRef.current) {
+          containerRef.current.style.opacity = '0';
+        }
+        setTimeout(() => {
+          resolve();
+        }, 300);
+      }, 1100);
+    });
+  };
+
+  // 修改 handleBackToHome 函数
+  const handleBackToHome = async (e) => {
+    e.preventDefault();
+    await playExitAnimation();
+    navigate('/');
+  };
+
+  // 修改 handleSubmit 函数
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Logo旋转消失
-    if (logoRef.current) {
-      logoRef.current.style.transform = 'translateY(-20px) rotate(180deg)';
-      logoRef.current.style.opacity = '0';
-    }
+    await playExitAnimation();
+    navigate('/dashboard');
+  };
 
-    // 标题缩小上浮
-    setTimeout(() => {
-      if (headingRef.current) {
-        headingRef.current.style.transform = 'scale(0.8) translateY(-30px)';
-        headingRef.current.style.opacity = '0';
-      }
-    }, 100);
-
-    // 社交按钮向两侧散开
-    setTimeout(() => {
-      socialButtonRefs.current.forEach((ref, index) => {
-        if (ref) {
-          ref.style.transform = `translateX(${index % 2 === 0 ? '-50px' : '50px'})`;
-          ref.style.opacity = '0';
-        }
-      });
-    }, 200);
-
-    // 输入框向两侧旋转消失
-    setTimeout(() => {
-      inputRefs.current.forEach((ref, index) => {
-        if (ref) {
-          ref.style.transform = `translateX(${index % 2 === 0 ? '-100px' : '100px'}) rotate(${index % 2 === 0 ? '-10deg' : '10deg'})`;
-          ref.style.opacity = '0';
-        }
-      });
-    }, 300);
-
-    // 提交按钮上浮旋转消失
-    setTimeout(() => {
-      if (submitButtonRef.current) {
-        submitButtonRef.current.style.transform = 'translateY(-30px) rotate(5deg)';
-        submitButtonRef.current.style.opacity = '0';
-      }
-    }, 400);
-
-    // 左右两侧内容消失
-    setTimeout(() => {
-      if (mainContainerRef.current && illustrationRef.current) {
-        mainContainerRef.current.style.transform = 'translateX(-100px)';
-        mainContainerRef.current.style.opacity = '0';
-        illustrationRef.current.style.transform = 'translateX(100px)';
-        illustrationRef.current.style.opacity = '0';
-      }
-    }, 600);
-
-    // 整体内容区域消失
-    setTimeout(() => {
-      if (contentRef.current) {
-        contentRef.current.style.transform = 'scale(0.95) translateY(-20px)';
-        contentRef.current.style.opacity = '0';
-      }
-    }, 900);
-
-    // 背景消失
-    setTimeout(() => {
-      if (containerRef.current) {
-        containerRef.current.style.opacity = '0';
-      }
-    }, 1100);
-
-    // 跳转
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1500);
+  // 修改 handleSigninClick 函数
+  const handleSigninClick = async (e) => {
+    e.preventDefault();
+    await playExitAnimation();
+    navigate('/login');
   };
 
   const handleSocialLogin = async (provider) => {
@@ -844,54 +925,34 @@ export default ({
     checkRequirements(value);
   };
 
-  // 添加处理登录链接点击的函数
-  const handleSigninClick = async (e) => {
-    e.preventDefault();
-    // 使用现有的 handleSubmit 中的动画逻辑
-    if (submitButtonRef.current) {
-      submitButtonRef.current.style.transform = 'translateY(30px) rotate(-5deg)';
-      submitButtonRef.current.style.opacity = '0';
-    }
-
-    inputRefs.current.forEach((ref, index) => {
-      if (ref) {
-        setTimeout(() => {
-          ref.style.transform = `translateX(${index % 2 === 0 ? '-100px' : '100px'}) rotate(${index % 2 === 0 ? '10deg' : '-10deg'})`;
-          ref.style.opacity = '0';
-        }, index * 100);
+  const openModal = (type) => {
+    setModalContent(type);
+    requestAnimationFrame(() => {
+      if (modalRef.current) {
+        modalRef.current.classList.add('show');
+      }
+      if (modalContentRef.current) {
+        modalContentRef.current.classList.add('show');
       }
     });
+  };
 
+  const closeModal = () => {
+    if (modalContentRef.current) {
+      modalContentRef.current.classList.remove('show');
+    }
+    if (modalRef.current) {
+      modalRef.current.classList.remove('show');
+    }
     setTimeout(() => {
-      if (mainContainerRef.current && illustrationRef.current) {
-        mainContainerRef.current.style.transform = 'translateX(-100px)';
-        mainContainerRef.current.style.opacity = '0';
-        illustrationRef.current.style.transform = 'translateX(100px)';
-        illustrationRef.current.style.opacity = '0';
-      }
-    }, 600);
-
-    setTimeout(() => {
-      if (contentRef.current) {
-        contentRef.current.style.transform = 'scale(0.95) translateY(20px)';
-        contentRef.current.style.opacity = '0';
-      }
-    }, 900);
-
-    setTimeout(() => {
-      if (containerRef.current) {
-        containerRef.current.style.opacity = '0';
-      }
-      setTimeout(() => {
-        navigate('/login');
-      }, 300);
-    }, 1100);
+      setModalContent(null);
+    }, 300);
   };
 
   return (
     <AnimationRevealPage>
       <Container ref={containerRef}>
-        <BackToHome to="/">
+        <BackToHome to="/" onClick={handleBackToHome}>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
@@ -1065,13 +1126,25 @@ export default ({
                   </SubmitButton>
                   <p tw="mt-8 text-sm text-gray-300 text-center">
                     注册即表示您同意我们的{" "}
-                    <a href={tosUrl} tw="border-b border-gray-200 hover:text-white transition-colors">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openModal('tos');
+                      }}
+                      tw="border-b border-gray-200 hover:text-white transition-colors"
+                    >
                       服务条款
-                    </a>{" "}
+                    </button>{" "}
                     和{" "}
-                    <a href={privacyPolicyUrl} tw="border-b border-gray-200 hover:text-white transition-colors">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openModal('privacy');
+                      }}
+                      tw="border-b border-gray-200 hover:text-white transition-colors"
+                    >
                       隐私政策
-                    </a>
+                    </button>
                   </p>
 
                   <p tw="mt-8 text-sm text-gray-300 text-center">
@@ -1093,6 +1166,71 @@ export default ({
           </IllustrationContainer>
         </Content>
       </Container>
+      {modalContent && (
+        <Modal ref={modalRef} onClick={(e) => e.target === modalRef.current && closeModal()}>
+          <ModalContent ref={modalContentRef}>
+            <ModalHeader>
+              <ModalTitle>
+                {modalContent === 'tos' ? '服务条款' : '隐私政策'}
+              </ModalTitle>
+              <CloseButton onClick={closeModal}>
+                <i className="bi bi-x-lg"></i>
+              </CloseButton>
+            </ModalHeader>
+            <ModalBody>
+              {modalContent === 'tos' ? (
+                <>
+                  <p>欢迎使用我们的服务。请仔细阅读以下条款，这些条款将影响您的合法权益。</p>
+                  
+                  <h3>1. 服务说明</h3>
+                  <p>我们提供的服务包括但不限于：用户注册、内容浏览、信息发布等功能。我们保留随时修改或中断服务而不需通知您的权利。</p>
+                  
+                  <h3>2. 用户责任</h3>
+                  <ul>
+                    <li>您必须遵守所有适用的法律法规</li>
+                    <li>不得利用我们的服务进行任何非法活动</li>
+                    <li>不得干扰或破坏服务的正常运行</li>
+                    <li>保护账户安全，对账户活动负责</li>
+                  </ul>
+                  
+                  <h3>3. 知识产权</h3>
+                  <p>服务中的所有内容均受著作权法和其他知识产权法律法规的保护。未经授权，您不得复制、修改、传播或使用这些内容。</p>
+                  
+                  <h3>4. 免责声明</h3>
+                  <p>我们不对服务的及时性、安全性、准确性作出任何承诺。在法律允许的最大范围内，我们对服务导致的任何直接或间接损失不承担责任。</p>
+                </>
+              ) : (
+                <>
+                  <p>我们重视您的隐私保护。本隐私政策说明我们如何收集、使用和保护您的个人信息。</p>
+                  
+                  <h3>1. 信息收集</h3>
+                  <p>我们收集的信息包括：</p>
+                  <ul>
+                    <li>注册信息（如：电子邮件、密码）</li>
+                    <li>使用记录（如：登录时间、操作记录）</li>
+                    <li>设备信息（如：IP地址、浏览器类型）</li>
+                  </ul>
+                  
+                  <h3>2. 信息使用</h3>
+                  <p>我们使用收集的信息用于：</p>
+                  <ul>
+                    <li>提供、维护和改进服务</li>
+                    <li>发送服务通知和更新</li>
+                    <li>防范安全风险</li>
+                    <li>进行数据分析</li>
+                  </ul>
+                  
+                  <h3>3. 信息保护</h3>
+                  <p>我们采取适当的技术和组织措施保护您的个人信息，防止未经授权的访问、使用或泄露。</p>
+                  
+                  <h3>4. 信息共享</h3>
+                  <p>除非经过您的同意或法律要求，我们不会与第三方分享您的个人信息。</p>
+                </>
+              )}
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+      )}
     </AnimationRevealPage>
   );
 };

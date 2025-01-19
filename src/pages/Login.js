@@ -381,6 +381,50 @@ const ErrorMessage = styled.div`
   }
 `;
 
+// 添加加载状态样式组件
+const LoadingOverlay = styled.div`
+  ${tw`absolute inset-0 flex items-center justify-center backdrop-blur-sm transition-all duration-300`}
+  background: rgba(0, 0, 0, 0.2);
+  opacity: ${props => props.$show ? 1 : 0};
+  visibility: ${props => props.$show ? 'visible' : 'hidden'};
+  z-index: 100;
+`;
+
+const LoadingSpinner = styled.div`
+  ${tw`relative w-12 h-12`}
+  
+  &:before, &:after {
+    content: '';
+    ${tw`absolute inset-0 rounded-full border-2 border-transparent transition-all duration-300`}
+    border-top-color: white;
+    animation: spin 1s cubic-bezier(0.76, 0.35, 0.2, 0.7) infinite;
+  }
+
+  &:before {
+    opacity: 0.4;
+    animation-delay: -0.5s;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+const LoadingText = styled.div`
+  ${tw`absolute mt-16 text-white text-sm font-medium`}
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.6s ease forwards 0.3s;
+
+  @keyframes fadeInUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
+
 export default ({
   logoLinkUrl = "/",
   illustrationImageSrc = illustration,
@@ -472,6 +516,7 @@ export default ({
   const [showTooltip, setShowTooltip] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
   const [showError, setShowError] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
   
   const emailSuffixes = [
     "@qq.com",      // 中国最流行的邮箱服务
@@ -753,34 +798,42 @@ export default ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!isFormValid) return;
-
+    
     try {
-      const loginResult = await auth.login({
-        email,
-        password
-      });
+      setIsLoading(true); // 开始加载
+      
+      // 添加一个最小加载时间，确保动画效果明显
+      const minLoadingTime = new Promise(resolve => setTimeout(resolve, 800));
+      
+      const [loginResult] = await Promise.all([
+        auth.login({
+          email,
+          password
+        }),
+        minLoadingTime
+      ]);
       
       if (!loginResult.success) {
         showErrorMessage(loginResult.message);
+        setIsLoading(false); // 结束加载
         return;
       }
       
-      // 登录成功后获取用户信息
       const userInfoResult = await auth.getUserInfo();
       
       if (!userInfoResult.success) {
         showErrorMessage(userInfoResult.message);
+        setIsLoading(false); // 结束加载
         return;
       }
       
-      // 播放退出动画，然后跳转
       await playExitAnimation();
       navigate('/');
       
     } catch (error) {
       showErrorMessage('登录失败，请稍后重试');
+      setIsLoading(false); // 结束加载
     }
   };
 
@@ -883,7 +936,13 @@ export default ({
     }
   }, []);
 
-  // 添加处理注册链接点击的函数
+  const handleBackToHome = async (e) => {
+    e.preventDefault();
+    await playExitAnimation();
+    navigate('/');
+  };
+
+  // 添加处理函数
   const handleSignupClick = async (e) => {
     e.preventDefault();
     await playExitAnimation();
@@ -899,7 +958,7 @@ export default ({
       </ErrorMessage>
       
       <Container ref={containerRef}>
-        <BackToHome to="/">
+        <BackToHome to="/" onClick={handleBackToHome}>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
@@ -942,6 +1001,10 @@ export default ({
                   <DividerText>其他登录方式</DividerText>
                 </DividerTextContainer>
                 <Form onSubmit={handleSubmit}>
+                  <LoadingOverlay $show={isLoading}>
+                    <LoadingSpinner />
+                    <LoadingText>登录中...</LoadingText>
+                  </LoadingOverlay>
                   <InputWrapper>
                     <Input
                       type="text"
@@ -1025,7 +1088,7 @@ export default ({
                   <p tw="mt-8 text-sm text-gray-300 text-center">
                     还没有账户？{" "}
                     <Link 
-                      to="/signup" 
+                      to={signupUrl} 
                       onClick={handleSignupClick}
                       tw="text-white border-b border-gray-200 hover:border-white transition-colors"
                     >
