@@ -200,16 +200,69 @@ const InputWrapper = styled.div`
 `;
 
 const Input = styled.input`
-  ${tw`w-full px-4 rounded-lg font-medium backdrop-blur-sm bg-white bg-opacity-10 border border-gray-200 placeholder-gray-400 text-white text-sm focus:outline-none focus:border-gray-400 focus:bg-opacity-15`}
+  ${tw`w-full px-4 rounded-lg font-medium text-white text-sm focus:outline-none`}
   height: 42px;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  
+  &:focus {
+    background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.15),
+      rgba(255, 255, 255, 0.1)
+    );
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
   transform: translateX(${props => props.$index % 2 === 0 ? '-100px' : '100px'}) rotate(${props => props.$index % 2 === 0 ? '10deg' : '-10deg'});
   opacity: 0;
   transition: all 0.8s ease-in-out;
+  
+  ${props => props.$isPassword && css`
+    border-bottom-color: ${props => {
+      if (props.$strength === 0) return 'rgba(239, 68, 68, 0.8)';
+      if (props.$strength === 1) return 'rgba(234, 179, 8, 0.8)';
+      if (props.$strength === 2) return 'rgba(34, 197, 94, 0.8)';
+      return 'rgba(255, 255, 255, 0.2)';
+    }};
+  `}
 `;
 
 // 最后定义提交按钮，继承基础按钮样式
 const SubmitButton = styled(BaseButton)`
-  ${tw`mt-6`}
+  ${tw`mt-4`}
+  transform: translateY(30px) rotate(-5deg);
+  opacity: 0;
+  transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+  
+  &:disabled {
+    ${tw`cursor-not-allowed`}
+    opacity: 0.5;
+    
+    &:hover {
+      transform: translateY(0) rotate(0);
+      &:before {
+        opacity: 0;
+      }
+    }
+  }
+
+  /* 添加初始状态的样式类 */
+  &.initial {
+    transform: translateY(30px) rotate(-5deg) !important;
+    opacity: 0 !important;
+  }
 `;
 
 const IllustrationContainer = styled.div`
@@ -231,6 +284,9 @@ const BackToHome = tw(Link)`
 const EmailSuffixButton = styled.button`
   ${tw`absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200 flex items-center`}
   right: 12px;
+  transform: translateY(${props => props.$index * 10}px);
+  opacity: 0;
+  transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
 `;
 
 const EmailSuffixDropdown = styled.div`
@@ -254,6 +310,9 @@ const EmailSuffixOption = styled.button`
 const PasswordToggle = styled.button`
   ${tw`absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200`}
   right: 12px;
+  transform: translateY(${props => props.$index * 10}px);
+  opacity: 0;
+  transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
 `;
 
 const VerificationCodeWrapper = styled(InputWrapper)`
@@ -313,6 +372,93 @@ const SendCodeButton = styled.button`
     ${tw`absolute transform transition-all duration-300`}
     opacity: ${props => props.$showCountdown ? '0' : '1'};
     scale: ${props => props.$showCountdown ? '0.8' : '1'};
+  }
+
+  transform: translateY(${props => props.$index * 10}px);
+  opacity: 0;
+  transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+`;
+
+const PasswordStrengthIndicator = styled.div`
+  ${tw`absolute left-0 w-full overflow-hidden transition-all duration-300`}
+  bottom: -2px;
+  height: ${props => props.$show ? '3px' : '0'};
+  opacity: ${props => props.$show ? '1' : '0'};
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  width: calc(100% - 24px);
+  left: 12px;
+`;
+
+const StrengthBar = styled.div`
+  ${tw`h-full transition-all duration-300 relative`}
+  border-radius: 1.5px;
+  background: ${props => {
+    if (props.$strength === 0) return `
+      linear-gradient(90deg, 
+        rgb(239, 68, 68) 0%, 
+        rgb(239, 68, 68) 33.33%, 
+        rgba(255, 255, 255, 0.05) 33.33%,
+        rgba(255, 255, 255, 0.05) 100%
+      )
+    `;
+    if (props.$strength === 1) return `
+      linear-gradient(90deg, 
+        rgb(234, 179, 8) 0%, 
+        rgb(234, 179, 8) 66.66%, 
+        rgba(255, 255, 255, 0.05) 66.66%,
+        rgba(255, 255, 255, 0.05) 100%
+      )
+    `;
+    if (props.$strength === 2) return `
+      linear-gradient(90deg, 
+        rgb(34, 197, 94) 0%, 
+        rgb(34, 197, 94) 100%
+      )
+    `;
+    return 'rgba(255, 255, 255, 0.05)';
+  }};
+`;
+
+const StrengthText = styled.div`
+  ${tw`text-xs absolute left-0 w-full text-center transition-all duration-300`}
+  bottom: -20px;
+  color: ${props => {
+    if (props.$strength === 0) return 'rgb(239, 68, 68)';
+    if (props.$strength === 1) return 'rgb(234, 179, 8)';
+    if (props.$strength === 2) return 'rgb(34, 197, 94)';
+    return 'rgb(209, 213, 219)';
+  }};
+  transform: translateY(${props => props.$show ? '0' : '10px'});
+  opacity: ${props => props.$show ? '1' : '0'};
+`;
+
+const PasswordRequirements = styled.div`
+  ${tw`absolute left-0 w-full rounded-lg p-3 space-y-2 transition-all duration-300`}
+  top: calc(100% + 16px);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 41, 59, 0.95),
+    rgba(30, 41, 59, 0.85)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2),
+              0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(${props => props.$show ? '0' : '-10px'});
+  opacity: ${props => props.$show ? '1' : '0'};
+  pointer-events: ${props => props.$show ? 'auto' : 'none'};
+  z-index: 10;
+`;
+
+const RequirementItem = styled.div`
+  ${tw`flex items-center text-xs space-x-2 transition-all duration-300`}
+  color: ${props => props.$met ? 'rgb(34, 197, 94)' : 'rgba(255, 255, 255, 0.7)'};
+  opacity: ${props => props.$met ? '1' : '0.8'};
+
+  i {
+    ${tw`text-base`}
+    color: ${props => props.$met ? 'rgb(34, 197, 94)' : 'rgba(255, 255, 255, 0.5)'};
+    text-shadow: ${props => props.$met ? '0 0 8px rgba(34, 197, 94, 0.3)' : 'none'};
   }
 `;
 
@@ -409,6 +555,21 @@ export default ({
   const dropdownTimeoutRef = React.useRef(null);
   const countdownIntervalRef = React.useRef(null);
   const [progress, setProgress] = React.useState(100);
+  const emailSuffixButtonRef = React.useRef(null);
+  const passwordToggleRef = React.useRef(null);
+  const sendCodeButtonRef = React.useRef(null);
+  const [password, setPassword] = React.useState("");
+  const [isPasswordFocused, setIsPasswordFocused] = React.useState(false);
+  const [passwordStrength, setPasswordStrength] = React.useState(-1);
+  const [requirements, setRequirements] = React.useState({
+    length: false,
+    number: false,
+    letter: false,
+    special: false
+  });
+  const [isPasswordValid, setIsPasswordValid] = React.useState(false);
+  const [isFormValid, setIsFormValid] = React.useState(false);
+  const [isInitialAnimation, setIsInitialAnimation] = React.useState(true);
 
   // 将按钮分组为每行两个
   const socialButtonRows = [];
@@ -476,12 +637,25 @@ export default ({
             ref.style.opacity = '1';
           }
         });
+        
+        // 添加输入框内组件的动画
+        if (emailSuffixButtonRef.current) {
+          emailSuffixButtonRef.current.style.transform = 'translateY(-50%)';
+          emailSuffixButtonRef.current.style.opacity = '1';
+        }
+        if (passwordToggleRef.current) {
+          passwordToggleRef.current.style.transform = 'translateY(-50%)';
+          passwordToggleRef.current.style.opacity = '1';
+        }
+        if (sendCodeButtonRef.current) {
+          sendCodeButtonRef.current.style.transform = 'translateY(0)';
+          sendCodeButtonRef.current.style.opacity = '1';
+        }
       }, 2000);
 
       setTimeout(() => {
         if (submitButtonRef.current) {
-          submitButtonRef.current.style.transform = 'translateY(0) rotate(0)';
-          submitButtonRef.current.style.opacity = '1';
+          setIsInitialAnimation(false);
         }
       }, 2200);
     });
@@ -593,9 +767,31 @@ export default ({
     }
   };
 
+  const validateForm = () => {
+    // 验证邮箱格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isEmailValid = emailRegex.test(email);
+
+    // 验证验证码 (假设验证码必须是6位数字)
+    const verificationCode = inputRefs.current[1]?.value || '';
+    const isVerificationCodeValid = /^\d{6}$/.test(verificationCode);
+
+    // 检查密码是否满足所有要求
+    const isPasswordValid = Object.values(requirements).every(requirement => requirement === true);
+
+    // 更新表单有效状态
+    setIsFormValid(isEmailValid && isVerificationCodeValid && isPasswordValid);
+
+    // 更新按钮样式
+    if (submitButtonRef.current) {
+      submitButtonRef.current.style.opacity = isEmailValid && isVerificationCodeValid && isPasswordValid ? '1' : '0.5';
+    }
+  };
+
   const handleEmailChange = (e) => {
     const value = e.target.value;
     setEmail(value);
+    validateForm();  // 添加这行
     
     if (dropdownTimeoutRef.current) {
       clearTimeout(dropdownTimeoutRef.current);
@@ -654,6 +850,57 @@ export default ({
     const baseEmail = email.split("@")[0]; // 获取@前的部分
     setEmail(baseEmail + suffix);
     setShowSuffixDropdown(false);
+  };
+
+  const checkPasswordStrength = (value) => {
+    if (!value) return -1;
+    
+    let strength = 0;
+    // 检查长度
+    if (value.length >= 8) strength++;
+    // 检查是否包含数字和字母
+    if (/(?=.*[a-zA-Z])(?=.*[0-9])/.test(value)) strength++;
+    // 检查是否包含特殊字符
+    if (/[^A-Za-z0-9]/.test(value)) strength++;
+    
+    return Math.min(2, strength);
+  };
+
+  const getStrengthText = (strength) => {
+    if (strength === 0) return "密码强度：弱";
+    if (strength === 1) return "密码强度：中";
+    if (strength === 2) return "密码强度：强";
+    return "请输入密码";
+  };
+
+  const checkRequirements = (value) => {
+    const length = value.length >= 8;
+    const number = /[0-9]/.test(value);
+    const letter = /[a-zA-Z]/.test(value);
+    const special = /[^A-Za-z0-9]/.test(value);
+    
+    setRequirements({
+      length,
+      number,
+      letter,
+      special
+    });
+
+    // 检查所有条件是否满足
+    setIsPasswordValid(length && number && letter && special);
+  };
+
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setPassword(value);
+    setPasswordStrength(checkPasswordStrength(value));
+    checkRequirements(value);
+    validateForm();  // 添加这行
+  };
+
+  // 修改验证码输入处理函数
+  const handleVerificationCodeChange = (e) => {
+    validateForm();
   };
 
   return (
@@ -716,6 +963,8 @@ export default ({
                         type="button"
                         onClick={() => setShowSuffixDropdown(!showSuffixDropdown)}
                         tabIndex="-1"
+                        ref={emailSuffixButtonRef}
+                        $index={0}
                       >
                         <i className="bi bi-chevron-down"></i>
                       </EmailSuffixButton>
@@ -743,6 +992,7 @@ export default ({
                       maxLength={6}
                       ref={el => inputRefs.current[1] = el}
                       $index={1}
+                      onChange={handleVerificationCodeChange}
                     />
                     <SendCodeButton
                       type="button"
@@ -750,6 +1000,8 @@ export default ({
                       disabled={!email.includes("@") || countdown > 0}
                       $showCountdown={countdown > 0}
                       $progress={progress}
+                      ref={sendCodeButtonRef}
+                      $index={1}
                     >
                       <div className="button-content">
                         <span className="send-text">
@@ -771,13 +1023,21 @@ export default ({
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="设置密码"
+                      value={password}
+                      onChange={handlePasswordChange}
+                      onFocus={() => setIsPasswordFocused(true)}
+                      onBlur={() => setIsPasswordFocused(false)}
                       ref={el => inputRefs.current[2] = el}
                       $index={2}
+                      $isPassword={true}
+                      $strength={passwordStrength}
                     />
                     <PasswordToggle
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       tabIndex="-1"
+                      ref={passwordToggleRef}
+                      $index={2}
                     >
                       {showPassword ? (
                         <i className="bi bi-eye-slash text-lg"></i>
@@ -785,9 +1045,35 @@ export default ({
                         <i className="bi bi-eye text-lg"></i>
                       )}
                     </PasswordToggle>
+                    <PasswordStrengthIndicator $show={isPasswordFocused || passwordStrength >= 0}>
+                      <StrengthBar $strength={passwordStrength} />
+                    </PasswordStrengthIndicator>
+                    <PasswordRequirements $show={isPasswordFocused && !isPasswordValid}>
+                      <RequirementItem $met={requirements.length}>
+                        <i className={`bi bi-${requirements.length ? 'check-circle-fill' : 'circle'}`} />
+                        <span>至少 8 个字符</span>
+                      </RequirementItem>
+                      <RequirementItem $met={requirements.letter}>
+                        <i className={`bi bi-${requirements.letter ? 'check-circle-fill' : 'circle'}`} />
+                        <span>包含字母</span>
+                      </RequirementItem>
+                      <RequirementItem $met={requirements.number}>
+                        <i className={`bi bi-${requirements.number ? 'check-circle-fill' : 'circle'}`} />
+                        <span>包含数字</span>
+                      </RequirementItem>
+                      <RequirementItem $met={requirements.special}>
+                        <i className={`bi bi-${requirements.special ? 'check-circle-fill' : 'circle'}`} />
+                        <span>包含特殊字符</span>
+                      </RequirementItem>
+                    </PasswordRequirements>
                   </InputWrapper>
                   
-                  <SubmitButton ref={submitButtonRef} type="submit">
+                  <SubmitButton 
+                    ref={submitButtonRef} 
+                    type="submit" 
+                    disabled={!isFormValid}
+                    className={isInitialAnimation ? 'initial' : ''}
+                  >
                     <SubmitButtonIcon className="icon" />
                     <span className="text">{submitButtonText}</span>
                   </SubmitButton>

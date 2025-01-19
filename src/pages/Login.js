@@ -71,6 +71,18 @@ const SubmitButton = styled.button`
       ${tw`opacity-25`}
     }
   }
+
+  &:disabled {
+    ${tw`cursor-not-allowed`}
+    opacity: 0.5;
+    
+    &:hover {
+      transform: none;
+      &:before {
+        opacity: 0;
+      }
+    }
+  }
 `;
 
 const Form = styled.form`
@@ -210,6 +222,9 @@ const InputWrapper = styled.div`
 const EmailSuffixButton = styled.button`
   ${tw`absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200 flex items-center`}
   right: 12px;
+  transform: translateY(${props => props.$index * 10}px);
+  opacity: 0;
+  transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
 `;
 
 const EmailSuffixDropdown = styled.div`
@@ -233,6 +248,9 @@ const EmailSuffixOption = styled.button`
 const PasswordToggle = styled.button`
   ${tw`absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200`}
   right: 12px;
+  transform: translateY(${props => props.$index * 10}px);
+  opacity: 0;
+  transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
 `;
 
 export default ({
@@ -312,6 +330,10 @@ export default ({
   const [showSuffixDropdown, setShowSuffixDropdown] = React.useState(false);
   const dropdownRef = React.useRef(null);
   const dropdownTimeoutRef = React.useRef(null);
+  const emailSuffixButtonRef = React.useRef(null);
+  const passwordToggleRef = React.useRef(null);
+  const [isFormValid, setIsFormValid] = React.useState(false);
+  const [password, setPassword] = React.useState("");
   
   const emailSuffixes = [
     "@qq.com",      // 中国最流行的邮箱服务
@@ -326,9 +348,22 @@ export default ({
     "@sohu.com"     // 搜狐邮箱
   ];
 
+  const validateForm = () => {
+    // 验证邮箱格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isEmailValid = emailRegex.test(email);
+
+    // 验证密码是否已输入
+    const isPasswordValid = password.length > 0;
+
+    // 更新表单有效状态
+    setIsFormValid(isEmailValid && isPasswordValid);
+  };
+
   const handleEmailChange = (e) => {
     const value = e.target.value;
     setEmail(value);
+    validateForm();
     
     // 清除任何现有的超时
     if (dropdownTimeoutRef.current) {
@@ -353,6 +388,12 @@ export default ({
     const baseEmail = email.split("@")[0]; // 获取@前的部分
     setEmail(baseEmail + suffix);
     setShowSuffixDropdown(false);
+  };
+
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setPassword(value);
+    validateForm();
   };
 
   // 清理超时
@@ -450,6 +491,25 @@ export default ({
         submitButtonRef.current.style.opacity = '1';
       }
     }, 1200);
+
+    setTimeout(() => {
+      inputRefs.current.forEach((ref) => {
+        if (ref) {
+          ref.style.transform = 'translateX(0) rotate(0)';
+          ref.style.opacity = '1';
+        }
+      });
+      
+      // 添加输入框内组件的动画
+      if (emailSuffixButtonRef.current) {
+        emailSuffixButtonRef.current.style.transform = 'translateY(-50%)';
+        emailSuffixButtonRef.current.style.opacity = '1';
+      }
+      if (passwordToggleRef.current) {
+        passwordToggleRef.current.style.transform = 'translateY(-50%)';
+        passwordToggleRef.current.style.opacity = '1';
+      }
+    }, 2000);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -616,6 +676,8 @@ export default ({
                         type="button"
                         onClick={() => setShowSuffixDropdown(!showSuffixDropdown)}
                         tabIndex="-1"
+                        ref={emailSuffixButtonRef}
+                        $index={0}
                       >
                         <i className="bi bi-chevron-down"></i>
                       </EmailSuffixButton>
@@ -639,6 +701,8 @@ export default ({
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="密码"
+                      value={password}
+                      onChange={handlePasswordChange}
                       ref={el => inputRefs.current[1] = el}
                       $index={1}
                     />
@@ -646,6 +710,8 @@ export default ({
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       tabIndex="-1"
+                      ref={passwordToggleRef}
+                      $index={1}
                     >
                       {showPassword ? (
                         <i className="bi bi-eye-slash text-lg"></i>
@@ -654,7 +720,7 @@ export default ({
                       )}
                     </PasswordToggle>
                   </InputWrapper>
-                  <SubmitButton ref={submitButtonRef} type="submit">
+                  <SubmitButton ref={submitButtonRef} type="submit" disabled={!isFormValid}>
                     <SubmitButtonIcon className="icon" />
                     <span className="text">{submitButtonText}</span>
                   </SubmitButton>
