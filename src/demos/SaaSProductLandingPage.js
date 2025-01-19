@@ -1,6 +1,7 @@
 import React from "react";
 import tw from "twin.macro";
 import { css } from "styled-components/macro"; //eslint-disable-line
+import styled from "styled-components";
 import AnimationRevealPage from "helpers/AnimationRevealPage.js";
 import Hero from "components/hero/TwoColumnWithInput.js";
 import Features from "components/features/ThreeColWithSideImage.js";
@@ -17,19 +18,57 @@ import macHeroScreenshotImageSrc from "images/hero-screenshot-2.png";
 import prototypeIllustrationImageSrc from "images/prototype-illustration.svg";
 import { ReactComponent as BriefcaseIcon } from "feather-icons/dist/icons/briefcase.svg";
 import { ReactComponent as MoneyIcon } from "feather-icons/dist/icons/dollar-sign.svg";
+import Header from "../components/headers/light.js";
+import AppDownloadModal from "components/modals/AppDownloadModal.js";
+import SocialLinksModal from "components/modals/SocialLinksModal.js";
+import backgroundImage from "../images/pexels-apasaric-3629227.jpg";
 
 // 将样式组件定义移到组件外部
 const Subheading = tw.span`uppercase tracking-widest font-bold text-primary-500`;
 const HighlightedText = tw.span`text-primary-500`;
 
+const Container = styled.div`
+  ${tw`
+    min-h-screen  // 确保最小高度为屏幕高度
+    bg-[#252525] 
+    flex 
+    flex-col
+  `}
+  background-image: url(${backgroundImage});
+  background-position: center;
+  background-size: cover;
+  background-attachment: fixed;
+`;
+
+const MainContent = styled.main`
+  ${tw`
+    flex-1
+    mt-20  // 添加顶部外边距，避免被 header 遮挡
+    mb-8   // 添加底部外边距，与 footer 保持距离
+  `}
+`;
+
+const HeroContainer = styled.div`
+  ${tw`
+    mt-20  // 添加顶部外边距，避免被 header 遮挡
+    pt-10  // 增加内部顶部内边距
+    pb-16  // 增加底部内边距
+  `}
+`;
+
 export default () => {
   return (
-    <AnimationRevealPage>
-      <Hero 
-        roundedHeaderButton={true}
-        heading="您的专业技术伙伴"
-        description="为您提供一站式技术解决方案"
-      />
+    <Container>
+      <Header />
+      
+      <HeroContainer>
+        <Hero 
+          roundedHeaderButton={true}
+          heading="您的专业技术伙伴"
+          description="为您提供一站式技术解决方案"
+        />
+      </HeroContainer>
+
       <Features
         subheading={<Subheading>Features</Subheading>}
         heading={
@@ -183,7 +222,19 @@ export default () => {
         ]}
       />
       <GetStarted/>
+
+      <MainContent>
+        <div className="nav-grid">
+          <div className="container">
+            {/* ... existing content ... */}
+          </div>
+        </div>
+      </MainContent>
+
       <Footer />
-    </AnimationRevealPage>
+
+      <AppDownloadModal />
+      <SocialLinksModal />
+    </Container>
   );
 }

@@ -844,6 +844,50 @@ export default ({
     checkRequirements(value);
   };
 
+  // 添加处理登录链接点击的函数
+  const handleSigninClick = async (e) => {
+    e.preventDefault();
+    // 使用现有的 handleSubmit 中的动画逻辑
+    if (submitButtonRef.current) {
+      submitButtonRef.current.style.transform = 'translateY(30px) rotate(-5deg)';
+      submitButtonRef.current.style.opacity = '0';
+    }
+
+    inputRefs.current.forEach((ref, index) => {
+      if (ref) {
+        setTimeout(() => {
+          ref.style.transform = `translateX(${index % 2 === 0 ? '-100px' : '100px'}) rotate(${index % 2 === 0 ? '10deg' : '-10deg'})`;
+          ref.style.opacity = '0';
+        }, index * 100);
+      }
+    });
+
+    setTimeout(() => {
+      if (mainContainerRef.current && illustrationRef.current) {
+        mainContainerRef.current.style.transform = 'translateX(-100px)';
+        mainContainerRef.current.style.opacity = '0';
+        illustrationRef.current.style.transform = 'translateX(100px)';
+        illustrationRef.current.style.opacity = '0';
+      }
+    }, 600);
+
+    setTimeout(() => {
+      if (contentRef.current) {
+        contentRef.current.style.transform = 'scale(0.95) translateY(20px)';
+        contentRef.current.style.opacity = '0';
+      }
+    }, 900);
+
+    setTimeout(() => {
+      if (containerRef.current) {
+        containerRef.current.style.opacity = '0';
+      }
+      setTimeout(() => {
+        navigate('/login');
+      }, 300);
+    }, 1100);
+  };
+
   return (
     <AnimationRevealPage>
       <Container ref={containerRef}>
@@ -889,7 +933,10 @@ export default ({
                 <DividerTextContainer>
                   <DividerText>或使用邮箱注册</DividerText>
                 </DividerTextContainer>
-                <Form onSubmit={handleSubmit}>
+                <Form 
+                  onSubmit={handleSubmit} 
+                  autoComplete="off"
+                >
                   <InputWrapper>
                     <Input
                       type="email"
@@ -898,6 +945,8 @@ export default ({
                       onChange={handleEmailChange}
                       ref={el => inputRefs.current[0] = el}
                       $index={0}
+                      autoComplete="off"
+                      name={`email_${Math.random()}`}
                     />
                     {!(email.includes("@") && email.split("@")[1].length > 0) && (
                       <EmailSuffixButton
@@ -971,6 +1020,8 @@ export default ({
                       $index={2}
                       $isPassword={true}
                       $strength={passwordStrength}
+                      autoComplete="new-password"
+                      name={`password_${Math.random()}`}
                     />
                     <PasswordToggle
                       type="button"
@@ -1025,7 +1076,11 @@ export default ({
 
                   <p tw="mt-8 text-sm text-gray-300 text-center">
                     已有账户？{" "}
-                    <Link to={signInUrl} tw="text-white border-b border-gray-200 hover:border-white transition-colors">
+                    <Link 
+                      to="/login" 
+                      onClick={handleSigninClick}
+                      tw="text-white border-b border-gray-200 hover:border-white transition-colors"
+                    >
                       立即登录
                     </Link>
                   </p>

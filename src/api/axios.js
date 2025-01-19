@@ -3,7 +3,7 @@ import axios from 'axios';
 // 创建 axios 实例
 const instance = axios.create({
   baseURL: localStorage.getItem('apiBaseUrl') || process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api',
-  timeout: 15000,
+  timeout: 5000, // 5 秒超时
   headers: {
     'Content-Type': 'application/json',
   },

@@ -30,14 +30,17 @@ const Container = tw.div`
   bg-gray-100 dark:bg-gray-900 
   w-full
   flex-grow
+  min-h-screen
 `;
 
 const Content = tw.div`
   max-w-screen-xl 
   mx-auto 
-  py-20 lg:py-24
+  py-12
   px-4 sm:px-6 lg:px-8
   w-full
+  flex-grow
+  mt-20
 `;
 
 const ProfileHeader = styled(motion.div)`
@@ -82,6 +85,7 @@ const TabsContainer = tw.div`
   shadow-md 
   p-6
   w-full
+  mb-8
 `;
 
 const TabList = tw.div`
@@ -205,35 +209,36 @@ const afterOpenStyles = {
 };
 
 const ModalHeader = tw.div`
-  p-8 
+  p-4 
   border-b border-gray-200 dark:border-gray-700 
   flex items-center justify-between
 `;
 
 const ModalTitle = tw.h2`
-  text-2xl font-bold 
+  text-lg font-bold 
   text-gray-900 dark:text-gray-100
 `;
 
-const ModalContent = tw.div`p-8`;
+const ModalContent = tw.div`p-4`;
 
 const ModalFooter = tw.div`
-  p-8 
+  p-4 
   border-t border-gray-200 dark:border-gray-700 
   flex justify-end gap-4
 `;
 
 const FormLabel = tw.label`
   block 
-  text-sm font-medium 
+  text-xs font-medium 
   text-gray-700 dark:text-gray-300 
-  mb-2
+  mb-1
 `;
 
 const FormInput = tw.input`
   w-full 
-  px-4 py-3
-  rounded-xl
+  px-3 py-2
+  text-sm 
+  rounded-lg
   border border-gray-300 dark:border-gray-600 
   bg-white dark:bg-gray-700 
   text-gray-900 dark:text-gray-100 
@@ -244,20 +249,22 @@ const FormInput = tw.input`
 
 const FormTextarea = tw.textarea`
   w-full 
-  px-4 py-3
-  rounded-xl
+  px-3 py-2
+  text-sm 
+  rounded-lg
   border border-gray-300 dark:border-gray-600 
   bg-white dark:bg-gray-700 
   text-gray-900 dark:text-gray-100 
   placeholder-gray-500 dark:placeholder-gray-400
   focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:ring-opacity-25 
   transition duration-200
-  min-h-[120px] resize-none
+  min-h-[100px]
+  resize-none
 `;
 
 const AvatarUploadSection = tw.div`
   flex flex-col items-center 
-  mb-10
+  mb-6
 `;
 
 const AvatarUpload = styled.div`

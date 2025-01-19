@@ -12,6 +12,16 @@ import SocialLinksModal from "components/modals/SocialLinksModal.js";
 import SearchBar from "../components/navigation/SearchBar.js";
 import NavigationCard from "../components/navigation/NavigationCard.js";
 import backgroundImage from "../images/pexels-apasaric-3629227.jpg";
+import axios from "axios";
+
+// 创建专用的 axios 实例
+const webAxios = axios.create({
+  baseURL: 'https://protx.cn/manage/',
+  timeout: 5000,
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
 
 // 工具函数
 const getCountryCodeFromUrl = () => {
@@ -69,9 +79,14 @@ const Container = styled.div`
 
 const HeroSection = styled.div`
   ${tw`relative text-center`}
-  padding-top: 120px;
-  padding-bottom: 80px;
+  padding-top: 180px;
+  padding-bottom: 100px;
   backdrop-filter: blur(10px);
+
+  @media (max-width: 768px) {
+    padding-top: 140px;
+    padding-bottom: 80px;
+  }
 `;
 
 const HeroTitle = styled.h1`
@@ -197,7 +212,10 @@ const BookmarkButton = styled.button`
 
 // 添加 MainContent 样式组件
 const MainContent = styled.main`
-  ${tw`flex-1`}
+  ${tw`
+    flex-1
+  `}
+  min-height: 60vh;
 `;
 
 // 组件定义
@@ -212,16 +230,19 @@ const Navigation = () => {
       try {
         setIsLoading(true);
         const countryCode = getCountryCodeFromUrl();
-        const response = await fetch(
-          `https://protx.cn/manage/base/website-list/list?countryCode=${countryCode}`
-        );
-        const result = await response.json();
+        const response = await webAxios.get(`/base/website-list/list`, {
+          params: {
+            countryCode
+          }
+        });
         
-        if (result.success) {
-          console.log('获取到的数据:', result.data);
-          const groupedData = groupNavigationData(result.data);
+        if (response.data.success) {
+          console.log('获取到的数据:', response.data.data);
+          const groupedData = groupNavigationData(response.data.data);
           console.log('分组后的数据:', groupedData);
           setNavigationData(groupedData);
+        } else {
+          console.error('获取数据失败:', response.data.message);
         }
       } catch (error) {
         console.error('获取数据失败:', error);
@@ -240,14 +261,18 @@ const Navigation = () => {
     const fetchSearchResults = async () => {
       try {
         const countryCode = getCountryCodeFromUrl();
-        const response = await fetch(
-          `https://protx.cn/manage/base/website-list/list?countryCode=${countryCode}${value ? `&name=${value}` : ''}`
-        );
-        const result = await response.json();
+        const response = await webAxios.get(`/productx/website/list`, {
+          params: {
+            countryCode,
+            name: value
+          }
+        });
         
-        if (result.success) {
-          const groupedData = groupNavigationData(result.data);
+        if (response.data.success) {
+          const groupedData = groupNavigationData(response.data.data);
           setNavigationData(groupedData);
+        } else {
+          console.error('搜索失败:', response.data.message);
         }
       } catch (error) {
         console.error('搜索失败:', error);

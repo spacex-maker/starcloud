@@ -665,6 +665,92 @@ export default ({
     }, 3000);
   };
 
+  // 添加退出动画函数
+  const playExitAnimation = () => {
+    return new Promise(resolve => {
+      // 提交按钮消失
+      if (submitButtonRef.current) {
+        submitButtonRef.current.style.transform = 'translateY(30px) rotate(-5deg)';
+        submitButtonRef.current.style.opacity = '0';
+      }
+
+      // 输入框依次消失
+      inputRefs.current.forEach((ref, index) => {
+        if (ref) {
+          setTimeout(() => {
+            ref.style.transform = `translateX(${index % 2 === 0 ? '-100px' : '100px'}) rotate(${index % 2 === 0 ? '10deg' : '-10deg'})`;
+            ref.style.opacity = '0';
+          }, index * 100);
+        }
+      });
+
+      // 输入框内组件消失
+      if (emailSuffixButtonRef.current) {
+        emailSuffixButtonRef.current.style.transform = 'translateY(10px)';
+        emailSuffixButtonRef.current.style.opacity = '0';
+      }
+      if (passwordToggleRef.current) {
+        passwordToggleRef.current.style.transform = 'translateY(10px)';
+        passwordToggleRef.current.style.opacity = '0';
+      }
+
+      // 社交按钮依次消失
+      setTimeout(() => {
+        socialButtonRefs.current.forEach((ref, index) => {
+          if (ref) {
+            setTimeout(() => {
+              ref.style.transform = `translateY(${index * 10}px)`;
+              ref.style.opacity = '0';
+            }, index * 100);
+          }
+        });
+      }, 200);
+
+      // 标题消失
+      setTimeout(() => {
+        if (headingRef.current) {
+          headingRef.current.style.transform = 'scale(0.8) translateY(30px)';
+          headingRef.current.style.opacity = '0';
+        }
+      }, 400);
+
+      // Logo旋转消失
+      setTimeout(() => {
+        if (logoRef.current) {
+          logoRef.current.style.transform = 'translateY(20px) rotate(-180deg)';
+          logoRef.current.style.opacity = '0';
+        }
+      }, 600);
+
+      // 左右两侧内容消失
+      setTimeout(() => {
+        if (mainContainerRef.current && illustrationRef.current) {
+          mainContainerRef.current.style.transform = 'translateX(-100px)';
+          mainContainerRef.current.style.opacity = '0';
+          illustrationRef.current.style.transform = 'translateX(100px)';
+          illustrationRef.current.style.opacity = '0';
+        }
+      }, 800);
+
+      // 内容区域消失
+      setTimeout(() => {
+        if (contentRef.current) {
+          contentRef.current.style.transform = 'scale(0.95) translateY(20px)';
+          contentRef.current.style.opacity = '0';
+        }
+      }, 1000);
+
+      // 背景淡出
+      setTimeout(() => {
+        if (containerRef.current) {
+          containerRef.current.style.opacity = '0';
+        }
+        // 动画完成后解析 Promise
+        setTimeout(resolve, 300);
+      }, 1200);
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -689,8 +775,10 @@ export default ({
         return;
       }
       
-      // 登录成功后直接跳转到主页
+      // 播放退出动画，然后跳转
+      await playExitAnimation();
       navigate('/');
+      
     } catch (error) {
       showErrorMessage('登录失败，请稍后重试');
     }
@@ -778,6 +866,28 @@ export default ({
       return "密码长度至少为6位";
     }
     return "请填写所有必填项";
+  };
+
+  // 检查并自动填充测试账号
+  React.useEffect(() => {
+    const currentApiUrl = localStorage.getItem('apiBaseUrl') || process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api';
+    
+    // 检查是否为回环地址
+    const isLocalhost = currentApiUrl.includes('localhost') || 
+                       currentApiUrl.includes('127.0.0.1') ||
+                       currentApiUrl.includes('::1');
+    
+    if (isLocalhost) {
+      setEmail('TestAdmin');
+      setPassword('123456');
+    }
+  }, []);
+
+  // 添加处理注册链接点击的函数
+  const handleSignupClick = async (e) => {
+    e.preventDefault();
+    await playExitAnimation();
+    navigate('/signup');
   };
 
   return (
@@ -914,7 +1024,11 @@ export default ({
                   </p>
                   <p tw="mt-8 text-sm text-gray-300 text-center">
                     还没有账户？{" "}
-                    <Link to={signupUrl} tw="text-white border-b border-gray-200 hover:border-white transition-colors">
+                    <Link 
+                      to="/signup" 
+                      onClick={handleSignupClick}
+                      tw="text-white border-b border-gray-200 hover:border-white transition-colors"
+                    >
                       立即注册
                     </Link>
                   </p>

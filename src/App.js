@@ -8,6 +8,7 @@ import SignupPage from "./pages/Signup";
 import JoinUs from "pages/JoinUs";
 import Navigation from "pages/Navigation";
 import ProfilePage from "pages/Profile";
+import About from "pages/About";
 
 // 初始化主题
 const initTheme = () => {
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/about" element={<About />} />
         </Routes>
       </Router>
     </>
