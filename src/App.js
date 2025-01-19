@@ -1,11 +1,13 @@
 import React from "react";
 import GlobalStyles from './styles/GlobalStyles';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { css } from "styled-components/macro";
 import SaaSProductLandingPage from "./demos/SaaSProductLandingPage";
 import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";
 import JoinUs from "pages/JoinUs";
 import Navigation from "pages/Navigation";
+import ProfilePage from "pages/Profile";
 
 // 初始化主题
 const initTheme = () => {
@@ -47,6 +49,7 @@ export default function App() {
           <Route path="/join" element={<JoinUs />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </Router>
     </>

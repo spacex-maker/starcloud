@@ -242,27 +242,6 @@ const Input = styled.input`
 // 最后定义提交按钮，继承基础按钮样式
 const SubmitButton = styled(BaseButton)`
   ${tw`mt-4`}
-  transform: translateY(30px) rotate(-5deg);
-  opacity: 0;
-  transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
-  
-  &:disabled {
-    ${tw`cursor-not-allowed`}
-    opacity: 0.5;
-    
-    &:hover {
-      transform: translateY(0) rotate(0);
-      &:before {
-        opacity: 0;
-      }
-    }
-  }
-
-  /* 添加初始状态的样式类 */
-  &.initial {
-    transform: translateY(30px) rotate(-5deg) !important;
-    opacity: 0 !important;
-  }
 `;
 
 const IllustrationContainer = styled.div`
@@ -567,9 +546,6 @@ export default ({
     letter: false,
     special: false
   });
-  const [isPasswordValid, setIsPasswordValid] = React.useState(false);
-  const [isFormValid, setIsFormValid] = React.useState(false);
-  const [isInitialAnimation, setIsInitialAnimation] = React.useState(true);
 
   // 将按钮分组为每行两个
   const socialButtonRows = [];
@@ -655,7 +631,8 @@ export default ({
 
       setTimeout(() => {
         if (submitButtonRef.current) {
-          setIsInitialAnimation(false);
+          submitButtonRef.current.style.transform = 'translateY(0) rotate(0)';
+          submitButtonRef.current.style.opacity = '1';
         }
       }, 2200);
     });
@@ -767,31 +744,9 @@ export default ({
     }
   };
 
-  const validateForm = () => {
-    // 验证邮箱格式
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const isEmailValid = emailRegex.test(email);
-
-    // 验证验证码 (假设验证码必须是6位数字)
-    const verificationCode = inputRefs.current[1]?.value || '';
-    const isVerificationCodeValid = /^\d{6}$/.test(verificationCode);
-
-    // 检查密码是否满足所有要求
-    const isPasswordValid = Object.values(requirements).every(requirement => requirement === true);
-
-    // 更新表单有效状态
-    setIsFormValid(isEmailValid && isVerificationCodeValid && isPasswordValid);
-
-    // 更新按钮样式
-    if (submitButtonRef.current) {
-      submitButtonRef.current.style.opacity = isEmailValid && isVerificationCodeValid && isPasswordValid ? '1' : '0.5';
-    }
-  };
-
   const handleEmailChange = (e) => {
     const value = e.target.value;
     setEmail(value);
-    validateForm();  // 添加这行
     
     if (dropdownTimeoutRef.current) {
       clearTimeout(dropdownTimeoutRef.current);
@@ -874,20 +829,12 @@ export default ({
   };
 
   const checkRequirements = (value) => {
-    const length = value.length >= 8;
-    const number = /[0-9]/.test(value);
-    const letter = /[a-zA-Z]/.test(value);
-    const special = /[^A-Za-z0-9]/.test(value);
-    
     setRequirements({
-      length,
-      number,
-      letter,
-      special
+      length: value.length >= 8,
+      number: /[0-9]/.test(value),
+      letter: /[a-zA-Z]/.test(value),
+      special: /[^A-Za-z0-9]/.test(value)
     });
-
-    // 检查所有条件是否满足
-    setIsPasswordValid(length && number && letter && special);
   };
 
   const handlePasswordChange = (e) => {
@@ -895,12 +842,6 @@ export default ({
     setPassword(value);
     setPasswordStrength(checkPasswordStrength(value));
     checkRequirements(value);
-    validateForm();  // 添加这行
-  };
-
-  // 修改验证码输入处理函数
-  const handleVerificationCodeChange = (e) => {
-    validateForm();
   };
 
   return (
@@ -992,7 +933,6 @@ export default ({
                       maxLength={6}
                       ref={el => inputRefs.current[1] = el}
                       $index={1}
-                      onChange={handleVerificationCodeChange}
                     />
                     <SendCodeButton
                       type="button"
@@ -1048,7 +988,7 @@ export default ({
                     <PasswordStrengthIndicator $show={isPasswordFocused || passwordStrength >= 0}>
                       <StrengthBar $strength={passwordStrength} />
                     </PasswordStrengthIndicator>
-                    <PasswordRequirements $show={isPasswordFocused && !isPasswordValid}>
+                    <PasswordRequirements $show={isPasswordFocused}>
                       <RequirementItem $met={requirements.length}>
                         <i className={`bi bi-${requirements.length ? 'check-circle-fill' : 'circle'}`} />
                         <span>至少 8 个字符</span>
@@ -1068,12 +1008,7 @@ export default ({
                     </PasswordRequirements>
                   </InputWrapper>
                   
-                  <SubmitButton 
-                    ref={submitButtonRef} 
-                    type="submit" 
-                    disabled={!isFormValid}
-                    className={isInitialAnimation ? 'initial' : ''}
-                  >
+                  <SubmitButton ref={submitButtonRef} type="submit">
                     <SubmitButtonIcon className="icon" />
                     <span className="text">{submitButtonText}</span>
                   </SubmitButton>

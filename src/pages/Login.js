@@ -9,6 +9,9 @@ import logo from "images/logo.svg";
 import { ReactComponent as LoginIcon } from "feather-icons/dist/icons/log-in.svg";
 import { Link, useNavigate } from "react-router-dom";
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import { auth } from '../api';
+import { handleApiError } from '../utils/errorHandler';
+import { axios } from '../api';
 
 const Container = styled(ContainerBase)`
   ${tw`min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-800 text-white font-medium flex items-center justify-center -m-8`}
@@ -98,7 +101,31 @@ const Form = styled.form`
 `;
 
 const Input = styled.input`
-  ${tw`w-full px-4 py-2 rounded-lg font-medium backdrop-blur-sm bg-white bg-opacity-10 border border-gray-200 placeholder-gray-400 text-white text-sm focus:outline-none focus:border-gray-400 focus:bg-opacity-15`}
+  ${tw`w-full px-4 rounded-lg font-medium text-white text-sm focus:outline-none`}
+  height: 42px;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  
+  &:focus {
+    background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.15),
+      rgba(255, 255, 255, 0.1)
+    );
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
   transform: translateX(${props => props.$index % 2 === 0 ? '-100px' : '100px'}) rotate(${props => props.$index % 2 === 0 ? '10deg' : '-10deg'});
   opacity: 0;
   transition: all 0.8s ease-in-out;
@@ -253,6 +280,107 @@ const PasswordToggle = styled.button`
   transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
 `;
 
+// 首先定义基础按钮样式
+const BaseButton = styled.button`
+  ${tw`tracking-wide font-semibold text-gray-100 w-full rounded-lg transition-all duration-300 ease-in-out flex items-center justify-center focus:shadow-outline focus:outline-none relative overflow-hidden`}
+  height: 42px;
+  background: linear-gradient(92.88deg, rgb(55, 126, 248) 9.16%, rgb(132, 59, 255) 43.89%, rgb(159, 48, 255) 64.72%);
+
+  &:before {
+    content: '';
+    ${tw`absolute inset-0 opacity-0 transition-opacity duration-300`}
+    background: linear-gradient(92.88deg, rgb(132, 59, 255) 9.16%, rgb(159, 48, 255) 43.89%, rgb(55, 126, 248) 64.72%);
+  }
+
+  &:hover {
+    ${tw`transform scale-105 shadow-lg`}
+    &:before {
+      ${tw`opacity-25`}
+    }
+  }
+`;
+
+// 然后定义依赖于 BaseButton 的组件
+const ApiConfigButton = styled(BaseButton)`
+  ${tw`mr-2 px-4 py-2`}
+  transform: none !important;
+  opacity: 1 !important;
+`;
+
+// 添加新的样式组件
+const ApiConfigModal = styled.div`
+  ${tw`fixed inset-0 flex items-center justify-center z-50 transition-all duration-300`}
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  opacity: ${props => props.$show ? 1 : 0};
+  pointer-events: ${props => props.$show ? 'auto' : 'none'};
+`;
+
+const ApiConfigContent = styled.div`
+  ${tw`bg-white bg-opacity-10 backdrop-blur-md p-6 rounded-2xl shadow-xl w-full max-w-md transform transition-all duration-300`}
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transform: scale(${props => props.$show ? 1 : 0.9}) translateY(${props => props.$show ? 0 : '20px'});
+`;
+
+const ApiConfigTitle = tw.h3`text-xl font-bold text-white mb-4`;
+
+const ApiConfigInput = styled(Input)`
+  ${tw`mb-4`}
+  transform: none !important;
+  opacity: 1 !important;
+`;
+
+// 修改提示样式组件
+const TooltipWrapper = styled.div`
+  ${tw`relative inline-block w-full`}
+`;
+
+const Tooltip = styled.div`
+  ${tw`absolute left-1/2 px-3 py-2 text-sm text-white rounded-lg opacity-0 invisible transition-all duration-200`}
+  top: -40px;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+
+  &:after {
+    content: '';
+    ${tw`absolute left-1/2`}
+    bottom: -6px;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid rgba(0, 0, 0, 0.8);
+  }
+
+  ${({ $show }) => $show && tw`opacity-100 visible`}
+`;
+
+// 添加错误提示组件样式
+const ErrorMessage = styled.div`
+  ${tw`fixed top-0 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white text-sm transition-all duration-500`}
+  background: rgba(220, 38, 38, 0.9);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  
+  /* 控制显示和隐藏的动画 */
+  opacity: ${props => props.$show ? 1 : 0};
+  transform: translate(-50%, ${props => props.$show ? '20px' : '-100%'});
+  
+  /* 添加图标和文字布局 */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  /* 添加动画效果 */
+  &:hover {
+    background: rgba(220, 38, 38, 1);
+  }
+`;
+
 export default ({
   logoLinkUrl = "/",
   illustrationImageSrc = illustration,
@@ -332,8 +460,18 @@ export default ({
   const dropdownTimeoutRef = React.useRef(null);
   const emailSuffixButtonRef = React.useRef(null);
   const passwordToggleRef = React.useRef(null);
+  const [isInitialAnimation, setIsInitialAnimation] = React.useState(true);
   const [isFormValid, setIsFormValid] = React.useState(false);
   const [password, setPassword] = React.useState("");
+  const [showApiConfig, setShowApiConfig] = React.useState(false);
+  const [apiBaseUrl, setApiBaseUrl] = React.useState(
+    localStorage.getItem('apiBaseUrl') || process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api'
+  );
+  const [keySequence, setKeySequence] = React.useState([]);
+  const secretCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown']; // 上上下下触发
+  const [showTooltip, setShowTooltip] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState('');
+  const [showError, setShowError] = React.useState(false);
   
   const emailSuffixes = [
     "@qq.com",      // 中国最流行的邮箱服务
@@ -349,37 +487,32 @@ export default ({
   ];
 
   const validateForm = () => {
-    // 验证邮箱格式
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const isEmailValid = emailRegex.test(email);
-
-    // 验证密码是否已输入
-    const isPasswordValid = password.length > 0;
+    // 检查邮箱/用户名是否已输入
+    const isEmailValid = email.trim().length > 0;
+    
+    // 检查密码是否已输入且长度符合要求（最少6位）
+    const isPasswordValid = password.trim().length >= 6;
 
     // 更新表单有效状态
-    setIsFormValid(isEmailValid && isPasswordValid);
+    const isValid = isEmailValid && isPasswordValid;
+    
+    if (isFormValid !== isValid) {
+      setIsFormValid(isValid);
+    }
   };
+
+  // 在相关状态变化时进行验证
+  React.useEffect(() => {
+    validateForm();
+  }, [email, password]);
 
   const handleEmailChange = (e) => {
     const value = e.target.value;
     setEmail(value);
-    validateForm();
-    
-    // 清除任何现有的超时
-    if (dropdownTimeoutRef.current) {
-      clearTimeout(dropdownTimeoutRef.current);
-    }
-
-    // 只有当@后面有内容时才隐藏下拉框
-    if (value.includes("@") && value.split("@")[1].length > 0) {
-      setShowSuffixDropdown(false);
-    } else if (value.length > 0) {
-      // 当用户开始输入时，延迟200ms显示下拉框
-      dropdownTimeoutRef.current = setTimeout(() => {
-        setShowSuffixDropdown(true);
-      }, 200);
+    // 现有的邮箱后缀处理逻辑保持不变
+    if (value.includes('@') && !value.split('@')[1]) {
+      setShowSuffixDropdown(true);
     } else {
-      // 当输入框为空时隐藏下拉框
       setShowSuffixDropdown(false);
     }
   };
@@ -393,7 +526,6 @@ export default ({
   const handlePasswordChange = (e) => {
     const value = e.target.value;
     setPassword(value);
-    validateForm();
   };
 
   // 清理超时
@@ -512,80 +644,56 @@ export default ({
     }, 2000);
   }, []);
 
+  // 添加初始动画效果
+  React.useEffect(() => {
+    // 延迟移除初始动画类
+    setTimeout(() => {
+      setIsInitialAnimation(false);
+    }, 2200); // 与其他动画时间保持一致
+  }, []);
+
+  // 显示错误信息的函数
+  const showErrorMessage = (message) => {
+    setErrorMessage(message);
+    setShowError(true);
+    
+    // 3秒后自动隐藏
+    setTimeout(() => {
+      setShowError(false);
+      // 等动画结束后清空消息
+      setTimeout(() => setErrorMessage(''), 500);
+    }, 3000);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!isFormValid) return;
 
-    // Logo旋转消失
-    if (logoRef.current) {
-      logoRef.current.style.transform = 'translateY(20px) rotate(180deg)';
-      logoRef.current.style.opacity = '0';
+    try {
+      const loginResult = await auth.login({
+        email,
+        password
+      });
+      
+      if (!loginResult.success) {
+        showErrorMessage(loginResult.message);
+        return;
+      }
+      
+      // 登录成功后获取用户信息
+      const userInfoResult = await auth.getUserInfo();
+      
+      if (!userInfoResult.success) {
+        showErrorMessage(userInfoResult.message);
+        return;
+      }
+      
+      // 登录成功后直接跳转到主页
+      navigate('/');
+    } catch (error) {
+      showErrorMessage('登录失败，请稍后重试');
     }
-
-    // 标题缩小上浮
-    setTimeout(() => {
-      if (headingRef.current) {
-        headingRef.current.style.transform = 'scale(0.8) translateY(-30px)';
-        headingRef.current.style.opacity = '0';
-      }
-    }, 100);
-
-    // 社交按钮向两侧散开
-    setTimeout(() => {
-      socialButtonRefs.current.forEach((ref, index) => {
-        if (ref) {
-          ref.style.transform = `translateX(${index % 2 === 0 ? '-50px' : '50px'})`;
-          ref.style.opacity = '0';
-        }
-      });
-    }, 200);
-
-    // 输入框向两侧旋转消失
-    setTimeout(() => {
-      inputRefs.current.forEach((ref, index) => {
-        if (ref) {
-          ref.style.transform = `translateX(${index % 2 === 0 ? '-100px' : '100px'}) rotate(${index % 2 === 0 ? '-10deg' : '10deg'})`;
-          ref.style.opacity = '0';
-        }
-      });
-    }, 300);
-
-    // 提交按钮上浮旋转消失
-    setTimeout(() => {
-      if (submitButtonRef.current) {
-        submitButtonRef.current.style.transform = 'translateY(-30px) rotate(5deg)';
-        submitButtonRef.current.style.opacity = '0';
-      }
-    }, 400);
-
-    // 左右两侧内容消失
-    setTimeout(() => {
-      if (mainContainerRef.current && illustrationRef.current) {
-        mainContainerRef.current.style.transform = 'translateX(-100px)';
-        mainContainerRef.current.style.opacity = '0';
-        illustrationRef.current.style.transform = 'translateX(100px)';
-        illustrationRef.current.style.opacity = '0';
-      }
-    }, 600);
-
-    // 整体内容区域消失
-    setTimeout(() => {
-      if (contentRef.current) {
-        contentRef.current.style.transform = 'scale(0.95) translateY(-20px)';
-        contentRef.current.style.opacity = '0';
-      }
-    }, 900);
-
-    // 背景消失
-    setTimeout(() => {
-      if (containerRef.current) {
-        containerRef.current.style.opacity = '0';
-      }
-    }, 1100);
-
-    // 跳转
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1500);
   };
 
   const handleSocialLogin = async (provider) => {
@@ -616,8 +724,70 @@ export default ({
     }
   };
 
+  const handleSendCode = async () => {
+    try {
+      await auth.sendVerificationCode(email);
+      // 开始倒计时等逻辑...
+    } catch (error) {
+      handleApiError(error);
+    }
+  };
+
+  // 监听键盘事件
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      const newSequence = [...keySequence, e.key].slice(-secretCode.length);
+      setKeySequence(newSequence);
+      
+      if (JSON.stringify(newSequence) === JSON.stringify(secretCode)) {
+        setShowApiConfig(true);
+        setKeySequence([]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [keySequence]);
+
+  // 保存 API 配置
+  const handleSaveApiConfig = () => {
+    localStorage.setItem('apiBaseUrl', apiBaseUrl);
+    // 更新 axios 实例的 baseURL
+    axios.defaults.baseURL = apiBaseUrl;
+    setShowApiConfig(false);
+  };
+
+  // 重置 API 配置
+  const handleResetApiConfig = () => {
+    const defaultUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api';
+    setApiBaseUrl(defaultUrl);
+    localStorage.setItem('apiBaseUrl', defaultUrl);
+    axios.defaults.baseURL = defaultUrl;
+    setShowApiConfig(false);
+  };
+
+  // 获取禁用提示文本
+  const getDisabledMessage = () => {
+    if (!email.trim()) {
+      return "请输入用户名或邮箱";
+    }
+    if (!password.trim()) {
+      return "请输入密码";
+    }
+    if (password.trim().length < 6) {
+      return "密码长度至少为6位";
+    }
+    return "请填写所有必填项";
+  };
+
   return (
     <AnimationRevealPage>
+      {/* 添加错误提示组件 */}
+      <ErrorMessage $show={showError}>
+        <i className="bi bi-exclamation-circle"></i>
+        {errorMessage}
+      </ErrorMessage>
+      
       <Container ref={containerRef}>
         <BackToHome to="/">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -659,19 +829,19 @@ export default ({
                   ))}
                 </SocialButtonsRow>
                 <DividerTextContainer>
-                  <DividerText>或使用邮箱登录</DividerText>
+                  <DividerText>其他登录方式</DividerText>
                 </DividerTextContainer>
                 <Form onSubmit={handleSubmit}>
                   <InputWrapper>
                     <Input
-                      type="email"
-                      placeholder="电子邮箱"
+                      type="text"
+                      placeholder="用户名或邮箱"
                       value={email}
                       onChange={handleEmailChange}
                       ref={el => inputRefs.current[0] = el}
                       $index={0}
                     />
-                    {!(email.includes("@") && email.split("@")[1].length > 0) && (
+                    {email.includes('@') && !(email.includes("@") && email.split("@")[1].length > 0) && (
                       <EmailSuffixButton
                         type="button"
                         onClick={() => setShowSuffixDropdown(!showSuffixDropdown)}
@@ -720,10 +890,23 @@ export default ({
                       )}
                     </PasswordToggle>
                   </InputWrapper>
-                  <SubmitButton ref={submitButtonRef} type="submit" disabled={!isFormValid}>
-                    <SubmitButtonIcon className="icon" />
-                    <span className="text">{submitButtonText}</span>
-                  </SubmitButton>
+                  <TooltipWrapper
+                    onMouseEnter={() => !isFormValid && setShowTooltip(true)}
+                    onMouseLeave={() => setShowTooltip(false)}
+                  >
+                    <Tooltip $show={showTooltip && !isFormValid}>
+                      {getDisabledMessage()}
+                    </Tooltip>
+                    <SubmitButton 
+                      ref={submitButtonRef} 
+                      type="submit" 
+                      disabled={!isFormValid}
+                      className={isInitialAnimation ? 'initial' : ''}
+                    >
+                      <SubmitButtonIcon className="icon" />
+                      <span className="text">{submitButtonText}</span>
+                    </SubmitButton>
+                  </TooltipWrapper>
                   <p tw="mt-8 text-sm text-gray-300 text-center">
                     <Link to={forgotPasswordUrl} tw="text-white border-b border-gray-200 hover:border-white transition-colors">
                       忘记密码？
@@ -743,6 +926,33 @@ export default ({
             <IllustrationImage imageSrc={illustrationImageSrc} />
           </IllustrationContainer>
         </Content>
+        
+        {/* 添加 API 配置模态框 */}
+        <ApiConfigModal $show={showApiConfig} onClick={() => setShowApiConfig(false)}>
+          <ApiConfigContent 
+            $show={showApiConfig} 
+            onClick={e => e.stopPropagation()}
+          >
+            <ApiConfigTitle>API 配置</ApiConfigTitle>
+            <ApiConfigInput
+              type="text"
+              placeholder="API 基地址"
+              value={apiBaseUrl}
+              onChange={(e) => setApiBaseUrl(e.target.value)}
+            />
+            <div tw="flex justify-end">
+              <ApiConfigButton onClick={handleResetApiConfig}>
+                重置
+              </ApiConfigButton>
+              <ApiConfigButton onClick={handleSaveApiConfig}>
+                保存
+              </ApiConfigButton>
+            </div>
+            <p tw="mt-4 text-sm text-gray-400">
+              提示：此配置将保存在本地，刷新页面后依然有效
+            </p>
+          </ApiConfigContent>
+        </ApiConfigModal>
       </Container>
     </AnimationRevealPage>
   );

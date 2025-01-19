@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import tw from "twin.macro";
 import styled from "styled-components";
 import { css } from "styled-components/macro";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import useAnimatedNavToggler from "../../helpers/useAnimatedNavToggler.js";
 import logo from "../../images/logo.svg";
@@ -11,6 +11,7 @@ import { ReactComponent as MenuIcon } from "feather-icons/dist/icons/menu.svg";
 import { ReactComponent as CloseIcon } from "feather-icons/dist/icons/x.svg";
 import { ReactComponent as SunIcon } from "feather-icons/dist/icons/sun.svg";
 import { ReactComponent as MoonIcon } from "feather-icons/dist/icons/moon.svg";
+import { auth } from "../../api/auth.js";
 
 const Header = styled.header`
   ${tw`
@@ -121,11 +122,58 @@ const DarkModeIcon = styled.div`
   }
 `;
 
+// 添加用户菜单样式
+const UserMenu = styled.div`
+  ${tw`relative inline-block`}
+`;
+
+const UserButton = styled.button`
+  ${tw`
+    flex items-center space-x-2
+    px-3 py-2
+    rounded-full
+    hover:bg-gray-100 dark:hover:bg-gray-800
+    transition duration-300
+  `}
+`;
+
+const UserAvatar = styled.img`
+  ${tw`w-8 h-8 rounded-full object-cover`}
+`;
+
+const UserName = tw.span`
+  ml-2 font-medium text-gray-700 dark:text-gray-300
+`;
+
+const UserDropdown = styled.div`
+  ${tw`
+    absolute right-0 mt-2
+    w-48
+    py-2
+    bg-white dark:bg-gray-900
+    rounded-lg shadow-xl
+    z-50
+  `}
+  display: ${props => props.show ? 'block' : 'none'};
+`;
+
+const UserMenuItem = styled.button`
+  ${tw`
+    w-full px-4 py-2 text-left
+    text-sm text-gray-700 dark:text-gray-300
+    hover:bg-gray-100 dark:hover:bg-gray-800
+    transition duration-300
+  `}
+`;
+
 export default ({ roundedHeaderButton = false, logoLink, links, className, collapseBreakpointClass = "lg" }) => {
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDark, setIsDark] = useState(() => 
     document.documentElement.classList.contains('dark')
   );
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [userInfo, setUserInfo] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -135,6 +183,14 @@ export default ({ roundedHeaderButton = false, logoLink, links, className, colla
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    // 从 localStorage 获取用户信息
+    const storedUserInfo = localStorage.getItem('userInfo');
+    if (storedUserInfo) {
+      setUserInfo(JSON.parse(storedUserInfo));
+    }
   }, []);
 
   const toggleDarkMode = (e) => {
@@ -155,6 +211,10 @@ export default ({ roundedHeaderButton = false, logoLink, links, className, colla
     console.log('classList:', document.documentElement.classList.toString());
   };
 
+  const handleLogout = () => {
+    auth.logout();
+  };
+
   const defaultLinks = [
     <NavLinks key={1}>
       <NavGroup>
@@ -162,8 +222,30 @@ export default ({ roundedHeaderButton = false, logoLink, links, className, colla
         <NavLink to="/navigation">综合导航</NavLink>
         <NavLink to="/about">关于我们</NavLink>
         <NavLink to="/join">入驻申请</NavLink>
-        <NavLink to="/login">登录</NavLink>
-        <PrimaryLink to="/signup">立即注册</PrimaryLink>
+        {userInfo ? (
+          <UserMenu>
+            <UserButton onClick={() => setShowUserMenu(!showUserMenu)}>
+              <UserAvatar src={userInfo.avatar} alt={userInfo.username} />
+              <UserName>{userInfo.username}</UserName>
+            </UserButton>
+            <UserDropdown show={showUserMenu}>
+              <UserMenuItem onClick={() => {
+                setShowUserMenu(false);
+                navigate('/profile');
+              }}>
+                个人中心
+              </UserMenuItem>
+              <UserMenuItem onClick={handleLogout}>
+                退出登录
+              </UserMenuItem>
+            </UserDropdown>
+          </UserMenu>
+        ) : (
+          <>
+            <NavLink to="/login">登录</NavLink>
+            <PrimaryLink to="/signup">立即注册</PrimaryLink>
+          </>
+        )}
         <DarkModeButton 
           type="button"
           onClick={toggleDarkMode}

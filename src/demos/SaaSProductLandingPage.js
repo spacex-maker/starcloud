@@ -18,10 +18,11 @@ import prototypeIllustrationImageSrc from "images/prototype-illustration.svg";
 import { ReactComponent as BriefcaseIcon } from "feather-icons/dist/icons/briefcase.svg";
 import { ReactComponent as MoneyIcon } from "feather-icons/dist/icons/dollar-sign.svg";
 
-export default () => {
-  const Subheading = tw.span`uppercase tracking-widest font-bold text-primary-500`;
-  const HighlightedText = tw.span`text-primary-500`;
+// 将样式组件定义移到组件外部
+const Subheading = tw.span`uppercase tracking-widest font-bold text-primary-500`;
+const HighlightedText = tw.span`text-primary-500`;
 
+export default () => {
   return (
     <AnimationRevealPage>
       <Hero 
