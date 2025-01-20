@@ -1,16 +1,14 @@
-import React from "react";
+import React, { useMemo, useEffect } from "react";
 import AnimationRevealPage from "helpers/AnimationRevealPage.js";
 import { Container as ContainerBase } from "components/misc/Layouts";
 import tw from "twin.macro";
 import styled from "styled-components";
-import { css } from "styled-components/macro"; //eslint-disable-line
 import illustration from "images/login-illustration.svg";
 import logo from "images/logo.svg";
 import { ReactComponent as LoginIcon } from "feather-icons/dist/icons/log-in.svg";
 import { Link, useNavigate } from "react-router-dom";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { auth } from '../api';
-import { handleApiError } from '../utils/errorHandler';
 import { axios } from '../api';
 
 const Container = styled(ContainerBase)`
@@ -512,7 +510,7 @@ export default ({
     localStorage.getItem('apiBaseUrl') || process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api'
   );
   const [keySequence, setKeySequence] = React.useState([]);
-  const secretCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown']; // 上上下下触发
+  const secretCode = useMemo(() => ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'], []);
   const [showTooltip, setShowTooltip] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
   const [showError, setShowError] = React.useState(false);
@@ -547,9 +545,9 @@ export default ({
   };
 
   // 在相关状态变化时进行验证
-  React.useEffect(() => {
+  useEffect(() => {
     validateForm();
-  }, [email, password]);
+  }, [email, password, validateForm]);
 
   const handleEmailChange = (e) => {
     const value = e.target.value;
@@ -573,17 +571,18 @@ export default ({
     setPassword(value);
   };
 
-  // 清理超时
-  React.useEffect(() => {
+  // 修复 dropdownTimeoutRef 的清理函数
+  useEffect(() => {
+    const timeoutId = dropdownTimeoutRef.current;
     return () => {
-      if (dropdownTimeoutRef.current) {
-        clearTimeout(dropdownTimeoutRef.current);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
     };
   }, []);
 
   // 点击外部关闭下拉菜单
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowSuffixDropdown(false);
@@ -595,7 +594,7 @@ export default ({
   }, []);
 
   // 添加进场动画
-  React.useEffect(() => {
+  useEffect(() => {
     // 背景淡入
     setTimeout(() => {
       if (containerRef.current) {
@@ -690,7 +689,7 @@ export default ({
   }, []);
 
   // 添加初始动画效果
-  React.useEffect(() => {
+  useEffect(() => {
     // 延迟移除初始动画类
     setTimeout(() => {
       setIsInitialAnimation(false);
@@ -865,17 +864,8 @@ export default ({
     }
   };
 
-  const handleSendCode = async () => {
-    try {
-      await auth.sendVerificationCode(email);
-      // 开始倒计时等逻辑...
-    } catch (error) {
-      handleApiError(error);
-    }
-  };
-
   // 监听键盘事件
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e) => {
       const newSequence = [...keySequence, e.key].slice(-secretCode.length);
       setKeySequence(newSequence);
@@ -888,7 +878,7 @@ export default ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [keySequence]);
+  }, [secretCode, keySequence]);
 
   // 保存 API 配置
   const handleSaveApiConfig = () => {
@@ -922,7 +912,7 @@ export default ({
   };
 
   // 检查并自动填充测试账号
-  React.useEffect(() => {
+  useEffect(() => {
     const currentApiUrl = localStorage.getItem('apiBaseUrl') || process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api';
     
     // 检查是否为回环地址

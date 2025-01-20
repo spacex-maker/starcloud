@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import AnimationRevealPage from "helpers/AnimationRevealPage.js";
 import Header from "components/headers/light.js";
 import Footer from "components/footers/FiveColumnWithBackground.js";
 import { ReactComponent as EditIcon } from "feather-icons/dist/icons/edit-2.svg";
@@ -9,7 +8,6 @@ import { ReactComponent as CancelIcon } from "feather-icons/dist/icons/x.svg";
 import Modal from 'react-modal';
 import { motion } from "framer-motion";
 import tw from "twin.macro";
-import { css } from "styled-components/macro";
 
 // 确保只设置一次 appElement
 if (typeof window !== 'undefined') {
@@ -195,16 +193,6 @@ const modalStyles = {
     transform: 'translateY(20px)',
     opacity: 0,
     transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-  }
-};
-
-const afterOpenStyles = {
-  overlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)'
-  },
-  content: {
-    transform: 'translateY(0)',
-    opacity: 1
   }
 };
 

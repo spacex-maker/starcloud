@@ -1,7 +1,6 @@
 import React from "react";
 import GlobalStyles from './styles/GlobalStyles';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { css } from "styled-components/macro";
 import SaaSProductLandingPage from "./demos/SaaSProductLandingPage";
 import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";

@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 import tw from "twin.macro";
-import { Modal } from 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import AOS from 'aos';
-import 'aos/dist/aos.css';
 import Header from "components/headers/light.js";
 import Footer from "components/footers/FiveColumnWithInputForm.js";
 import AppDownloadModal from "components/modals/AppDownloadModal.js";
@@ -60,7 +57,7 @@ const float = keyframes`
 `;
 
 const shine = keyframes`
-  0% { background-position: 0% 50%; }
+  0% { background-position: 0 50%; }
   100% { background-position: 200% 50%; }
 `;
 
@@ -222,7 +219,6 @@ const MainContent = styled.main`
 const Navigation = () => {
   const [navigationData, setNavigationData] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
-  const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -318,14 +314,12 @@ const Navigation = () => {
     `;
     
     document.body.appendChild(toast);
-    setIsBookmarked(true);
     
     setTimeout(() => {
       toast.style.transition = 'opacity 0.3s ease-out';
       toast.style.opacity = '0';
       setTimeout(() => {
         toast.remove();
-        setIsBookmarked(false);
       }, 300);
     }, 3000);
   };

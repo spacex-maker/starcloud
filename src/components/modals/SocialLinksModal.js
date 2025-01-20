@@ -162,35 +162,6 @@ const SocialLinks = styled.div`
   ${tw`flex flex-col gap-4`}
 `;
 
-const iconAnimation = `
-  @keyframes iconRotate {
-    0% { 
-      transform: rotateY(0deg) scale(1) translateZ(0);
-      filter: brightness(1);
-    }
-    50% { 
-      transform: rotateY(180deg) scale(1.2) translateZ(20px);
-      filter: brightness(1.5);
-    }
-    100% { 
-      transform: rotateY(360deg) scale(1) translateZ(0);
-      filter: brightness(1);
-    }
-  }
-
-  @keyframes glowPulse {
-    0% { opacity: 0.3; filter: blur(8px); }
-    50% { opacity: 0.6; filter: blur(12px); }
-    100% { opacity: 0.3; filter: blur(8px); }
-  }
-
-  @keyframes hoverGlow {
-    0% { opacity: 0.6; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.05); }
-    100% { opacity: 0.6; transform: scale(1); }
-  }
-`;
-
 const SocialIcon = styled.div`
   ${tw`w-12 h-12 flex items-center justify-center rounded-xl text-2xl flex-shrink-0 relative`}
   background: rgba(255, 255, 255, 0.1);
@@ -271,12 +242,10 @@ const SocialLink = styled.a`
 
     &::before {
       opacity: 1;
-      animation: glowPulse 2s ease-in-out infinite;
     }
 
     &::after {
       opacity: 1;
-      animation: hoverGlow 2s ease-in-out infinite;
     }
 
     ${SocialIcon} {
