@@ -10,6 +10,7 @@ import { Link, useNavigate } from "react-router-dom";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { auth } from '../api';
 import { axios } from '../api';
+import { API_CONFIG } from '../api';
 
 const Container = styled(ContainerBase)`
   ${tw`min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-800 text-white font-medium flex items-center justify-center -m-8`}
@@ -540,7 +541,7 @@ export default ({
   const [password, setPassword] = React.useState("");
   const [showApiConfig, setShowApiConfig] = React.useState(false);
   const [apiBaseUrl, setApiBaseUrl] = React.useState(
-    localStorage.getItem('apiBaseUrl') || process.env.REACT_APP_API_BASE_URL || 'https://web.protx.cn/'
+    localStorage.getItem('apiBaseUrl') || API_CONFIG.baseURL
   );
   const [keySequence, setKeySequence] = React.useState([]);
   const secretCode = useMemo(() => ['ArrowLeft', 'ArrowLeft', 'ArrowRight', 'ArrowRight'], []);
@@ -923,10 +924,9 @@ export default ({
 
   // 重置 API 配置
   const handleResetApiConfig = () => {
-    const defaultUrl = process.env.REACT_APP_API_BASE_URL || 'https://protx.cn/';
-    setApiBaseUrl(defaultUrl);
-    localStorage.setItem('apiBaseUrl', defaultUrl);
-    axios.defaults.baseURL = defaultUrl;
+    setApiBaseUrl(API_CONFIG.baseURL);
+    localStorage.setItem('apiBaseUrl', API_CONFIG.baseURL);
+    axios.defaults.baseURL = API_CONFIG.baseURL;
     setShowApiConfig(false);
   };
 

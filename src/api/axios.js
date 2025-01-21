@@ -1,15 +1,23 @@
 import axios from 'axios';
 
-// 创建 axios 实例，修改默认 baseURL
+// 定义默认配置
+const DEFAULT_CONFIG = {
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://.protx.cn/',
+  timeout: 15000,
+};
+
+// 创建 axios 实例
 const instance = axios.create({
-  baseURL: localStorage.getItem('apiBaseUrl') || process.env.REACT_APP_API_BASE_URL || 'https://protx.cn/',
-  timeout: 5000, // 5 秒超时
+  baseURL: localStorage.getItem('apiBaseUrl') || DEFAULT_CONFIG.baseURL,
+  timeout: DEFAULT_CONFIG.timeout,
   headers: {
     'Content-Type': 'application/json',
   },
-  // 添加这些配置确保请求能被浏览器捕获和显示
-  withCredentials: true, // 允许跨域请求携带 cookies
+  withCredentials: true,
 });
+
+// 导出默认配置供其他模块使用
+export const API_CONFIG = DEFAULT_CONFIG;
 
 // 请求拦截器
 instance.interceptors.request.use(
