@@ -299,10 +299,32 @@ const BaseButton = styled.button`
 `;
 
 // 然后定义依赖于 BaseButton 的组件
+const ApiConfigButtonContainer = styled.div`
+  ${tw`flex justify-end mt-6`}
+  gap: 1rem; // 或者使用具体的像素值 gap: 16px;
+`;
+
+// 修改按钮样式，确保有合适的内边距
 const ApiConfigButton = styled(BaseButton)`
-  ${tw`mr-2 px-4 py-2`}
-  transform: none !important;
-  opacity: 1 !important;
+  ${tw`px-6 py-2 text-sm font-medium transition-all duration-300`}
+  min-width: 120px; // 确保按钮有最小宽度
+  background: ${props => props.$variant === 'reset' 
+    ? 'linear-gradient(135deg, #64748b, #475569)'
+    : 'linear-gradient(135deg, #3b82f6, #6366f1)'};
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+
+  // 添加图标和文字的间距
+  i {
+    ${tw`mr-2`}
+  }
 `;
 
 // 添加新的样式组件
@@ -320,7 +342,14 @@ const ApiConfigContent = styled.div`
   transform: scale(${props => props.$show ? 1 : 0.9}) translateY(${props => props.$show ? 0 : '20px'});
 `;
 
-const ApiConfigTitle = tw.h3`text-xl font-bold text-white mb-4`;
+const ApiConfigTitle = styled.h3`
+  ${tw`text-2xl font-bold text-white mb-6 flex items-center`}
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  
+  i {
+    ${tw`mr-3 text-2xl`}
+  }
+`;
 
 const ApiConfigInput = styled(Input)`
   ${tw`mb-4`}
@@ -423,6 +452,10 @@ const LoadingText = styled.div`
   }
 `;
 
+const ApiConfigTip = styled.div`
+  ${tw`mt-4 text-sm text-gray-400`}
+`;
+
 export default ({
   logoLinkUrl = "/",
   illustrationImageSrc = illustration,
@@ -507,10 +540,10 @@ export default ({
   const [password, setPassword] = React.useState("");
   const [showApiConfig, setShowApiConfig] = React.useState(false);
   const [apiBaseUrl, setApiBaseUrl] = React.useState(
-    localStorage.getItem('apiBaseUrl') || process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api'
+    localStorage.getItem('apiBaseUrl') || process.env.REACT_APP_API_BASE_URL || 'https://web.protx.cn/'
   );
   const [keySequence, setKeySequence] = React.useState([]);
-  const secretCode = useMemo(() => ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'], []);
+  const secretCode = useMemo(() => ['ArrowLeft', 'ArrowLeft', 'ArrowRight', 'ArrowRight'], []);
   const [showTooltip, setShowTooltip] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
   const [showError, setShowError] = React.useState(false);
@@ -890,7 +923,7 @@ export default ({
 
   // 重置 API 配置
   const handleResetApiConfig = () => {
-    const defaultUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api';
+    const defaultUrl = process.env.REACT_APP_API_BASE_URL || 'https://protx.cn/';
     setApiBaseUrl(defaultUrl);
     localStorage.setItem('apiBaseUrl', defaultUrl);
     axios.defaults.baseURL = defaultUrl;
@@ -1100,24 +1133,35 @@ export default ({
             $show={showApiConfig} 
             onClick={e => e.stopPropagation()}
           >
-            <ApiConfigTitle>API 配置</ApiConfigTitle>
+            <ApiConfigTitle>
+              <i className="bi bi-gear-fill"></i>
+              API 配置
+            </ApiConfigTitle>
             <ApiConfigInput
               type="text"
-              placeholder="API 基地址"
+              placeholder="请输入 API 基地址"
               value={apiBaseUrl}
               onChange={(e) => setApiBaseUrl(e.target.value)}
             />
-            <div tw="flex justify-end">
-              <ApiConfigButton onClick={handleResetApiConfig}>
-                重置
+            <ApiConfigButtonContainer>
+              <ApiConfigButton 
+                $variant="reset" 
+                onClick={handleResetApiConfig}
+              >
+                <i className="bi bi-arrow-counterclockwise"></i>
+                重置默认
               </ApiConfigButton>
-              <ApiConfigButton onClick={handleSaveApiConfig}>
-                保存
+              <ApiConfigButton 
+                onClick={handleSaveApiConfig}
+              >
+                <i className="bi bi-check2-circle"></i>
+                保存配置
               </ApiConfigButton>
-            </div>
-            <p tw="mt-4 text-sm text-gray-400">
-              提示：此配置将保存在本地，刷新页面后依然有效
-            </p>
+            </ApiConfigButtonContainer>
+            <ApiConfigTip>
+              <i className="bi bi-info-circle mr-2"></i>
+              此配置将保存在本地存储中，刷新页面后依然有效
+            </ApiConfigTip>
           </ApiConfigContent>
         </ApiConfigModal>
       </Container>
