@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 定义默认配置
 const DEFAULT_CONFIG = {
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://.protx.cn/',
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://protx.cn/manage',
   timeout: 15000,
 };
 
