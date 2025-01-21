@@ -11,6 +11,6 @@ export { auth } from './auth';
 
 // 如果需要，也可以导出一些通用的 API 配置
 export const API_CONFIG = {
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000/api',
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://protx.cn/',
   timeout: 15000,
 }; 
