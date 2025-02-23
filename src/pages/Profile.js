@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import Header from "components/headers/light.js";
-import Footer from "components/footers/FiveColumnWithBackground.js";
+import SimpleHeader from "components/headers/simple.js";
 import { ReactComponent as EditIcon } from "feather-icons/dist/icons/edit-2.svg";
 import { ReactComponent as SaveIcon } from "feather-icons/dist/icons/check.svg";
 import { ReactComponent as CancelIcon } from "feather-icons/dist/icons/x.svg";
@@ -17,107 +16,200 @@ if (typeof window !== 'undefined') {
 const PageWrapper = styled.div`
   ${tw`
     w-full
-    min-h-screen
+    h-screen  // 改为固定高度
     flex
     flex-col
+    overflow-hidden  // 防止整体滚动
   `}
 `;
 
-const Container = tw.div`
-  relative 
-  bg-gray-100 dark:bg-gray-900 
-  w-full
-  flex-grow
-  min-h-screen
+const Container = styled.div`
+  ${tw`
+    relative 
+    w-full
+    flex-grow
+  `}
+  background: var(--ant-color-bg-container);
 `;
 
-const Content = tw.div`
-  max-w-screen-xl 
-  mx-auto 
-  py-12
-  px-4 sm:px-6 lg:px-8
-  w-full
-  flex-grow
-  mt-20
+const Content = styled.div`
+  ${tw`
+    mx-auto 
+    w-full
+    h-full
+  `}
+  height: calc(100vh - 64px);
+  overflow: auto;
+  margin-top: 64px;
+  padding: 24px;
+  max-width: 1000px;  // 限制最大宽度
 `;
 
 const ProfileHeader = styled(motion.div)`
-  ${tw`
-    bg-white dark:bg-gray-800 
-    rounded-lg 
-    shadow-md 
-    p-6 
-    mb-8 
-    flex 
-    items-start 
-    gap-6
-    w-full
-    flex-wrap sm:flex-nowrap  // 在小屏幕上允许换行
-  `}
+  background: var(--ant-color-bg-container);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  padding: 32px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  width: 100%;
+  position: relative;  // 为绝对定位的编辑按钮做准备
+
+  &:after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    border: 1px solid var(--ant-color-border);
+    pointer-events: none;
+  }
 `;
 
 const AvatarSection = tw.div`flex-shrink-0`;
 
 const Avatar = styled.div`
-  ${tw`w-24 h-24 rounded-full bg-cover bg-center border-4 border-gray-200 dark:border-gray-700`}
+  width: 88px;
+  height: 88px;
+  border-radius: 12px;
   background-image: url(${props => props.src});
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 `;
 
-const UserInfo = tw.div`flex-grow`;
-
-const Username = tw.h1`text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2`;
-
-const UserDescription = tw.p`text-gray-600 dark:text-gray-400 mb-4`;
-
-const Stats = tw.div`grid grid-cols-3 gap-4`;
-
-const StatItem = tw.div`text-center`;
-
-const StatValue = tw.div`text-xl font-bold text-gray-900 dark:text-gray-100`;
-
-const StatLabel = tw.div`text-sm text-gray-600 dark:text-gray-400`;
-
-const TabsContainer = tw.div`
-  bg-white dark:bg-gray-800 
-  rounded-lg 
-  shadow-md 
-  p-6
-  w-full
-  mb-8
+const UserInfo = styled.div`
+  flex-grow: 1;
 `;
 
-const TabList = tw.div`
-  flex 
-  gap-4 
-  border-b 
-  border-gray-200 dark:border-gray-700 
-  mb-6
-  overflow-x-auto  // 只允许标签栏在必要时横向滚动
-  pb-2  // 为滚动条留出空间
+const Username = styled.h1`
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ant-color-text);
+  margin-bottom: 8px;
+`;
+
+const UserDescription = styled.p`
+  font-size: 14px;
+  color: var(--ant-color-text-secondary);
+  margin-bottom: 16px;
+`;
+
+const Stats = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid var(--ant-color-border);
+`;
+
+const StatItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px;
+  background: var(--ant-color-bg-elevated);
+  border-radius: 8px;
+  border: 1px solid var(--ant-color-border);
+`;
+
+const StatValue = styled.div`
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ant-color-text);
+`;
+
+const StatLabel = styled.div`
+  font-size: 13px;
+  color: var(--ant-color-text-secondary);
+`;
+
+const TabsContainer = styled.div`
+  background: var(--ant-color-bg-container);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  width: 100%;
+  position: relative;
+
+  &:after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    border: 1px solid var(--ant-color-border);
+    pointer-events: none;
+  }
+`;
+
+const TabList = styled.div`
+  display: flex;
+  padding: 16px 24px;
+  gap: 8px;
+  border-bottom: 1px solid var(--ant-color-border);
 `;
 
 const Tab = styled.button`
-  ${tw`px-4 py-2 text-gray-600 dark:text-gray-400 font-medium transition-colors duration-200`}
-  ${props => props.active && tw`text-primary-500 border-b-2 border-primary-500`}
+  padding: 8px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: ${props => props.active ? 'var(--ant-color-primary)' : 'var(--ant-color-text-secondary)'};
+  background: ${props => props.active ? 'var(--ant-color-primary-bg)' : 'transparent'};
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    color: var(--ant-color-primary);
+    background: var(--ant-color-primary-bg);
+  }
 `;
 
-const InfoSection = tw.div`mt-6`;
-
-const SectionTitle = tw.h2`text-xl font-bold text-gray-900 dark:text-gray-100 mb-4`;
-
-const Grid = tw.div`
-  grid 
-  grid-cols-1 
-  md:grid-cols-2 
-  gap-6
-  w-full
+const InfoSection = styled.div`
+  padding: 24px;
 `;
 
-const InfoItem = tw.div``;
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);  // 固定两列
+  gap: 20px;
+`;
 
-const Label = tw.div`text-sm font-medium text-gray-600 dark:text-gray-400 mb-1`;
+const InfoItem = styled.div`
+  padding: 20px;
+  background: var(--ant-color-bg-container);
+  border-radius: 8px;
+  transition: all 0.3s;
+  position: relative;
 
-const Value = tw.div`text-gray-900 dark:text-gray-100`;
+  &:after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    border: 1px solid var(--ant-color-border);
+    pointer-events: none;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+`;
+
+const Label = styled.div`
+  font-size: 13px;
+  color: var(--ant-color-text-secondary);
+  margin-bottom: 8px;
+`;
+
+const Value = styled.div`
+  font-size: 15px;
+  color: var(--ant-color-text);
+  font-weight: 500;
+`;
 
 const StyledButton = styled.button`
   ${tw`
@@ -143,22 +235,31 @@ const StyledButton = styled.button`
     `}
 `;
 
-const EditButton = styled(StyledButton)`
-  ${tw`
-    z-10
-    cursor-pointer
-    px-4 py-2
-    bg-white dark:bg-gray-800
-    hover:bg-gray-100 dark:hover:bg-gray-700
-    text-gray-700 dark:text-gray-300
-    rounded-lg
-    flex items-center gap-2
-    transition-all duration-200
-    shadow-sm hover:shadow
-  `}
-  
+const EditButton = styled.button`
+  position: absolute;
+  right: 32px;
+  top: 32px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--ant-color-bg-container);
+  color: var(--ant-color-text);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid var(--ant-color-border);
+
   svg {
-    ${tw`w-4 h-4`}
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    color: var(--ant-color-primary);
+    border-color: var(--ant-color-primary);
+    background: var(--ant-color-primary-bg);
   }
 `;
 
@@ -461,14 +562,10 @@ export default () => {
 
   return (
     <PageWrapper>
-      <Header />
+      <SimpleHeader />
       <Container>
         <Content>
-          <ProfileHeader
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <ProfileHeader>
             <AvatarSection>
               <Avatar src={userInfo.avatar} />
             </AvatarSection>
@@ -479,34 +576,26 @@ export default () => {
               </UserDescription>
               <Stats>
                 <StatItem>
-                  <StatValue>{userInfo.creditScore}</StatValue>
+                  <StatValue>{userInfo.creditScore || 0}</StatValue>
                   <StatLabel>信用分</StatLabel>
                 </StatItem>
                 <StatItem>
-                  <StatValue>{userInfo.level}</StatValue>
+                  <StatValue>{userInfo.level || 1}</StatValue>
                   <StatLabel>等级</StatLabel>
                 </StatItem>
                 <StatItem>
-                  <StatValue>{userInfo.balance?.toFixed(2)}</StatValue>
+                  <StatValue>{(userInfo.balance || 0).toFixed(2)}</StatValue>
                   <StatLabel>余额</StatLabel>
                 </StatItem>
               </Stats>
             </UserInfo>
-            <EditButton 
-              type="button"
-              onClick={handleEdit}
-            >
+            <EditButton onClick={handleEdit}>
               <EditIcon />
               编辑资料
             </EditButton>
           </ProfileHeader>
 
-          <TabsContainer
-            as={motion.div}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
+          <TabsContainer>
             <TabList>
               <Tab 
                 active={activeTab === 'basic'} 
@@ -520,17 +609,10 @@ export default () => {
               >
                 账户信息
               </Tab>
-              <Tab 
-                active={activeTab === 'address'} 
-                onClick={() => setActiveTab('address')}
-              >
-                地址信息
-              </Tab>
             </TabList>
 
             {activeTab === 'basic' && (
               <InfoSection>
-                <SectionTitle>基本信息</SectionTitle>
                 <Grid>
                   <InfoItem>
                     <Label>昵称</Label>
@@ -554,7 +636,6 @@ export default () => {
 
             {activeTab === 'account' && (
               <InfoSection>
-                <SectionTitle>账户信息</SectionTitle>
                 <Grid>
                   <InfoItem>
                     <Label>USDT 地址</Label>
@@ -562,15 +643,15 @@ export default () => {
                   </InfoItem>
                   <InfoItem>
                     <Label>USDT 余额</Label>
-                    <Value>{userInfo.usdtAmount?.toFixed(6) || '0.000000'}</Value>
+                    <Value>{(userInfo.usdtAmount || 0).toFixed(6)}</Value>
                   </InfoItem>
                   <InfoItem>
                     <Label>USDT 冻结金额</Label>
-                    <Value>{userInfo.usdtFrozenAmount?.toFixed(6) || '0.000000'}</Value>
+                    <Value>{(userInfo.usdtFrozenAmount || 0).toFixed(6)}</Value>
                   </InfoItem>
                   <InfoItem>
                     <Label>注册时间</Label>
-                    <Value>{userInfo.createTime}</Value>
+                    <Value>{userInfo.createTime || '未知'}</Value>
                   </InfoItem>
                   <InfoItem>
                     <Label>账户状态</Label>
@@ -579,38 +660,9 @@ export default () => {
                 </Grid>
               </InfoSection>
             )}
-
-            {activeTab === 'address' && (
-              <InfoSection>
-                <SectionTitle>地址信息</SectionTitle>
-                <Grid>
-                  <InfoItem>
-                    <Label>地址</Label>
-                    <Value>{userInfo.address || '未设置'}</Value>
-                  </InfoItem>
-                  <InfoItem>
-                    <Label>城市</Label>
-                    <Value>{userInfo.city || '未设置'}</Value>
-                  </InfoItem>
-                  <InfoItem>
-                    <Label>省份/州</Label>
-                    <Value>{userInfo.state || '未设置'}</Value>
-                  </InfoItem>
-                  <InfoItem>
-                    <Label>邮政编码</Label>
-                    <Value>{userInfo.postalCode || '未设置'}</Value>
-                  </InfoItem>
-                  <InfoItem>
-                    <Label>国家</Label>
-                    <Value>{userInfo.country || '未设置'}</Value>
-                  </InfoItem>
-                </Grid>
-              </InfoSection>
-            )}
           </TabsContainer>
         </Content>
       </Container>
-      <Footer />
       {modalElement}
     </PageWrapper>
   );

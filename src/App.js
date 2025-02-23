@@ -1,7 +1,8 @@
 import React from "react";
 import GlobalStyles from './styles/GlobalStyles';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ConfigProvider, theme } from 'antd';
+import { ConfigProvider, theme, message } from 'antd';
+import { ThemeProvider } from 'styled-components';
 import 'antd/dist/reset.css'; // 只需要这一个样式文件即可
 import SaaSProductLandingPage from "./demos/SaaSProductLandingPage";
 import LoginPage from "./pages/Login";
@@ -11,16 +12,7 @@ import Navigation from "pages/Navigation";
 import ProfilePage from "pages/Profile";
 import About from "pages/About";
 import PartnerSurvey from "pages/PartnerSurvey";
-
-// 初始化主题
-const initTheme = () => {
-  const savedTheme = localStorage.getItem('theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  
-  if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-    document.documentElement.classList.add('dark');
-  }
-};
+import CloudDrivePage from "./pages/CloudDrive"; // 新增云盘页面组件
 
 export default function App() {
   const [isDark, setIsDark] = React.useState(() => {
@@ -29,52 +21,75 @@ export default function App() {
     return savedTheme === 'dark' || (!savedTheme && prefersDark);
   });
 
+  // 设置 message 全局配置
+  message.config({
+    top: 60,
+    duration: 2,
+    maxCount: 3,
+  });
+
+  const themeConfig = React.useMemo(() => ({
+    algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
+    token: {
+      colorPrimary: '#3b82f6',
+      borderRadius: 4,
+      fontSize: 13,
+    },
+    components: {
+      Button: {
+        borderRadius: 4,
+      },
+      Card: {
+        borderRadius: 8,
+      },
+      Message: {
+        zIndex: 1050,
+      },
+    },
+  }), [isDark]);
+
+  // 主题切换处理函数
+  const handleThemeChange = React.useCallback((dark) => {
+    setIsDark(dark);
+    if (dark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, []);
+
   React.useEffect(() => {
-    initTheme();
+    handleThemeChange(isDark);
     
-    // 监听系统主题变化
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e) => {
-      if (!localStorage.getItem('theme')) {  // 只有在用户没有手动设置主题时才跟随系统
-        setIsDark(e.matches);
-        if (e.matches) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+      if (!localStorage.getItem('theme')) {
+        handleThemeChange(e.matches);
       }
     };
 
     mediaQuery.addListener(handleChange);
     return () => mediaQuery.removeListener(handleChange);
-  }, []);
+  }, [handleThemeChange, isDark]);
 
   return (
-    <>
-      <GlobalStyles />
-      <ConfigProvider
-        theme={{
-          algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
-          token: {
-            colorPrimary: '#3b82f6', // 使用您项目中的主色调
-            borderRadius: 4,
-            fontSize: 13,
-          },
-        }}
-      >
+    <ThemeProvider theme={{ 
+      mode: isDark ? 'dark' : 'light',
+      setTheme: handleThemeChange 
+    }}>
+      <ConfigProvider theme={themeConfig}>
+        <GlobalStyles />
         <Router>
           <Routes>
-            <Route path="/" element={<SaaSProductLandingPage />} />
-            <Route path="/navigation" element={<Navigation />} />
-            <Route path="/join" element={<JoinUs />} />
+            <Route path="/" element={<CloudDrivePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/partner-survey" element={<PartnerSurvey />} />
           </Routes>
         </Router>
       </ConfigProvider>
-    </>
+    </ThemeProvider>
   );
 }

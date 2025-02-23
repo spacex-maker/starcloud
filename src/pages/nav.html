@@ -2079,7 +2079,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const countryCode = getCountryCodeFromUrl();
-                const response = await fetch(`https://protx.cn/manage/base/website-list/list?countryCode=${countryCode}`);
+                const response = await fetch(`https://admin.anakkix.cn/manage/base/website-list/list?countryCode=${countryCode}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -2397,7 +2397,7 @@
             async function fetchAndUpdateData(searchTerm = '') {
                 try {
                     const countryCode = getCountryCodeFromUrl();
-                    const response = await fetch(`https://protx.cn/manage/base/website-list/list?countryCode=${countryCode}${searchTerm ? `&name=${searchTerm}` : ''}`);
+                    const response = await fetch(`https://admin.anakkix.cn/manage/base/website-list/list?countryCode=${countryCode}${searchTerm ? `&name=${searchTerm}` : ''}`);
                     const result = await response.json();
                     
                     if (result.success) {

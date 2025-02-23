@@ -13,7 +13,7 @@ import axios from "axios";
 
 // 创建专用的 axios 实例
 const webAxios = axios.create({
-  baseURL: 'https://protx.cn/manage/',
+  baseURL: 'https://admin.anakkix.cn/manage/',
   timeout: 5000,
   headers: {
     'Content-Type': 'application/json',
