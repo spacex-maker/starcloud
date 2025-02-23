@@ -2,26 +2,21 @@ import axios from './axios';
 
 export const auth = {
   // 登录
-  login: async (data) => {
+  login: async ({ email, password }) => {
     try {
-      const response = await axios.post('/productx/user/login', {
-        username: data.email,
-        password: data.password
+      const { data } = await axios.post('/productx/user/login', { 
+        username: email, 
+        password 
       });
       
-      if (response.data.success) {
-        // 保存 token
-        localStorage.setItem('token', response.data.data);
-        // 设置 axios 默认 header
-        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.data}`;
+      if (data.success) {
+        const token = data.data;
+        localStorage.setItem('token', token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       }
-      
-      return response.data;
+      return data;
     } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || '登录失败'
-      };
+      return { success: false, message: error.response?.data?.message || '登录失败' };
     }
   },
 
@@ -61,17 +56,13 @@ export const auth = {
   // 获取用户信息
   getUserInfo: async () => {
     try {
-      const response = await axios.get('/productx/user/user-detail');
-      if (response.data.success) {
-        // 保存用户信息到 localStorage
-        localStorage.setItem('userInfo', JSON.stringify(response.data.data));
+      const { data } = await axios.get('/productx/user/user-detail');
+      if (data.success) {
+        localStorage.setItem('userInfo', JSON.stringify(data.data));
       }
-      return response.data;
+      return data;
     } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || '获取用户信息失败'
-      };
+      return { success: false, message: error.response?.data?.message || '获取用户信息失败' };
     }
   },
 
