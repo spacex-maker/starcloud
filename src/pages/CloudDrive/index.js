@@ -17,6 +17,7 @@ import SimpleHeader from "components/headers/simple";
 import AboutModal from "components/modals/AboutModal";
 import { cosService } from 'services/cos';
 import { message } from 'antd';
+import UploadProgressModal from 'components/modals/UploadProgressModal';
 
 const { Content, Sider } = Layout;
 
@@ -153,6 +154,12 @@ const CloudDrivePage = () => {
   const [currentPath, setCurrentPath] = useState('');
   const [isAboutModalVisible, setIsAboutModalVisible] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadModalVisible, setUploadModalVisible] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [uploadSpeeds, setUploadSpeeds] = useState({});
+  const [uploadStartTimes, setUploadStartTimes] = useState({});
+  const [uploadFileSizes, setUploadFileSizes] = useState({});
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     loadFiles();
@@ -189,16 +196,42 @@ const CloudDrivePage = () => {
     }
   };
 
-  const handleUpload = async (file) => {
+  const handleUpload = async (files) => {
+    setUploadModalVisible(true);
+    setIsUploading(true);
+    
+    const newStartTimes = {};
+    const newFileSizes = {};
+    
+    // 初始化进度信息
+    files.forEach(file => {
+      newStartTimes[file.name] = Date.now();
+      newFileSizes[file.name] = file.size;
+    });
+    
+    setUploadStartTimes(newStartTimes);
+    setUploadFileSizes(newFileSizes);
+
     try {
-      setUploading(true);
-      await cosService.uploadFile(file, currentPath);
+      await Promise.all(files.map(file => 
+        cosService.uploadFile(file, currentPath, (progress, speed) => {
+          setUploadProgress(prev => ({
+            ...prev,
+            [file.name]: Math.round(progress * 100)
+          }));
+          setUploadSpeeds(prev => ({
+            ...prev,
+            [file.name]: speed
+          }));
+        })
+      ));
+
       message.success('上传成功');
       loadFiles();
     } catch (error) {
       message.error('上传失败');
     } finally {
-      setUploading(false);
+      setIsUploading(false);
     }
   };
 
@@ -322,14 +355,18 @@ const CloudDrivePage = () => {
               <ActionBar>
                 <Space>
                   <Upload
+                    multiple
                     showUploadList={false}
-                    beforeUpload={handleUpload}
-                    disabled={uploading}
+                    beforeUpload={(file, fileList) => {
+                      handleUpload(fileList);
+                      return false; // 阻止默认上传
+                    }}
+                    disabled={isUploading}
                   >
                     <Button 
                       type="primary" 
                       icon={<CloudUploadOutlined />}
-                      loading={uploading}
+                      loading={isUploading}
                     >
                       上传文件
                     </Button>
@@ -423,6 +460,23 @@ const CloudDrivePage = () => {
         <AboutModal 
           isVisible={isAboutModalVisible}
           onClose={() => setIsAboutModalVisible(false)}
+        />
+        <UploadProgressModal
+          visible={uploadModalVisible}
+          uploading={isUploading}
+          progress={uploadProgress}
+          speeds={uploadSpeeds}
+          startTimes={uploadStartTimes}
+          fileSizes={uploadFileSizes}
+          onClose={() => {
+            if (!isUploading) {
+              setUploadModalVisible(false);
+              setUploadProgress({});
+              setUploadSpeeds({});
+              setUploadStartTimes({});
+              setUploadFileSizes({});
+            }
+          }}
         />
       </ContentContainer>
     </PageContainer>

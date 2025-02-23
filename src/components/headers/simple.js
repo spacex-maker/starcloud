@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../../images/logo.svg";
 import { ReactComponent as SunIcon } from "feather-icons/dist/icons/sun.svg";
@@ -44,6 +44,34 @@ const LogoContainer = styled.div`
   align-items: center;
 `;
 
+const glowingEffect = keyframes`
+  0% {
+    color: #fff;
+    text-shadow: 
+      0 0 5px var(--ant-color-primary),
+      0 0 10px var(--ant-color-primary),
+      0 0 20px var(--ant-color-primary),
+      0 0 40px var(--ant-color-primary);
+  }
+  50% {
+    color: #fff;
+    text-shadow: 
+      0 0 10px var(--ant-color-primary),
+      0 0 20px var(--ant-color-primary),
+      0 0 40px var(--ant-color-primary),
+      0 0 80px var(--ant-color-primary),
+      0 0 120px var(--ant-color-primary);
+  }
+  100% {
+    color: #fff;
+    text-shadow: 
+      0 0 5px var(--ant-color-primary),
+      0 0 10px var(--ant-color-primary),
+      0 0 20px var(--ant-color-primary),
+      0 0 40px var(--ant-color-primary);
+  }
+`;
+
 const LogoLink = styled(Link)`
   display: flex;
   align-items: center;
@@ -59,6 +87,28 @@ const LogoLink = styled(Link)`
 
   &:hover {
     color: var(--ant-color-primary);
+  }
+`;
+
+const BrandName = styled.span`
+  display: flex;
+  align-items: center;
+  
+  &:after {
+    content: 'X';
+    margin-left: 4px;
+    font-size: 2em;
+    font-weight: 900;
+    animation: ${glowingEffect} 2s ease-in-out infinite;
+    transform: translateY(-2px);
+    text-shadow: 
+      0 0 5px var(--ant-color-primary),
+      0 0 10px var(--ant-color-primary),
+      0 0 20px var(--ant-color-primary),
+      0 0 40px var(--ant-color-primary);
+    -webkit-text-stroke: 1px var(--ant-color-primary);
+    position: relative;
+    z-index: 1;
   }
 `;
 
@@ -263,7 +313,7 @@ export default function SimpleHeader() {
         <LeftSection>
           <LogoLink to="/">
             <img src={logo} alt="logo" />
-            <span>MyStorageX</span>
+            <BrandName>MyStorage</BrandName>
           </LogoLink>
         </LeftSection>
 
