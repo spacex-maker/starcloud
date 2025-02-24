@@ -43,26 +43,36 @@ class COSService {
     }
   }
 
-  async uploadFile(file, path = '') {
+  async uploadFile(file, path = '', onProgress) {
     if (!this.cos) {
       await this.init();
     }
 
     return new Promise((resolve, reject) => {
       const key = path ? `${path}/${file.name}` : file.name;
+      let lastProgress = 0; // 记录上一次的进度
 
-      this.cos.putObject({
+      this.cos.uploadFile({
         Bucket: 'px-1258150206',
         Region: 'ap-nanjing',
         Key: key,
         Body: file,
         onProgress: (progressData) => {
-          console.log('上传进度:', JSON.stringify(progressData));
+          const percent = progressData.percent * 100;
+          const speed = progressData.speed;
+          
+          // 确保进度只能增加，不能减少
+          if (percent >= lastProgress) {
+            lastProgress = percent;
+            onProgress(percent, speed);
+          }
         }
       }, (err, data) => {
         if (err) {
           reject(err);
         } else {
+          // 确保最后进度为 100%
+          onProgress(100, 0);
           resolve({
             url: `${this.host}${key}`,
             key: key,

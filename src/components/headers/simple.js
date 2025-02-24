@@ -276,9 +276,20 @@ export default function SimpleHeader() {
   const [userInfo, setUserInfo] = useState(null);
 
   useEffect(() => {
+    // 从本地存储获取用户信息
     const storedUserInfo = localStorage.getItem('userInfo');
     if (storedUserInfo) {
       setUserInfo(JSON.parse(storedUserInfo));
+    } else {
+      // 如果本地没有用户信息但有token，尝试重新获取
+      const token = localStorage.getItem('token');
+      if (token) {
+        auth.getUserInfo().then(result => {
+          if (result.success) {
+            setUserInfo(result.data);
+          }
+        });
+      }
     }
   }, []);
 

@@ -13,6 +13,14 @@ export const auth = {
         const token = data.data;
         localStorage.setItem('token', token);
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
+        // 登录成功后立即获取用户信息
+        const userInfoResult = await auth.getUserInfo();
+        if (!userInfoResult.success) {
+          return { success: false, message: '获取用户信息失败' };
+        }
+        
+        return { success: true };
       }
       return data;
     } catch (error) {
