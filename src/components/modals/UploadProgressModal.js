@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Button, Spin } from 'antd';
+import { Modal, Button, Spin, Progress } from 'antd';
 import { 
   CloudUploadOutlined,
   CheckCircleOutlined,
@@ -24,84 +24,18 @@ const ProgressWrapper = styled.div`
     border-bottom: 1px solid var(--ant-color-border);
   }
 
-  .progress-card {
-    padding: 16px 0;
-    border-bottom: 1px solid var(--ant-color-border);
-    
-    &:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
-    
-    &:first-child {
-      padding-top: 0;
-    }
-  }
-
-  .file-info {
+  .header-info {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
+    align-items: center;
+    margin-bottom: 16px;
   }
 
-  .file-name {
+  .status-info {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 14px;
-    max-width: 60%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--ant-color-text);
-
-    .file-icon {
-      color: var(--ant-color-text-secondary);
-      flex-shrink: 0;
-    }
-  }
-
-  .upload-info {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 13px;
     color: var(--ant-color-text-secondary);
-  }
-
-  .progress-bar {
-    height: 6px;
-    border-radius: 3px;
-    margin: 8px 0;
-    background-color: var(--ant-color-bg-container);
-
-    .progress-inner {
-      height: 100%;
-      border-radius: 3px;
-      background-color: var(--ant-color-primary);
-      transition: width 0.3s ease;
-    }
-
-    &.complete .progress-inner {
-      background-color: var(--ant-color-success);
-    }
-  }
-
-  .progress-details {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 13px;
-    margin-top: 8px;
-    color: var(--ant-color-text-secondary);
-  }
-
-  .success-icon {
-    color: var(--ant-color-success);
-    display: flex;
-    align-items: center;
-    gap: 4px;
   }
 
   .time-info {
@@ -109,38 +43,44 @@ const ProgressWrapper = styled.div`
     align-items: center;
     gap: 4px;
     color: var(--ant-color-text-secondary);
-  }
-
-  .status-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    border-radius: 4px;
     font-size: 13px;
-    
-    &.uploading {
-      background-color: var(--ant-color-primary-bg);
-      color: var(--ant-color-primary);
-    }
-    
-    &.complete {
-      background-color: var(--ant-color-success-bg);
-      color: var(--ant-color-success);
-    }
   }
+`;
 
-  .file-type {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 12px;
-    background-color: var(--ant-color-bg-container);
-    color: var(--ant-color-text-secondary);
-    margin-left: 8px;
-    text-transform: uppercase;
+const ProgressContainer = styled.div`
+  margin-bottom: 16px;
+`;
+
+const FileInfo = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 16px;
+`;
+
+const FileName = styled.span`
+  font-size: 14px;
+  color: var(--ant-color-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
+`;
+
+const SpeedInfo = styled.span`
+  font-size: 12px;
+  color: var(--ant-color-text-secondary);
+  flex-shrink: 0;
+  min-width: 85px;
+  text-align: right;
 `;
 
 // 工具函数
@@ -155,6 +95,33 @@ const formatBytes = (bytes) => {
 const formatDate = (timestamp) => {
   if (!timestamp) return '';
   return new Date(timestamp).toLocaleTimeString();
+};
+
+const formatSpeed = (speed) => {
+  // 如果 speed 是字符串且已经格式化过，直接返回
+  if (typeof speed === 'string' && speed.endsWith('/s')) {
+    return speed;
+  }
+
+  // 转换为数字
+  const numSpeed = Number(speed);
+  
+  // 如果是 0 或无效值，返回 0 KB/s
+  if (numSpeed === 0 || isNaN(numSpeed)) {
+    return '0 KB/s';
+  }
+  
+  const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+  let value = numSpeed;
+  let unitIndex = 0;
+  
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+  
+  const decimals = value >= 100 ? 0 : value >= 10 ? 1 : 2;
+  return `${value.toFixed(decimals)} ${units[unitIndex]}`;
 };
 
 const UploadProgressModal = ({ 
@@ -225,7 +192,6 @@ const UploadProgressModal = ({
   };
 
   const totalProgress = calculateTotalProgress();
-  const isComplete = totalProgress === 100;
   const totalFiles = Object.keys(progress || {}).length;
   const completedFiles = Object.values(progress || {}).filter(p => p === 100).length;
   const earliestStartTime = Object.values(startTimes).length > 0 
@@ -236,12 +202,7 @@ const UploadProgressModal = ({
     <Modal
       open={visible}
       onCancel={onClose}
-      title={
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CloudUploadOutlined style={{ color: 'var(--ant-color-primary)' }} />
-          文件上传进度
-        </div>
-      }
+      title="文件上传进度"
       footer={[
         <Button
           key="close"
@@ -252,83 +213,54 @@ const UploadProgressModal = ({
           {uploading ? '上传中...' : '关闭'}
         </Button>
       ]}
-      width={800}
+      width={600}
     >
       <ProgressWrapper>
-        {/* 总进度 */}
+        {/* 总进度区域 */}
         <div className="total-progress">
-          <div className="file-info">
-            <div className="file-name">
-              <div className={`status-badge ${isComplete ? 'complete' : 'uploading'}`}>
-                {uploading ? (
-                  <Spin size="small" />
-                ) : isComplete ? (
-                  <CheckCircleOutlined />
-                ) : null}
-                {uploading ? '正在上传' : isComplete ? '上传完成' : '准备上传'}
-              </div>
-            </div>
-            <div className="upload-info">
-              <span>总文件：{completedFiles}/{totalFiles}</span>
+          <div className="header-info">
+            <div className="status-info">
+              {uploading && <Spin size="small" />}
+              <span>{`${completedFiles}/${totalFiles} 个文件`}</span>
               {uploading && earliestStartTime && (
                 <span className="time-info">
                   <ClockCircleOutlined />
-                  已用时：{calculateTimeElapsed(earliestStartTime)}
+                  {calculateTimeElapsed(earliestStartTime)}
                 </span>
               )}
             </div>
+            <span>{totalProgress}%</span>
           </div>
-          <div className={`progress-bar ${isComplete ? 'complete' : ''}`}>
-            <div 
-              className="progress-inner" 
-              style={{ width: `${totalProgress}%` }}
-            />
-          </div>
-          <div className="progress-details">
-            <span>总进度：{totalProgress}%</span>
-            <span>已完成：{completedFiles} / {totalFiles}</span>
-          </div>
+          <Progress 
+            percent={totalProgress}
+            status={uploading ? 'active' : 'success'}
+            strokeColor={{
+              '0%': '#108ee9',
+              '100%': '#87d068',
+            }}
+          />
         </div>
 
         {/* 单个文件进度 */}
         {progress && Object.entries(progress).map(([filename, percent]) => (
-          <div key={filename} className="progress-card">
-            <div className="file-info">
-              <div className="file-name">
+          <ProgressContainer key={filename}>
+            <FileInfo>
+              <FileName>
                 {getFileIcon(filename)}
                 <span>{filename}</span>
-                <span className="file-type">{filename.split('.').pop()?.toUpperCase()}</span>
-              </div>
-              <div className="upload-info">
-                {speeds && speeds[filename] && (
-                  <span>{speeds[filename]} MB/s</span>
-                )}
-                {percent < 100 && uploading && (
-                  <span className="time-info">
-                    <ClockCircleOutlined />
-                    剩余：{calculateRemainingTime(speeds[filename], percent, filename)}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className={`progress-bar ${percent === 100 ? 'complete' : ''}`}>
-              <div 
-                className="progress-inner" 
-                style={{ width: `${percent}%` }}
-              />
-            </div>
-            <div className="progress-details">
-              <span>{percent}%</span>
-              {percent === 100 && (
-                <span className="success-icon">
-                  <CheckCircleOutlined /> 完成
-                </span>
-              )}
-              <span className="time-info">
-                开始：{formatDate(startTimes[filename])}
-              </span>
-            </div>
-          </div>
+              </FileName>
+              <SpeedInfo>{formatSpeed(speeds[filename])}</SpeedInfo>
+            </FileInfo>
+            <Progress 
+              percent={percent} 
+              status={percent === 100 ? 'success' : 'active'}
+              strokeColor={{
+                '0%': '#108ee9',
+                '100%': '#87d068',
+              }}
+              size="small"
+            />
+          </ProgressContainer>
         ))}
       </ProgressWrapper>
     </Modal>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Table, Button, Space, Input, Upload } from 'antd';
+import { Layout, Menu, Table, Button, Space, Input, Upload, Modal, Image } from 'antd';
 import {
   FolderOutlined,
   FileOutlined,
@@ -11,6 +11,8 @@ import {
   RightOutlined,
   InfoCircleOutlined,
   InboxOutlined,
+  FileImageOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import tw, { styled } from 'twin.macro';
 import SimpleHeader from "components/headers/simple";
@@ -20,6 +22,7 @@ import { message } from 'antd';
 import UploadProgressModal from 'components/modals/UploadProgressModal';
 
 const { Content, Sider } = Layout;
+const { confirm } = Modal;
 
 const StyledLayout = styled(Layout)`
   flex: 1;
@@ -48,17 +51,21 @@ const StyledContent = styled(Content)`
   flex: 1;
   padding: 24px;
   background: var(--ant-color-bg-container);
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 `;
 
 const TableContainer = styled.div`
   flex: 1;
-  overflow: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   
   .ant-table-wrapper {
-    height: 100%;
+    flex: 1;
+    overflow: hidden;
     
     .ant-spin-nested-loading {
       height: 100%;
@@ -67,6 +74,26 @@ const TableContainer = styled.div`
         height: 100%;
         display: flex;
         flex-direction: column;
+        
+        .ant-table {
+          flex: 1;
+          overflow: hidden;
+          
+          .ant-table-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            
+            .ant-table-header {
+              flex-shrink: 0;
+            }
+            
+            .ant-table-body {
+              flex: 1;
+              overflow-y: auto;
+            }
+          }
+        }
       }
     }
   }
@@ -160,6 +187,9 @@ const CloudDrivePage = () => {
   const [uploadStartTimes, setUploadStartTimes] = useState({});
   const [uploadFileSizes, setUploadFileSizes] = useState({});
   const [isUploading, setIsUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [filteredFiles, setFilteredFiles] = useState([]);
 
   useEffect(() => {
     loadFiles();
@@ -170,7 +200,7 @@ const CloudDrivePage = () => {
       setLoading(true);
       const result = await cosService.listFiles(currentPath);
       
-      const files = [
+      const newFiles = [
         ...(result.CommonPrefixes || []).map(prefix => ({
           key: prefix.Prefix,
           name: prefix.Prefix.split('/').slice(-2)[0] || prefix.Prefix,
@@ -185,9 +215,11 @@ const CloudDrivePage = () => {
           size: formatSize(file.Size),
           modifiedDate: new Date(file.LastModified).toLocaleString()
         }))
-      ].filter(file => file.name); // 过滤掉空名称
+      ].filter(file => file.name);
 
-      setFiles(files);
+      setFiles(newFiles);
+      setFilteredFiles(newFiles);  // 初始化过滤后的文件列表
+      setSearchText('');  // 重置搜索文本
     } catch (error) {
       console.error('加载文件列表失败:', error);
       message.error('加载文件列表失败: ' + (error.message || '未知错误'));
@@ -202,26 +234,39 @@ const CloudDrivePage = () => {
     
     const newStartTimes = {};
     const newFileSizes = {};
+    const newProgress = {};
+    const newSpeeds = {};
     
     // 初始化进度信息
     files.forEach(file => {
       newStartTimes[file.name] = Date.now();
       newFileSizes[file.name] = file.size;
+      newProgress[file.name] = 0;
+      newSpeeds[file.name] = '0 KB/s';
     });
     
     setUploadStartTimes(newStartTimes);
     setUploadFileSizes(newFileSizes);
+    setUploadProgress(newProgress);
+    setUploadSpeeds(newSpeeds);
 
     try {
       await Promise.all(files.map(file => 
         cosService.uploadFile(file, currentPath, (progress, speed) => {
-          setUploadProgress(prev => ({
-            ...prev,
-            [file.name]: Math.round(progress * 100)
-          }));
+          // 使用函数形式的 setState 确保获取最新状态
+          setUploadProgress(prev => {
+            const currentProgress = prev[file.name] || 0;
+            // 确保进度只能增加，不能减少
+            const newProgress = Math.max(currentProgress, Math.round(progress));
+            return {
+              ...prev,
+              [file.name]: newProgress
+            };
+          });
+          
           setUploadSpeeds(prev => ({
             ...prev,
-            [file.name]: speed
+            [file.name]: speed ? formatSpeed(speed) : '0 KB/s'
           }));
         })
       ));
@@ -229,20 +274,43 @@ const CloudDrivePage = () => {
       message.success('上传成功');
       loadFiles();
     } catch (error) {
-      message.error('上传失败');
+      console.error('上传失败:', error);
+      message.error('上传失败: ' + (error.message || '未知错误'));
     } finally {
       setIsUploading(false);
+      setTimeout(() => {
+        setUploadModalVisible(false);
+        setUploadProgress({});
+        setUploadSpeeds({});
+        setUploadStartTimes({});
+        setUploadFileSizes({});
+      }, 1000);
     }
   };
 
-  const handleDelete = async (key) => {
-    try {
-      await cosService.deleteFile(key);
-      message.success('删除成功');
-      loadFiles();
-    } catch (error) {
-      message.error('删除失败');
-    }
+  const handleDelete = (key) => {
+    const fileName = key.split('/').pop();
+    
+    confirm({
+      title: '确认删除',
+      content: `确定要删除 "${fileName}" 吗？此操作不可恢复。`,
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      async onOk() {
+        try {
+          await cosService.deleteFile(key);
+          message.success('删除成功');
+          loadFiles();  // 刷新文件列表
+        } catch (error) {
+          console.error('删除失败:', error);
+          message.error('删除失败: ' + (error.message || '未知错误'));
+        }
+      },
+      onCancel() {
+        // 用户取消删除，不做任何操作
+      },
+    });
   };
 
   const handlePathClick = (index) => {
@@ -254,38 +322,119 @@ const CloudDrivePage = () => {
     setCurrentPath(folder.key);
   };
 
+  // 判断是否是图片文件
+  const isImageFile = (filename) => {
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
+    const ext = filename.split('.').pop()?.toLowerCase();
+    return imageExtensions.includes(ext);
+  };
+
+  // 处理图片预览
+  const handlePreview = (file) => {
+    setPreviewImage({
+      url: `${cosService.host}${file.key}`,
+      title: file.name
+    });
+  };
+
+  // 搜索处理函数
+  const handleSearch = (value) => {
+    setSearchText(value);
+    if (!value.trim()) {
+      setFilteredFiles(files);
+      return;
+    }
+
+    const searchValue = value.toLowerCase();
+    const filtered = files.filter(file => {
+      const fileName = file.name.toLowerCase();
+      return fileName.includes(searchValue);
+    });
+    setFilteredFiles(filtered);
+  };
+
   // 表格列定义
   const columns = [
     {
       title: '文件名',
       dataIndex: 'name',
       key: 'name',
+      ellipsis: true,
+      width: '50%',
       render: (text, record) => (
-        <Space>
-          {record.type === 'folder' ? <FolderOutlined /> : <FileOutlined />}
-          {text}
-        </Space>
+        <div>
+          <Space>
+            {record.type === 'folder' ? (
+              <FolderOutlined style={{ color: '#ffd591' }} />
+            ) : isImageFile(text) ? (
+              <FileImageOutlined style={{ color: '#85a5ff' }} />
+            ) : (
+              <FileOutlined style={{ color: '#91d5ff' }} />
+            )}
+            <span
+              style={{ 
+                cursor: record.type === 'folder' ? 'pointer' : 'default',
+                color: record.type === 'folder' ? 'var(--ant-color-primary)' : 'inherit'
+              }}
+              onClick={() => {
+                if (record.type === 'folder') {
+                  handleFolderClick(record);
+                }
+              }}
+            >
+              {text}
+            </span>
+          </Space>
+          {record.type === 'file' && isImageFile(text) && (
+            <Button
+              type="link"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handlePreview(record)}
+              style={{ marginLeft: 24, padding: 0 }}
+            >
+              预览图片
+            </Button>
+          )}
+        </div>
       ),
     },
     {
       title: '大小',
       dataIndex: 'size',
       key: 'size',
+      width: '15%',    // 固定宽度
+      align: 'right',  // 右对齐
     },
     {
       title: '修改日期',
       dataIndex: 'modifiedDate',
       key: 'modifiedDate',
+      width: '20%',    // 固定宽度
+      align: 'center', // 居中对齐
     },
     {
       title: '操作',
       key: 'action',
+      width: 120,
+      fixed: 'right',
       render: (_, record) => (
-        <Space size="middle">
-          <Button type="text" icon={<DownloadOutlined />}>
-            下载
-          </Button>
-          <Button type="text" danger icon={<DeleteOutlined />}>
+        <Space size={4}>
+          {record.type === 'file' && (
+            <Button 
+              type="text" 
+              icon={<DownloadOutlined />}
+              onClick={() => window.open(`${cosService.host}${record.key}`)}
+            >
+              下载
+            </Button>
+          )}
+          <Button 
+            type="text" 
+            danger 
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.key)}
+          >
             删除
           </Button>
         </Space>
@@ -377,73 +526,26 @@ const CloudDrivePage = () => {
                   placeholder="搜索文件"
                   prefix={<SearchOutlined />}
                   style={{ width: 200 }}
+                  value={searchText}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  allowClear  // 添加清除按钮
                 />
               </ActionBar>
 
               <Table
-                columns={[
-                  {
-                    title: '文件名',
-                    dataIndex: 'name',
-                    key: 'name',
-                    render: (text, record) => (
-                      <Space>
-                        {record.type === 'folder' ? (
-                          <FolderOutlined style={{ color: '#ffd591' }} />
-                        ) : (
-                          <FileOutlined style={{ color: '#91d5ff' }} />
-                        )}
-                        <span
-                          style={{ 
-                            cursor: record.type === 'folder' ? 'pointer' : 'default',
-                            color: record.type === 'folder' ? 'var(--ant-color-primary)' : 'inherit'
-                          }}
-                          onClick={() => record.type === 'folder' && handleFolderClick(record)}
-                        >
-                          {text}
-                        </span>
-                      </Space>
-                    ),
-                  },
-                  {
-                    title: '大小',
-                    dataIndex: 'size',
-                    key: 'size',
-                  },
-                  {
-                    title: '修改日期',
-                    dataIndex: 'modifiedDate',
-                    key: 'modifiedDate',
-                  },
-                  {
-                    title: '操作',
-                    key: 'action',
-                    render: (_, record) => (
-                      <Space size="middle">
-                        {record.type === 'file' && (
-                          <Button 
-                            type="text" 
-                            icon={<DownloadOutlined />}
-                            onClick={() => window.open(`${cosService.host}${record.key}`)}
-                          >
-                            下载
-                          </Button>
-                        )}
-                        <Button 
-                          type="text" 
-                          danger 
-                          icon={<DeleteOutlined />}
-                          onClick={() => handleDelete(record.key)}
-                        >
-                          删除
-                        </Button>
-                      </Space>
-                    ),
-                  },
-                ]}
-                dataSource={files}
+                columns={columns}
+                dataSource={filteredFiles}
                 loading={loading}
                 pagination={false}
+                locale={{
+                  emptyText: searchText ? '没有找到相关文件' : '当前文件夹为空'
+                }}
+                scroll={{
+                  y: 'calc(100vh - 300px)',
+                  x: 1200  // 增加最小宽度以确保固定列正常工作
+                }}
+                size="middle"     // 稍微紧凑一点的尺寸
+                rowKey="key"      // 使用文件的 key 作为行的唯一标识
               />
             </StyledContent>
             
@@ -478,6 +580,19 @@ const CloudDrivePage = () => {
             }
           }}
         />
+
+        {/* 添加图片预览组件 */}
+        <Image
+          style={{ display: 'none' }}
+          preview={{
+            visible: previewImage !== null,
+            src: previewImage?.url,
+            title: previewImage?.title,
+            onVisibleChange: (visible) => {
+              if (!visible) setPreviewImage(null);
+            },
+          }}
+        />
       </ContentContainer>
     </PageContainer>
   );
@@ -491,5 +606,20 @@ function formatSize(bytes) {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
+
+// 格式化速度显示
+const formatSpeed = (speed) => {
+  if (!speed) return '0 KB/s';
+  const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+  let value = speed;
+  let unitIndex = 0;
+  
+  while (value > 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+  
+  return `${value.toFixed(2)} ${units[unitIndex]}`;
+};
 
 export default CloudDrivePage; 

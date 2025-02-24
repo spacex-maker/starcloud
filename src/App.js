@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import GlobalStyles from './styles/GlobalStyles';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ConfigProvider, theme, message } from 'antd';
@@ -13,6 +13,19 @@ import ProfilePage from "pages/Profile";
 import About from "pages/About";
 import PartnerSurvey from "pages/PartnerSurvey";
 import CloudDrivePage from "./pages/CloudDrive"; // 新增云盘页面组件
+import zhCN from 'antd/locale/zh_CN';
+import enUS from 'antd/locale/en_US';
+import jaJP from 'antd/locale/ja_JP';
+import koKR from 'antd/locale/ko_KR';
+import { LocaleProvider } from './contexts/LocaleContext';
+
+// 语言配置映射
+const localeMap = {
+  zh_CN: zhCN,
+  en_US: enUS,
+  ja_JP: jaJP,
+  ko_KR: koKR,
+};
 
 export default function App() {
   const [isDark, setIsDark] = React.useState(() => {
@@ -20,6 +33,8 @@ export default function App() {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     return savedTheme === 'dark' || (!savedTheme && prefersDark);
   });
+
+  const [locale, setLocale] = useState('zh_CN');
 
   // 设置 message 全局配置
   message.config({
@@ -75,21 +90,26 @@ export default function App() {
   }, [handleThemeChange, isDark]);
 
   return (
-    <ThemeProvider theme={{ 
-      mode: isDark ? 'dark' : 'light',
-      setTheme: handleThemeChange 
-    }}>
-      <ConfigProvider theme={themeConfig}>
-        <GlobalStyles />
-        <Router>
-          <Routes>
-            <Route path="/" element={<CloudDrivePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-          </Routes>
-        </Router>
-      </ConfigProvider>
-    </ThemeProvider>
+    <LocaleProvider>
+      <ThemeProvider theme={{ 
+        mode: isDark ? 'dark' : 'light',
+        setTheme: handleThemeChange 
+      }}>
+        <ConfigProvider
+          locale={localeMap[locale]}
+          theme={themeConfig}
+        >
+          <GlobalStyles />
+          <Router>
+            <Routes>
+              <Route path="/" element={<CloudDrivePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+            </Routes>
+          </Router>
+        </ConfigProvider>
+      </ThemeProvider>
+    </LocaleProvider>
   );
 }
