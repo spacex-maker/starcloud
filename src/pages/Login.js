@@ -459,6 +459,32 @@ const PoweredBy = styled.div`
     : 'rgba(255, 255, 255, 0.5)'};
 `;
 
+// 添加一个新的样式组件
+const PhilosophyQuote = styled.div`
+  position: absolute;
+  bottom: 3.5rem; // 放在版权信息上方
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: ${props => props.theme.mode === 'dark' 
+    ? 'rgba(255, 255, 255, 0.75)' 
+    : 'rgba(0, 0, 0, 0.65)'};
+  font-style: italic;
+  padding: 0.75rem 1.5rem;
+  max-width: 600px;
+  margin: 0 auto;
+  
+  &::before, &::after {
+    content: '"';
+    font-family: serif;
+    font-size: 1.2em;
+    opacity: 0.7;
+  }
+`;
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -693,8 +719,12 @@ export default function LoginPage() {
                 </Form>
         </LoginBox>
       </RightSection>
+      <PhilosophyQuote>
+        技术应是为人民服务
+      </PhilosophyQuote>
+      
       <PoweredBy>
-        Powered by ProTX
+        © 2024 ProTX Team. All rights reserved.
       </PoweredBy>
     </PageContainer>
   );
