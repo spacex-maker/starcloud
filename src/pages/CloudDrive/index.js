@@ -22,6 +22,7 @@ import { cosService } from 'services/cos';
 import { message } from 'antd';
 import UploadProgressModal from 'components/modals/UploadProgressModal';
 import instance from 'api/axios'; // 导入已配置的 axios 实例
+import { Helmet } from 'react-helmet';
 
 const { Content, Sider } = Layout;
 const { confirm } = Modal;
@@ -769,184 +770,190 @@ const CloudDrivePage = () => {
   );
 
   return (
-    <PageContainer>
-      <SimpleHeader />
-      <ContentContainer>
-        <StyledLayout>
-          <StyledSider width={200}>
-            <Menu
-              mode="inline"
-              selectedKeys={selectedKeys}
-              onSelect={({ key }) => setSelectedKeys([key])}
-              items={[
-                {
-                  key: 'all',
-                  icon: <FolderOutlined />,
-                  label: '全部文件',
-                },
-                {
-                  key: 'images',
-                  icon: <FolderOutlined />,
-                  label: '图片',
-                },
-                {
-                  key: 'documents',
-                  icon: <FolderOutlined />,
-                  label: '文档',
-                },
-                {
-                  key: 'videos',
-                  icon: <FolderOutlined />,
-                  label: '视频',
-                },
-              ]}
-            />
-            <AboutButton
-              type="text"
-              icon={<InfoCircleOutlined />}
-              onClick={() => setIsAboutModalVisible(true)}
-            >
-              关于我们
-            </AboutButton>
-          </StyledSider>
-          
-          <MainLayout>
-            <StyledContent>
-              <PathContainer>
-                <HomeOutlined 
-                  style={{ 
-                    color: 'var(--ant-color-text-secondary)',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => {
-                    console.log('Home icon clicked');
-                    handleHomeClick();
-                  }}
-                />
-                {pathHistory.map((path, index) => (
-                  <React.Fragment key={index}>
-                    <PathSeparator />
-                    <PathItem 
-                      onClick={() => {
-                        console.log('Path item clicked:', path.name, 'index:', index);
-                        handlePathClick(index);
-                      }}
-                    >
-                      {path.name}
-                    </PathItem>
-                  </React.Fragment>
-                ))}
-              </PathContainer>
-              
-              <ActionBar>
-                <Space>
-                  <Upload
-                    multiple
-                    showUploadList={false}
-                    beforeUpload={(file, fileList) => {
-                      handleUpload(fileList);
-                      return false; // 阻止默认上传
-                    }}
-                    disabled={isUploading}
-                  >
-                    <Button 
-                      type="primary" 
-                      icon={<CloudUploadOutlined />}
-                      loading={isUploading}
-                    >
-                      上传文件
-                    </Button>
-                  </Upload>
-                  <Button 
-                    icon={<FolderOutlined />}
-                    onClick={() => setNewFolderModalVisible(true)}
-                  >
-                    新建文件夹
-                  </Button>
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={() => loadFiles(currentParentId)}
-                    loading={loading}
-                  >
-                    刷新
-                  </Button>
-                </Space>
-                <Input
-                  placeholder="搜索文件"
-                  prefix={<SearchOutlined />}
-                  style={{ width: 200 }}
-                  value={searchText}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  allowClear
-                />
-              </ActionBar>
-
-              <Table
-                columns={columns}
-                dataSource={filteredFiles}
-                loading={loading}
-                pagination={false}
-                locale={{
-                  emptyText: searchText ? '没有找到相关文件' : '当前文件夹为空'
-                }}
-                scroll={{
-                  y: 'calc(100vh - 300px)',
-                  x: 1200
-                }}
-                size="middle"
-                rowKey="key"
+    <>
+      <Helmet>
+        <title>我的云盘 - MyStorageX</title>
+        <meta name="description" content="MyStorageX 云盘 - 安全存储和管理您的文件" />
+      </Helmet>
+      <PageContainer>
+        <SimpleHeader />
+        <ContentContainer>
+          <StyledLayout>
+            <StyledSider width={200}>
+              <Menu
+                mode="inline"
+                selectedKeys={selectedKeys}
+                onSelect={({ key }) => setSelectedKeys([key])}
+                items={[
+                  {
+                    key: 'all',
+                    icon: <FolderOutlined />,
+                    label: '全部文件',
+                  },
+                  {
+                    key: 'images',
+                    icon: <FolderOutlined />,
+                    label: '图片',
+                  },
+                  {
+                    key: 'documents',
+                    icon: <FolderOutlined />,
+                    label: '文档',
+                  },
+                  {
+                    key: 'videos',
+                    icon: <FolderOutlined />,
+                    label: '视频',
+                  },
+                ]}
               />
-            </StyledContent>
+              <AboutButton
+                type="text"
+                icon={<InfoCircleOutlined />}
+                onClick={() => setIsAboutModalVisible(true)}
+              >
+                关于我们
+              </AboutButton>
+            </StyledSider>
             
-            <Footer>
-              <FooterContent>
-                <span>©{new Date().getFullYear()}</span>
-                <span>MyStorageX</span>
-                <span>版权所有</span>
-              </FooterContent>
-            </Footer>
-          </MainLayout>
-        </StyledLayout>
+            <MainLayout>
+              <StyledContent>
+                <PathContainer>
+                  <HomeOutlined 
+                    style={{ 
+                      color: 'var(--ant-color-text-secondary)',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => {
+                      console.log('Home icon clicked');
+                      handleHomeClick();
+                    }}
+                  />
+                  {pathHistory.map((path, index) => (
+                    <React.Fragment key={index}>
+                      <PathSeparator />
+                      <PathItem 
+                        onClick={() => {
+                          console.log('Path item clicked:', path.name, 'index:', index);
+                          handlePathClick(index);
+                        }}
+                      >
+                        {path.name}
+                      </PathItem>
+                    </React.Fragment>
+                  ))}
+                </PathContainer>
+                
+                <ActionBar>
+                  <Space>
+                    <Upload
+                      multiple
+                      showUploadList={false}
+                      beforeUpload={(file, fileList) => {
+                        handleUpload(fileList);
+                        return false; // 阻止默认上传
+                      }}
+                      disabled={isUploading}
+                    >
+                      <Button 
+                        type="primary" 
+                        icon={<CloudUploadOutlined />}
+                        loading={isUploading}
+                      >
+                        上传文件
+                      </Button>
+                    </Upload>
+                    <Button 
+                      icon={<FolderOutlined />}
+                      onClick={() => setNewFolderModalVisible(true)}
+                    >
+                      新建文件夹
+                    </Button>
+                    <Button
+                      icon={<ReloadOutlined />}
+                      onClick={() => loadFiles(currentParentId)}
+                      loading={loading}
+                    >
+                      刷新
+                    </Button>
+                  </Space>
+                  <Input
+                    placeholder="搜索文件"
+                    prefix={<SearchOutlined />}
+                    style={{ width: 200 }}
+                    value={searchText}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    allowClear
+                  />
+                </ActionBar>
 
-        <AboutModal 
-          isVisible={isAboutModalVisible}
-          onClose={() => setIsAboutModalVisible(false)}
-        />
-        <UploadProgressModal
-          visible={uploadModalVisible}
-          uploading={isUploading}
-          progress={uploadProgress}
-          speeds={uploadSpeeds}
-          startTimes={uploadStartTimes}
-          fileSizes={uploadFileSizes}
-          onClose={() => {
-            if (!isUploading) {
-              setUploadModalVisible(false);
-              setUploadProgress({});
-              setUploadSpeeds({});
-              setUploadStartTimes({});
-              setUploadFileSizes({});
-            }
-          }}
-        />
+                <Table
+                  columns={columns}
+                  dataSource={filteredFiles}
+                  loading={loading}
+                  pagination={false}
+                  locale={{
+                    emptyText: searchText ? '没有找到相关文件' : '当前文件夹为空'
+                  }}
+                  scroll={{
+                    y: 'calc(100vh - 300px)',
+                    x: 1200
+                  }}
+                  size="middle"
+                  rowKey="key"
+                />
+              </StyledContent>
+              
+              <Footer>
+                <FooterContent>
+                  <span>©{new Date().getFullYear()}</span>
+                  <span>MyStorageX</span>
+                  <span>版权所有</span>
+                </FooterContent>
+              </Footer>
+            </MainLayout>
+          </StyledLayout>
 
-        {/* 渲染新建文件夹模态框 */}
-        {renderNewFolderModal()}
+          <AboutModal 
+            isVisible={isAboutModalVisible}
+            onClose={() => setIsAboutModalVisible(false)}
+          />
+          <UploadProgressModal
+            visible={uploadModalVisible}
+            uploading={isUploading}
+            progress={uploadProgress}
+            speeds={uploadSpeeds}
+            startTimes={uploadStartTimes}
+            fileSizes={uploadFileSizes}
+            onClose={() => {
+              if (!isUploading) {
+                setUploadModalVisible(false);
+                setUploadProgress({});
+                setUploadSpeeds({});
+                setUploadStartTimes({});
+                setUploadFileSizes({});
+              }
+            }}
+          />
 
-        {/* 添加图片预览组件 */}
-        <Image
-          style={{ display: 'none' }}
-          preview={{
-            visible: previewImage !== null,
-            src: previewImage?.url,
-            title: previewImage?.title,
-            onVisibleChange: (visible) => {
-              if (!visible) setPreviewImage(null);
-            },
-          }}
-        />
-      </ContentContainer>
-    </PageContainer>
+          {/* 渲染新建文件夹模态框 */}
+          {renderNewFolderModal()}
+
+          {/* 添加图片预览组件 */}
+          <Image
+            style={{ display: 'none' }}
+            preview={{
+              visible: previewImage !== null,
+              src: previewImage?.url,
+              title: previewImage?.title,
+              onVisibleChange: (visible) => {
+                if (!visible) setPreviewImage(null);
+              },
+            }}
+          />
+        </ContentContainer>
+      </PageContainer>
+    </>
   );
 };
 

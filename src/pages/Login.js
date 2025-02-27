@@ -21,6 +21,7 @@ import {
 import { Dropdown } from 'antd';
 import { useLocale } from 'contexts/LocaleContext';
 import { FormattedMessage, useIntl } from 'react-intl';
+import { Helmet } from 'react-helmet';
 
 // 定义跑马灯效果
 const marqueeGlow = keyframes`
@@ -659,166 +660,172 @@ export default function LoginPage() {
   };
 
   return (
-    <PageContainer>
-      <TopRightControls>
-        <IconButton onClick={toggleTheme}>
-          {isDark ? <SunOutlined /> : <MoonOutlined />}
-        </IconButton>
-        <Dropdown
-          menu={{
-            items: languageItems,
-            selectedKeys: [locale],
-            onClick: ({ key }) => {
-              changeLocale(key);
-            },
-          }}
-          placement="bottomRight"
-        >
-          <IconButton>
-            <GlobalOutlined />
+    <>
+      <Helmet>
+        <title>登录 - MyStorageX</title>
+        <meta name="description" content="登录 MyStorageX，开启您的云存储之旅" />
+      </Helmet>
+      <PageContainer>
+        <TopRightControls>
+          <IconButton onClick={toggleTheme}>
+            {isDark ? <SunOutlined /> : <MoonOutlined />}
           </IconButton>
-        </Dropdown>
-      </TopRightControls>
+          <Dropdown
+            menu={{
+              items: languageItems,
+              selectedKeys: [locale],
+              onClick: ({ key }) => {
+                changeLocale(key);
+              },
+            }}
+            placement="bottomRight"
+          >
+            <IconButton>
+              <GlobalOutlined />
+            </IconButton>
+          </Dropdown>
+        </TopRightControls>
 
-      <LeftSection>
-        <WelcomeText>
-          <h1>
-            <FormattedMessage id="login.welcome" />
-          </h1>
-          <p>
-            <FormattedMessage id="login.description" />
-          </p>
-        </WelcomeText>
-      </LeftSection>
+        <LeftSection>
+          <WelcomeText>
+            <h1>
+              <FormattedMessage id="login.welcome" />
+            </h1>
+            <p>
+              <FormattedMessage id="login.description" />
+            </p>
+          </WelcomeText>
+        </LeftSection>
 
-      <RightSection>
-        <LoginBox>
-          <Logo>
-            <FormattedMessage id="login.title" />
-          </Logo>
-          <Form onSubmit={handleSubmit} autoComplete="off">
-            <FormItem>
-              <InputWrapper>
-                <Input
-                  type="text"
-                  value={email}
-                  onChange={handleEmailChange}
-                  required
-                  placeholder={intl.formatMessage({ id: 'login.email.placeholder' })}
-                  autoComplete="off"
-                  onFocus={() => setEmailFocused(true)}
-                  onBlur={(e) => {
-                    // 检查点击是否在下拉按钮上，如果是则不失去焦点
-                    if (
-                      emailSuffixButtonRef.current && 
-                      !emailSuffixButtonRef.current.contains(e.relatedTarget)
-                    ) {
-                      setEmailFocused(false);
-                    }
-                  }}
-                />
-                <BorderGlow className={emailFocused ? "active" : ""} />
-                {!email.includes('@') && (
-                  <EmailSuffixButton
-                    type="button"
-                    onClick={handleSuffixButtonClick}
-                    ref={emailSuffixButtonRef}
-                  >
-                    <DownOutlined />
-                  </EmailSuffixButton>
-                )}
-                <EmailSuffixDropdown 
-                  ref={dropdownRef}
-                  className={showSuffixDropdown ? "show" : ""}
-                >
-                  {emailSuffixes.map((suffix, index) => (
-                    <EmailSuffixOption
-                      key={index}
+        <RightSection>
+          <LoginBox>
+            <Logo>
+              <FormattedMessage id="login.title" />
+            </Logo>
+            <Form onSubmit={handleSubmit} autoComplete="off">
+              <FormItem>
+                <InputWrapper>
+                  <Input
+                    type="text"
+                    value={email}
+                    onChange={handleEmailChange}
+                    required
+                    placeholder={intl.formatMessage({ id: 'login.email.placeholder' })}
+                    autoComplete="off"
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={(e) => {
+                      // 检查点击是否在下拉按钮上，如果是则不失去焦点
+                      if (
+                        emailSuffixButtonRef.current && 
+                        !emailSuffixButtonRef.current.contains(e.relatedTarget)
+                      ) {
+                        setEmailFocused(false);
+                      }
+                    }}
+                  />
+                  <BorderGlow className={emailFocused ? "active" : ""} />
+                  {!email.includes('@') && (
+                    <EmailSuffixButton
                       type="button"
-                      onClick={() => handleSuffixClick(suffix)}
+                      onClick={handleSuffixButtonClick}
+                      ref={emailSuffixButtonRef}
                     >
-                      {suffix}
-                    </EmailSuffixOption>
-                  ))}
-                </EmailSuffixDropdown>
-              </InputWrapper>
-            </FormItem>
+                      <DownOutlined />
+                    </EmailSuffixButton>
+                  )}
+                  <EmailSuffixDropdown 
+                    ref={dropdownRef}
+                    className={showSuffixDropdown ? "show" : ""}
+                  >
+                    {emailSuffixes.map((suffix, index) => (
+                      <EmailSuffixOption
+                        key={index}
+                        type="button"
+                        onClick={() => handleSuffixClick(suffix)}
+                      >
+                        {suffix}
+                      </EmailSuffixOption>
+                    ))}
+                  </EmailSuffixDropdown>
+                </InputWrapper>
+              </FormItem>
 
-            <FormItem>
-              <InputWrapper>
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder={intl.formatMessage({ id: 'login.password.placeholder' })}
-                  autoComplete="new-password"
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
+              <FormItem>
+                <InputWrapper>
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder={intl.formatMessage({ id: 'login.password.placeholder' })}
+                    autoComplete="new-password"
+                    onFocus={() => setPasswordFocused(true)}
+                    onBlur={() => setPasswordFocused(false)}
+                  />
+                  <BorderGlow className={passwordFocused ? "active" : ""} />
+                  <PasswordToggle
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex="-1"
+                  >
+                    {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                  </PasswordToggle>
+                </InputWrapper>
+              </FormItem>
+
+              {error && <ErrorText>{error}</ErrorText>}
+
+              <SubmitButton type="submit" disabled={loading}>
+                <FormattedMessage 
+                  id={loading ? 'login.loading' : 'login.button'} 
                 />
-                <BorderGlow className={passwordFocused ? "active" : ""} />
-                <PasswordToggle
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  tabIndex="-1"
-                >
-                  {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-                </PasswordToggle>
-              </InputWrapper>
-            </FormItem>
+              </SubmitButton>
 
-            {error && <ErrorText>{error}</ErrorText>}
+              <Divider>
+                <span>
+                  <FormattedMessage id="login.divider" />
+                </span>
+              </Divider>
 
-            <SubmitButton type="submit" disabled={loading}>
-              <FormattedMessage 
-                id={loading ? 'login.loading' : 'login.button'} 
-              />
-            </SubmitButton>
+              <SocialLogin>
+                <SocialButton type="button" socialType="google">
+                  <GoogleOutlined />
+                </SocialButton>
+                <SocialButton type="button" socialType="github">
+                  <GithubOutlined />
+                </SocialButton>
+                <SocialButton type="button" socialType="apple">
+                  <AppleOutlined />
+                </SocialButton>
+                <SocialButton type="button" socialType="facebook">
+                  <FacebookOutlined />
+                </SocialButton>
+                <SocialButton type="button" socialType="twitter">
+                  <TwitterOutlined />
+                </SocialButton>
+                <SocialButton type="button" socialType="linkedin">
+                  <LinkedinOutlined />
+                </SocialButton>
+              </SocialLogin>
 
-            <Divider>
-              <span>
-                <FormattedMessage id="login.divider" />
-              </span>
-            </Divider>
-
-            <SocialLogin>
-              <SocialButton type="button" socialType="google">
-                <GoogleOutlined />
-              </SocialButton>
-              <SocialButton type="button" socialType="github">
-                <GithubOutlined />
-              </SocialButton>
-              <SocialButton type="button" socialType="apple">
-                <AppleOutlined />
-              </SocialButton>
-              <SocialButton type="button" socialType="facebook">
-                <FacebookOutlined />
-              </SocialButton>
-              <SocialButton type="button" socialType="twitter">
-                <TwitterOutlined />
-              </SocialButton>
-              <SocialButton type="button" socialType="linkedin">
-                <LinkedinOutlined />
-              </SocialButton>
-            </SocialLogin>
-
-            <Footer>
-              <FormattedMessage id="login.signup" />{' '}
-              <Link to="/signup">
-                <FormattedMessage id="login.signup.link" />
-              </Link>
-            </Footer>
-          </Form>
-        </LoginBox>
-      </RightSection>
-      <PhilosophyQuote>
-        技术应是为人民服务
-      </PhilosophyQuote>
-      
-      <PoweredBy>
-        © 2024 ProTX Team. All rights reserved.
-      </PoweredBy>
-    </PageContainer>
+              <Footer>
+                <FormattedMessage id="login.signup" />{' '}
+                <Link to="/signup">
+                  <FormattedMessage id="login.signup.link" />
+                </Link>
+              </Footer>
+            </Form>
+          </LoginBox>
+        </RightSection>
+        <PhilosophyQuote>
+          技术应是为人民服务
+        </PhilosophyQuote>
+        
+        <PoweredBy>
+          © 2024 ProTX Team. All rights reserved.
+        </PoweredBy>
+      </PageContainer>
+    </>
   );
 }
 

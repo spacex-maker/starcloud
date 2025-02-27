@@ -22,6 +22,7 @@ import {
 import { FormattedMessage, useIntl } from "react-intl";
 import { useLocale } from "../contexts/LocaleContext";
 import axios from '../api/axios';
+import { Helmet } from 'react-helmet';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -666,240 +667,246 @@ export default function SignupPage() {
   }, [showSuffixDropdown]);
 
   return (
-    <PageContainer>
-      <TopRightControls>
-        <IconButton onClick={toggleTheme}>
-          {isDark ? <SunOutlined /> : <MoonOutlined />}
-        </IconButton>
-        <Dropdown
-          menu={{
-            items: items,
-            selectedKeys: [locale],
-            onClick: ({ key }) => changeLocale(key),
-          }}
-          placement="bottomRight"
-        >
-          <IconButton>
-            <GlobalOutlined />
+    <>
+      <Helmet>
+        <title>注册 - MyStorageX</title>
+        <meta name="description" content="注册 MyStorageX，获取专属云存储空间" />
+      </Helmet>
+      <PageContainer>
+        <TopRightControls>
+          <IconButton onClick={toggleTheme}>
+            {isDark ? <SunOutlined /> : <MoonOutlined />}
           </IconButton>
-        </Dropdown>
-      </TopRightControls>
+          <Dropdown
+            menu={{
+              items: items,
+              selectedKeys: [locale],
+              onClick: ({ key }) => changeLocale(key),
+            }}
+            placement="bottomRight"
+          >
+            <IconButton>
+              <GlobalOutlined />
+            </IconButton>
+          </Dropdown>
+        </TopRightControls>
 
-      <LeftSection>
-        <WelcomeText>
-          <h1>
-            <FormattedMessage id="signup.welcome" />
-          </h1>
-        </WelcomeText>
-        <Description>
-          <FormattedMessage id="signup.description" />
-        </Description>
-      </LeftSection>
+        <LeftSection>
+          <WelcomeText>
+            <h1>
+              <FormattedMessage id="signup.welcome" />
+            </h1>
+          </WelcomeText>
+          <Description>
+            <FormattedMessage id="signup.description" />
+          </Description>
+        </LeftSection>
 
-      <RightSection>
-        <LoginBox>
-          <Logo>
-            <FormattedMessage id="signup.title" />
-          </Logo>
-          <Form onSubmit={handleSubmit} autoComplete="off">
-            <FormItem>
-              <InputWrapper>
-                <Input
-                  as="div"
-                  onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                  style={{ 
-                    padding: 0,
-                    height: '50px',
-                    lineHeight: '50px'
-                  }}
-                >
-                  <SelectedCountryContent className={!countryCode ? 'placeholder' : ''}>
-                    {countryCode && countries.find(c => c.code === countryCode) ? (
-                      <>
-                        <CountryFlag 
-                          src={countries.find(c => c.code === countryCode)?.flagImageUrl} 
-                          alt={countries.find(c => c.code === countryCode)?.name}
-                          onError={(e) => {
-                            e.target.src = '/default-flag.png';
-                          }}
-                        />
-                        <span>{countries.find(c => c.code === countryCode)?.name}</span>
-                      </>
-                    ) : (
-                      <span>选择国家/地区</span>
-                    )}
-                  </SelectedCountryContent>
-                </Input>
-                <BorderGlow className={countryFocused ? "active" : ""} />
-                <EmailSuffixButton
-                  type="button"
-                  onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                  ref={countryButtonRef}
-                  style={{ right: '16px' }}
-                >
-                  <DownOutlined />
-                </EmailSuffixButton>
-                <CountryDropdown 
-                  ref={countryDropdownRef}
-                  className={showCountryDropdown ? "show" : ""}
-                >
-                  {countries.map(country => (
-                    <CountryOption
-                      key={country.code}
-                      type="button"
-                      onClick={() => {
-                        setCountryCode(country.code);
-                        setShowCountryDropdown(false);
-                      }}
-                    >
-                      <CountryOptionContent>
-                        <CountryFlag 
-                          src={country.flagImageUrl} 
-                          alt={country.name}
-                          onError={(e) => {
-                            e.target.src = '/default-flag.png';
-                          }}
-                        />
-                        <span>{country.name}</span>
-                      </CountryOptionContent>
-                    </CountryOption>
-                  ))}
-                </CountryDropdown>
-              </InputWrapper>
-            </FormItem>
-
-            <FormItem>
-              <InputWrapper>
-                <Input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  placeholder={intl.formatMessage({ id: "signup.username.placeholder" })}
-                  autoComplete="off"
-                  onFocus={() => setUsernameFocused(true)}
-                  onBlur={() => setUsernameFocused(false)}
-                />
-                <BorderGlow className={usernameFocused ? "active" : ""} />
-              </InputWrapper>
-            </FormItem>
-
-            <FormItem>
-              <InputWrapper>
-                <Input
-                  type="text"
-                  value={email}
-                  onChange={handleEmailChange}
-                  required
-                  placeholder={intl.formatMessage({ id: "signup.email.placeholder" })}
-                  autoComplete="off"
-                  onFocus={() => setEmailFocused(true)}
-                  onBlur={(e) => {
-                    // 检查点击是否在下拉按钮上，如果是则不失去焦点
-                    if (
-                      emailSuffixButtonRef.current && 
-                      !emailSuffixButtonRef.current.contains(e.relatedTarget)
-                    ) {
-                      setEmailFocused(false);
-                    }
-                  }}
-                />
-                <BorderGlow className={emailFocused ? "active" : ""} />
-                {!email.includes('@') && (
+        <RightSection>
+          <LoginBox>
+            <Logo>
+              <FormattedMessage id="signup.title" />
+            </Logo>
+            <Form onSubmit={handleSubmit} autoComplete="off">
+              <FormItem>
+                <InputWrapper>
+                  <Input
+                    as="div"
+                    onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                    style={{ 
+                      padding: 0,
+                      height: '50px',
+                      lineHeight: '50px'
+                    }}
+                  >
+                    <SelectedCountryContent className={!countryCode ? 'placeholder' : ''}>
+                      {countryCode && countries.find(c => c.code === countryCode) ? (
+                        <>
+                          <CountryFlag 
+                            src={countries.find(c => c.code === countryCode)?.flagImageUrl} 
+                            alt={countries.find(c => c.code === countryCode)?.name}
+                            onError={(e) => {
+                              e.target.src = '/default-flag.png';
+                            }}
+                          />
+                          <span>{countries.find(c => c.code === countryCode)?.name}</span>
+                        </>
+                      ) : (
+                        <span>选择国家/地区</span>
+                      )}
+                    </SelectedCountryContent>
+                  </Input>
+                  <BorderGlow className={countryFocused ? "active" : ""} />
                   <EmailSuffixButton
                     type="button"
-                    onClick={handleSuffixButtonClick}
-                    ref={emailSuffixButtonRef}
+                    onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                    ref={countryButtonRef}
+                    style={{ right: '16px' }}
                   >
                     <DownOutlined />
                   </EmailSuffixButton>
-                )}
-                <EmailSuffixDropdown 
-                  ref={dropdownRef}
-                  className={showSuffixDropdown ? "show" : ""}
-                >
-                  {emailSuffixes.map((suffix, index) => (
-                    <EmailSuffixOption
-                      key={index}
+                  <CountryDropdown 
+                    ref={countryDropdownRef}
+                    className={showCountryDropdown ? "show" : ""}
+                  >
+                    {countries.map(country => (
+                      <CountryOption
+                        key={country.code}
+                        type="button"
+                        onClick={() => {
+                          setCountryCode(country.code);
+                          setShowCountryDropdown(false);
+                        }}
+                      >
+                        <CountryOptionContent>
+                          <CountryFlag 
+                            src={country.flagImageUrl} 
+                            alt={country.name}
+                            onError={(e) => {
+                              e.target.src = '/default-flag.png';
+                            }}
+                          />
+                          <span>{country.name}</span>
+                        </CountryOptionContent>
+                      </CountryOption>
+                    ))}
+                  </CountryDropdown>
+                </InputWrapper>
+              </FormItem>
+
+              <FormItem>
+                <InputWrapper>
+                  <Input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    placeholder={intl.formatMessage({ id: "signup.username.placeholder" })}
+                    autoComplete="off"
+                    onFocus={() => setUsernameFocused(true)}
+                    onBlur={() => setUsernameFocused(false)}
+                  />
+                  <BorderGlow className={usernameFocused ? "active" : ""} />
+                </InputWrapper>
+              </FormItem>
+
+              <FormItem>
+                <InputWrapper>
+                  <Input
+                    type="text"
+                    value={email}
+                    onChange={handleEmailChange}
+                    required
+                    placeholder={intl.formatMessage({ id: "signup.email.placeholder" })}
+                    autoComplete="off"
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={(e) => {
+                      // 检查点击是否在下拉按钮上，如果是则不失去焦点
+                      if (
+                        emailSuffixButtonRef.current && 
+                        !emailSuffixButtonRef.current.contains(e.relatedTarget)
+                      ) {
+                        setEmailFocused(false);
+                      }
+                    }}
+                  />
+                  <BorderGlow className={emailFocused ? "active" : ""} />
+                  {!email.includes('@') && (
+                    <EmailSuffixButton
                       type="button"
-                      onClick={() => handleSuffixClick(suffix)}
+                      onClick={handleSuffixButtonClick}
+                      ref={emailSuffixButtonRef}
                     >
-                      {suffix}
-                    </EmailSuffixOption>
-                  ))}
-                </EmailSuffixDropdown>
-              </InputWrapper>
-            </FormItem>
+                      <DownOutlined />
+                    </EmailSuffixButton>
+                  )}
+                  <EmailSuffixDropdown 
+                    ref={dropdownRef}
+                    className={showSuffixDropdown ? "show" : ""}
+                  >
+                    {emailSuffixes.map((suffix, index) => (
+                      <EmailSuffixOption
+                        key={index}
+                        type="button"
+                        onClick={() => handleSuffixClick(suffix)}
+                      >
+                        {suffix}
+                      </EmailSuffixOption>
+                    ))}
+                  </EmailSuffixDropdown>
+                </InputWrapper>
+              </FormItem>
 
-            <FormItem>
-              <InputWrapper>
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder={intl.formatMessage({ id: "signup.password.placeholder" })}
-                  autoComplete="new-password"
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
+              <FormItem>
+                <InputWrapper>
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder={intl.formatMessage({ id: "signup.password.placeholder" })}
+                    autoComplete="new-password"
+                    onFocus={() => setPasswordFocused(true)}
+                    onBlur={() => setPasswordFocused(false)}
+                  />
+                  <BorderGlow className={passwordFocused ? "active" : ""} />
+                  <PasswordToggle
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex="-1"
+                  >
+                    {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                  </PasswordToggle>
+                </InputWrapper>
+              </FormItem>
+
+              <FormItem>
+                <InputWrapper>
+                  <Input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    placeholder={intl.formatMessage({ id: "signup.confirmPassword.placeholder" })}
+                    autoComplete="new-password"
+                    onFocus={() => setConfirmPasswordFocused(true)}
+                    onBlur={() => setConfirmPasswordFocused(false)}
+                  />
+                  <BorderGlow className={confirmPasswordFocused ? "active" : ""} />
+                  <PasswordToggle
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    tabIndex="-1"
+                  >
+                    {showConfirmPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                  </PasswordToggle>
+                </InputWrapper>
+              </FormItem>
+
+              {error && <ErrorText>{error}</ErrorText>}
+
+              <SubmitButton type="submit" disabled={loading}>
+                <FormattedMessage 
+                  id={loading ? "signup.loading" : "signup.button"} 
                 />
-                <BorderGlow className={passwordFocused ? "active" : ""} />
-                <PasswordToggle
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  tabIndex="-1"
-                >
-                  {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-                </PasswordToggle>
-              </InputWrapper>
-            </FormItem>
+              </SubmitButton>
 
-            <FormItem>
-              <InputWrapper>
-                <Input
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  placeholder={intl.formatMessage({ id: "signup.confirmPassword.placeholder" })}
-                  autoComplete="new-password"
-                  onFocus={() => setConfirmPasswordFocused(true)}
-                  onBlur={() => setConfirmPasswordFocused(false)}
-                />
-                <BorderGlow className={confirmPasswordFocused ? "active" : ""} />
-                <PasswordToggle
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  tabIndex="-1"
-                >
-                  {showConfirmPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-                </PasswordToggle>
-              </InputWrapper>
-            </FormItem>
-
-            {error && <ErrorText>{error}</ErrorText>}
-
-            <SubmitButton type="submit" disabled={loading}>
-              <FormattedMessage 
-                id={loading ? "signup.loading" : "signup.button"} 
-              />
-            </SubmitButton>
-
-            <Footer>
-              <FormattedMessage id="signup.login" />{' '}
-              <Link to="/login">
-                <FormattedMessage id="signup.login.link" />
-              </Link>
-            </Footer>
-          </Form>
-        </LoginBox>
-      </RightSection>
-      <PhilosophyQuote>
-        技术应是为人民服务
-      </PhilosophyQuote>
-      <PoweredBy>
-        Powered by ProTX
-      </PoweredBy>
-    </PageContainer>
+              <Footer>
+                <FormattedMessage id="signup.login" />{' '}
+                <Link to="/login">
+                  <FormattedMessage id="signup.login.link" />
+                </Link>
+              </Footer>
+            </Form>
+          </LoginBox>
+        </RightSection>
+        <PhilosophyQuote>
+          技术应是为人民服务
+        </PhilosophyQuote>
+        <PoweredBy>
+          Powered by ProTX
+        </PoweredBy>
+      </PageContainer>
+    </>
   );
 }

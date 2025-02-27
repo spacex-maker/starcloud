@@ -18,6 +18,7 @@ import enUS from 'antd/locale/en_US';
 import jaJP from 'antd/locale/ja_JP';
 import koKR from 'antd/locale/ko_KR';
 import { LocaleProvider } from './contexts/LocaleContext';
+import { Helmet } from 'react-helmet';
 
 // 语言配置映射
 const localeMap = {
@@ -91,6 +92,10 @@ export default function App() {
 
   return (
     <LocaleProvider>
+      <Helmet>
+        <meta name="application-name" content="MyStorageX" />
+        <meta name="apple-mobile-web-app-title" content="MyStorageX" />
+      </Helmet>
       <ThemeProvider theme={{ 
         mode: isDark ? 'dark' : 'light',
         setTheme: handleThemeChange 
