@@ -31,11 +31,8 @@ export const auth = {
   // 注册
   register: async (data) => {
     try {
-      const response = await axios.post('/auth/register', data);
-      return {
-        success: true,
-        data: response.data
-      };
+      const response = await axios.post('/productx/user/cos-register', data);
+      return response.data;
     } catch (error) {
       return {
         success: false,
