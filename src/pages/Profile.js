@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import SimpleHeader from "components/headers/simple.js";
 import { ReactComponent as EditIcon } from "feather-icons/dist/icons/edit-2.svg";
 import { ReactComponent as SaveIcon } from "feather-icons/dist/icons/check.svg";
@@ -45,6 +45,32 @@ const Content = styled.div`
   max-width: 1000px;  // 限制最大宽度
 `;
 
+// 定义跑马灯效果
+const marqueeGlow = keyframes`
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+`;
+
+// 定义脉冲效果
+const pulseEffect = keyframes`
+  0% {
+    transform: scale(0.97);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.97);
+    opacity: 0.8;
+  }
+`;
+
 const ProfileHeader = styled(motion.div)`
   background: var(--ant-color-bg-container);
   border-radius: 12px;
@@ -67,7 +93,66 @@ const ProfileHeader = styled(motion.div)`
   }
 `;
 
-const AvatarSection = tw.div`flex-shrink-0`;
+const AvatarSection = styled.div`
+  position: relative;
+  flex-shrink: 0;
+`;
+
+const AvatarGlow = styled.div`
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 16px;
+  z-index: 0;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 16px;
+    background: linear-gradient(
+      90deg, 
+      transparent 0%, 
+      #1890ff 25%, 
+      #40a9ff 50%, 
+      #1890ff 75%, 
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: ${marqueeGlow} 3s linear infinite;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    border-radius: 14px;
+    background: ${props => props.isDark ? '#141414' : '#ffffff'};
+    z-index: 0;
+  }
+`;
+
+const GlowOverlay = styled.div`
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 16px;
+  box-shadow: 0 0 8px 2px rgba(24, 144, 255, 0.3);
+  opacity: 0.7;
+  z-index: 0;
+  animation: ${pulseEffect} 2s ease-in-out infinite;
+`;
 
 const Avatar = styled.div`
   width: 88px;
@@ -77,6 +162,23 @@ const Avatar = styled.div`
   background-size: cover;
   background-position: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 1;
+`;
+
+const AvatarFallback = styled.div`
+  width: 88px;
+  height: 88px;
+  border-radius: 12px;
+  background-color: #1890ff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 2.5rem;
+  position: relative;
+  z-index: 1;
 `;
 
 const UserInfo = styled.div`
@@ -250,6 +352,29 @@ const EditButton = styled.button`
   cursor: pointer;
   transition: all 0.2s;
   border: 1px solid var(--ant-color-border);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      90deg, 
+      transparent 0%, 
+      rgba(24, 144, 255, 0.1) 25%, 
+      rgba(64, 169, 255, 0.2) 50%, 
+      rgba(24, 144, 255, 0.1) 75%, 
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: ${marqueeGlow} 3s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
 
   svg {
     width: 16px;
@@ -260,6 +385,10 @@ const EditButton = styled.button`
     color: var(--ant-color-primary);
     border-color: var(--ant-color-primary);
     background: var(--ant-color-primary-bg);
+    
+    &::before {
+      opacity: 1;
+    }
   }
 `;
 
@@ -565,10 +694,21 @@ export default () => {
       <SimpleHeader />
       <Container>
         <Content>
-          <ProfileHeader>
+          <ProfileHeader
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
             <AvatarSection>
-              <Avatar src={userInfo.avatar} />
+              <AvatarGlow isDark={document.documentElement.getAttribute('data-theme') === 'dark'} />
+              <GlowOverlay />
+              {userInfo.avatar ? (
+                <Avatar src={userInfo.avatar} />
+              ) : (
+                <AvatarFallback>{userInfo.username.charAt(0).toUpperCase()}</AvatarFallback>
+              )}
             </AvatarSection>
+            
             <UserInfo>
               <Username>{userInfo.username}</Username>
               <UserDescription>
@@ -589,6 +729,7 @@ export default () => {
                 </StatItem>
               </Stats>
             </UserInfo>
+            
             <EditButton onClick={handleEdit}>
               <EditIcon />
               编辑资料

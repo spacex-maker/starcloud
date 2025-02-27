@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { auth } from "../api/auth";
 import { base } from "../api/base";
 import { message } from "antd";
-import styled, { ThemeContext } from "styled-components";
+import styled, { ThemeContext, keyframes } from "styled-components";
 import { 
   GoogleOutlined, 
   GithubOutlined, 
@@ -21,6 +21,32 @@ import {
 import { Dropdown } from 'antd';
 import { useLocale } from 'contexts/LocaleContext';
 import { FormattedMessage, useIntl } from 'react-intl';
+
+// 定义跑马灯效果
+const marqueeGlow = keyframes`
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+`;
+
+// 定义脉冲效果
+const pulseEffect = keyframes`
+  0% {
+    transform: scale(0.97);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.97);
+    opacity: 0.8;
+  }
+`;
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -130,15 +156,53 @@ const FormItem = styled.div`
   gap: 0.5rem;
 `;
 
-const Label = styled.label`
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--ant-color-text-secondary);
-`;
-
 const InputWrapper = styled.div`
   position: relative;
   width: 100%;
+`;
+
+// 完全重新设计的边框发光效果
+const BorderGlow = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 2;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 2px; /* 控制边框宽度 */
+    border-radius: inherit;
+    background: linear-gradient(
+      90deg, 
+      transparent 0%, 
+      #1890ff 25%, 
+      #40a9ff 50%, 
+      #1890ff 75%, 
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    -webkit-mask: 
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: 
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    animation: ${marqueeGlow} 3s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  &.active::before {
+    opacity: 1;
+  }
 `;
 
 const Input = styled.input`
@@ -154,11 +218,12 @@ const Input = styled.input`
   color: var(--ant-color-text);
   font-size: 0.875rem;
   transition: all 0.3s;
+  position: relative;
+  z-index: 1;
 
   &:focus {
     outline: none;
-    border-color: var(--ant-color-primary);
-    box-shadow: 0 0 0 2px var(--ant-color-primary-bg);
+    border-color: transparent; /* 当输入框获得焦点时，隐藏原始边框 */
     background: ${props => props.theme.mode === 'dark' 
       ? 'rgba(255, 255, 255, 0.04)' 
       : '#ffffff'};
@@ -185,6 +250,7 @@ const EmailSuffixButton = styled.button`
   align-items: center;
   justify-content: center;
   transition: all 0.3s;
+  z-index: 3; /* 确保按钮在最上层 */
 
   &:hover {
     color: var(--ant-color-text);
@@ -500,6 +566,10 @@ export default function LoginPage() {
   const { locale, changeLocale } = useLocale();
   const intl = useIntl();
   const [languages, setLanguages] = useState([]); // 添加语言列表状态
+  
+  // 添加输入框焦点状态
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
   // 获取支持的语言列表
   useEffect(() => {
@@ -539,23 +609,31 @@ export default function LoginPage() {
     }
   };
 
+  // 修改邮箱后缀下拉框的处理逻辑
+  const handleSuffixButtonClick = (e) => {
+    e.preventDefault(); // 阻止默认行为
+    e.stopPropagation(); // 阻止事件冒泡
+    setShowSuffixDropdown(!showSuffixDropdown);
+  };
+  
+  // 处理点击文档其他地方关闭下拉框
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
         dropdownRef.current && 
-        emailSuffixButtonRef.current &&
         !dropdownRef.current.contains(event.target) &&
+        emailSuffixButtonRef.current && 
         !emailSuffixButtonRef.current.contains(event.target)
       ) {
         setShowSuffixDropdown(false);
       }
     };
 
-    if (showSuffixDropdown) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [showSuffixDropdown]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleEmailChange = (e) => {
     const value = e.target.value;
@@ -620,59 +698,73 @@ export default function LoginPage() {
           </Logo>
           <Form onSubmit={handleSubmit} autoComplete="off">
             <FormItem>
-                  <InputWrapper>
-                    <Input
-                      type="text"
-                      value={email}
-                      onChange={handleEmailChange}
+              <InputWrapper>
+                <Input
+                  type="text"
+                  value={email}
+                  onChange={handleEmailChange}
                   required
                   placeholder={intl.formatMessage({ id: 'login.email.placeholder' })}
                   autoComplete="off"
-                    />
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={(e) => {
+                    // 检查点击是否在下拉按钮上，如果是则不失去焦点
+                    if (
+                      emailSuffixButtonRef.current && 
+                      !emailSuffixButtonRef.current.contains(e.relatedTarget)
+                    ) {
+                      setEmailFocused(false);
+                    }
+                  }}
+                />
+                <BorderGlow className={emailFocused ? "active" : ""} />
                 {!email.includes('@') && (
-                      <EmailSuffixButton
-                        type="button"
-                        onClick={() => setShowSuffixDropdown(!showSuffixDropdown)}
-                        ref={emailSuffixButtonRef}
-                      >
+                  <EmailSuffixButton
+                    type="button"
+                    onClick={handleSuffixButtonClick}
+                    ref={emailSuffixButtonRef}
+                  >
                     <DownOutlined />
-                      </EmailSuffixButton>
-                    )}
-                    <EmailSuffixDropdown 
-                      ref={dropdownRef}
+                  </EmailSuffixButton>
+                )}
+                <EmailSuffixDropdown 
+                  ref={dropdownRef}
                   className={showSuffixDropdown ? "show" : ""}
+                >
+                  {emailSuffixes.map((suffix, index) => (
+                    <EmailSuffixOption
+                      key={index}
+                      type="button"
+                      onClick={() => handleSuffixClick(suffix)}
                     >
-                      {emailSuffixes.map((suffix, index) => (
-                        <EmailSuffixOption
-                          key={index}
-                          type="button"
-                          onClick={() => handleSuffixClick(suffix)}
-                        >
-                          {suffix}
-                        </EmailSuffixOption>
-                      ))}
-                    </EmailSuffixDropdown>
-                  </InputWrapper>
+                      {suffix}
+                    </EmailSuffixOption>
+                  ))}
+                </EmailSuffixDropdown>
+              </InputWrapper>
             </FormItem>
 
             <FormItem>
-                  <InputWrapper>
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
+              <InputWrapper>
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder={intl.formatMessage({ id: 'login.password.placeholder' })}
                   autoComplete="new-password"
-                    />
-                    <PasswordToggle
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      tabIndex="-1"
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                />
+                <BorderGlow className={passwordFocused ? "active" : ""} />
+                <PasswordToggle
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex="-1"
                 >
                   {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-                    </PasswordToggle>
-                  </InputWrapper>
+                </PasswordToggle>
+              </InputWrapper>
             </FormItem>
 
             {error && <ErrorText>{error}</ErrorText>}
@@ -681,7 +773,7 @@ export default function LoginPage() {
               <FormattedMessage 
                 id={loading ? 'login.loading' : 'login.button'} 
               />
-                    </SubmitButton>
+            </SubmitButton>
 
             <Divider>
               <span>
@@ -714,9 +806,9 @@ export default function LoginPage() {
               <FormattedMessage id="login.signup" />{' '}
               <Link to="/signup">
                 <FormattedMessage id="login.signup.link" />
-                    </Link>
+              </Link>
             </Footer>
-                </Form>
+          </Form>
         </LoginBox>
       </RightSection>
       <PhilosophyQuote>
