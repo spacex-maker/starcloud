@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth } from "../api/auth";
 import { base } from "../api/base";
-import { message, Dropdown } from "antd";
+import { message, Dropdown, Select } from "antd";
 import styled, { ThemeContext, keyframes } from "styled-components";
 import { 
   GoogleOutlined, 
@@ -16,10 +16,12 @@ import {
   MoonOutlined,
   EyeOutlined,
   EyeInvisibleOutlined,
-  DownOutlined
+  DownOutlined,
+  CaretDownOutlined
 } from '@ant-design/icons';
 import { FormattedMessage, useIntl } from "react-intl";
 import { useLocale } from "../contexts/LocaleContext";
+import axios from '../api/axios';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -452,6 +454,44 @@ const PhilosophyQuote = styled.div`
   }
 `;
 
+// 在已有的 styled components 中添加国家选择的样式
+const CountryDropdown = styled(EmailSuffixDropdown)`
+  // 继承邮箱下拉框的样式
+`;
+
+const CountryOption = styled(EmailSuffixOption)`
+  // 继承邮箱选项的样式
+`;
+
+// 添加国旗图标的样式
+const CountryFlag = styled.img`
+  width: 28px;  // 增加宽度
+  height: 21px; // 保持宽高比
+  margin-right: 12px;
+  border-radius: 4px;
+  object-fit: cover;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+`;
+
+const CountryOptionContent = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+// 修改输入框内容的显示样式
+const SelectedCountryContent = styled.div`
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 16px;
+  gap: 12px;
+  color: var(--ant-color-text);
+  
+  &.placeholder {
+    color: #8E99AB;
+  }
+`;
+
 export default function SignupPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
@@ -470,12 +510,20 @@ export default function SignupPage() {
   const { locale, changeLocale } = useLocale();
   const intl = useIntl();
   const [languages, setLanguages] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [countryCode, setCountryCode] = useState('');
   
   // 添加输入框焦点状态
   const [usernameFocused, setUsernameFocused] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
+  const [countryFocused, setCountryFocused] = useState(false);
+  
+  // 在组件中添加国家选择的状态
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const countryDropdownRef = useRef(null);
+  const countryButtonRef = useRef(null);
   
   // 获取支持的语言列表
   useEffect(() => {
@@ -487,6 +535,28 @@ export default function SignupPage() {
       }
     };
     fetchLanguages();
+  }, []);
+
+  useEffect(() => {
+    // 获取国家列表
+    const fetchCountries = async () => {
+      try {
+        const response = await axios.get('/base/countries/list-all-enable');
+        if (response.data.success) {
+          setCountries(response.data.data);
+          // 默认选中中国（如果存在）
+          const china = response.data.data.find(country => country.code === 'CN');
+          if (china) {
+            setCountryCode(china.code);
+          }
+        }
+      } catch (error) {
+        console.error('获取国家列表失败:', error);
+        message.error('获取国家列表失败');
+      }
+    };
+
+    fetchCountries();
   }, []);
 
   const toggleTheme = () => {
@@ -527,18 +597,43 @@ export default function SignupPage() {
       return;
     }
 
+    if (!username || !email || !password || !countryCode) {
+      setError("请填写所有必填字段");
+      return;
+    }
+
+    // 验证用户名长度
+    if (username.length < 4 || username.length > 10) {
+      setError("用户名长度必须在4-10个字符之间");
+      return;
+    }
+
+    // 验证邮箱格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("请输入有效的邮箱地址");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const result = await auth.signup({ username, email, password });
+      const result = await auth.register({
+        username,
+        email,
+        password,
+        countryCode
+      });
+
       if (result.success) {
         message.success("注册成功");
         navigate("/login");
       } else {
-        setError(result.message || "注册失败");
+        setError(result.message || "注册失败，请检查输入信息");
       }
     } catch (error) {
-      setError("注册失败，请稍后重试");
+      console.error('注册错误:', error);
+      setError(error.response?.data?.message || "注册失败，请稍后重试");
     } finally {
       setLoading(false);
     }
@@ -607,6 +702,72 @@ export default function SignupPage() {
             <FormattedMessage id="signup.title" />
           </Logo>
           <Form onSubmit={handleSubmit} autoComplete="off">
+            <FormItem>
+              <InputWrapper>
+                <Input
+                  as="div"
+                  onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                  style={{ 
+                    padding: 0,
+                    height: '50px',
+                    lineHeight: '50px'
+                  }}
+                >
+                  <SelectedCountryContent className={!countryCode ? 'placeholder' : ''}>
+                    {countryCode && countries.find(c => c.code === countryCode) ? (
+                      <>
+                        <CountryFlag 
+                          src={countries.find(c => c.code === countryCode)?.flagImageUrl} 
+                          alt={countries.find(c => c.code === countryCode)?.name}
+                          onError={(e) => {
+                            e.target.src = '/default-flag.png';
+                          }}
+                        />
+                        <span>{countries.find(c => c.code === countryCode)?.name}</span>
+                      </>
+                    ) : (
+                      <span>选择国家/地区</span>
+                    )}
+                  </SelectedCountryContent>
+                </Input>
+                <BorderGlow className={countryFocused ? "active" : ""} />
+                <EmailSuffixButton
+                  type="button"
+                  onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                  ref={countryButtonRef}
+                  style={{ right: '16px' }}
+                >
+                  <DownOutlined />
+                </EmailSuffixButton>
+                <CountryDropdown 
+                  ref={countryDropdownRef}
+                  className={showCountryDropdown ? "show" : ""}
+                >
+                  {countries.map(country => (
+                    <CountryOption
+                      key={country.code}
+                      type="button"
+                      onClick={() => {
+                        setCountryCode(country.code);
+                        setShowCountryDropdown(false);
+                      }}
+                    >
+                      <CountryOptionContent>
+                        <CountryFlag 
+                          src={country.flagImageUrl} 
+                          alt={country.name}
+                          onError={(e) => {
+                            e.target.src = '/default-flag.png';
+                          }}
+                        />
+                        <span>{country.name}</span>
+                      </CountryOptionContent>
+                    </CountryOption>
+                  ))}
+                </CountryDropdown>
+              </InputWrapper>
+            </FormItem>
+
             <FormItem>
               <InputWrapper>
                 <Input
