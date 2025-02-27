@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 创建 axios 实例
 const instance = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://app.protx.cn',
+  baseURL: process.env.REACT_APP_API_URL || 'http://175.27.255.29',
   timeout: 10000,
   withCredentials: true,
   headers: {
