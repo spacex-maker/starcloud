@@ -49,7 +49,7 @@ class COSService {
     }
 
     return new Promise((resolve, reject) => {
-      const key = path ? `${path}/${file.name}` : file.name;
+      const key = path ? `${path}${file.name}` : file.name;
       let lastProgress = 0; // 记录上一次的进度
 
       this.cos.uploadFile({
@@ -76,6 +76,37 @@ class COSService {
           resolve({
             url: `${this.host}${key}`,
             key: key,
+            etag: data.ETag,
+            location: data.Location,
+            ...data
+          });
+        }
+      });
+    });
+  }
+
+  async createFolder(path) {
+    if (!this.cos) {
+      await this.init();
+    }
+
+    // 确保路径以 / 结尾，这是对象存储中表示文件夹的方式
+    const folderPath = path.endsWith('/') ? path : `${path}/`;
+
+    return new Promise((resolve, reject) => {
+      this.cos.putObject({
+        Bucket: 'px-1258150206',
+        Region: 'ap-nanjing',
+        Key: folderPath,
+        Body: '',  // 空内容，只创建路径
+        ContentLength: 0
+      }, (err, data) => {
+        if (err) {
+          console.error('创建文件夹失败:', err);
+          reject(err);
+        } else {
+          resolve({
+            key: folderPath,
             ...data
           });
         }

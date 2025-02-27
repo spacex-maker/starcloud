@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth } from "../api/auth";
 import { base } from "../api/base";
-import { message } from "antd";
-import styled, { ThemeContext } from "styled-components";
+import { message, Dropdown } from "antd";
+import styled, { ThemeContext, keyframes } from "styled-components";
 import { 
   GoogleOutlined, 
   GithubOutlined, 
@@ -18,9 +18,8 @@ import {
   EyeInvisibleOutlined,
   DownOutlined
 } from '@ant-design/icons';
-import { Dropdown } from 'antd';
-import { useLocale } from '../contexts/LocaleContext';
-import { FormattedMessage, useIntl } from 'react-intl';
+import { FormattedMessage, useIntl } from "react-intl";
+import { useLocale } from "../contexts/LocaleContext";
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -136,6 +135,60 @@ const Label = styled.label`
   color: var(--ant-color-text-secondary);
 `;
 
+// 定义跑马灯效果
+const marqueeGlow = keyframes`
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+`;
+
+// 完全重新设计的边框发光效果
+const BorderGlow = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 2;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 2px; /* 控制边框宽度 */
+    border-radius: inherit;
+    background: linear-gradient(
+      90deg, 
+      transparent 0%, 
+      #1890ff 25%, 
+      #40a9ff 50%, 
+      #1890ff 75%, 
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    -webkit-mask: 
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: 
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    animation: ${marqueeGlow} 3s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  &.active::before {
+    opacity: 1;
+  }
+`;
+
 const InputWrapper = styled.div`
   position: relative;
   width: 100%;
@@ -154,11 +207,12 @@ const Input = styled.input`
   color: var(--ant-color-text);
   font-size: 0.875rem;
   transition: all 0.3s;
+  position: relative;
+  z-index: 1;
 
   &:focus {
     outline: none;
-    border-color: var(--ant-color-primary);
-    box-shadow: 0 0 0 2px var(--ant-color-primary-bg);
+    border-color: transparent; /* 当输入框获得焦点时，隐藏原始边框 */
     background: ${props => props.theme.mode === 'dark' 
       ? 'rgba(255, 255, 255, 0.04)' 
       : '#ffffff'};
@@ -185,6 +239,7 @@ const EmailSuffixButton = styled.button`
   align-items: center;
   justify-content: center;
   transition: all 0.3s;
+  z-index: 3; /* 确保按钮在最上层 */
 
   &:hover {
     color: var(--ant-color-text);
@@ -365,23 +420,11 @@ const emailSuffixes = [
 const PoweredBy = styled.div`
   position: absolute;
   bottom: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
   text-align: center;
   color: var(--ant-color-text-quaternary);
   font-size: 0.75rem;
-  padding: 0.5rem 1rem;
-  border-radius: 9999px;
-  background: ${props => props.theme.mode === 'dark' 
-    ? 'rgba(255, 255, 255, 0.08)' 
-    : 'rgba(255, 255, 255, 0.8)'};
-  backdrop-filter: blur(10px);
-  box-shadow: ${props => props.theme.mode === 'dark'
-    ? '0 2px 8px rgba(0, 0, 0, 0.2)'
-    : '0 2px 8px rgba(0, 0, 0, 0.05)'};
-  border: 1px solid ${props => props.theme.mode === 'dark'
-    ? 'rgba(255, 255, 255, 0.1)'
-    : 'rgba(255, 255, 255, 0.5)'};
 `;
 
 const PhilosophyQuote = styled.div`
@@ -427,7 +470,13 @@ export default function SignupPage() {
   const { locale, changeLocale } = useLocale();
   const intl = useIntl();
   const [languages, setLanguages] = useState([]);
-
+  
+  // 添加输入框焦点状态
+  const [usernameFocused, setUsernameFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
+  
   // 获取支持的语言列表
   useEffect(() => {
     const fetchLanguages = async () => {
@@ -495,22 +544,30 @@ export default function SignupPage() {
     }
   };
 
+  // 修改邮箱后缀下拉框的处理逻辑
+  const handleSuffixButtonClick = (e) => {
+    e.preventDefault(); // 阻止默认行为
+    e.stopPropagation(); // 阻止事件冒泡
+    setShowSuffixDropdown(!showSuffixDropdown);
+  };
+
+  // 处理点击文档其他地方关闭下拉框
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
         dropdownRef.current && 
-        emailSuffixButtonRef.current &&
         !dropdownRef.current.contains(event.target) &&
+        emailSuffixButtonRef.current && 
         !emailSuffixButtonRef.current.contains(event.target)
       ) {
         setShowSuffixDropdown(false);
       }
     };
 
-    if (showSuffixDropdown) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [showSuffixDropdown]);
 
   return (
@@ -559,7 +616,10 @@ export default function SignupPage() {
                   required
                   placeholder={intl.formatMessage({ id: "signup.username.placeholder" })}
                   autoComplete="off"
+                  onFocus={() => setUsernameFocused(true)}
+                  onBlur={() => setUsernameFocused(false)}
                 />
+                <BorderGlow className={usernameFocused ? "active" : ""} />
               </InputWrapper>
             </FormItem>
 
@@ -571,11 +631,23 @@ export default function SignupPage() {
                   onChange={handleEmailChange}
                   required
                   placeholder={intl.formatMessage({ id: "signup.email.placeholder" })}
+                  autoComplete="off"
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={(e) => {
+                    // 检查点击是否在下拉按钮上，如果是则不失去焦点
+                    if (
+                      emailSuffixButtonRef.current && 
+                      !emailSuffixButtonRef.current.contains(e.relatedTarget)
+                    ) {
+                      setEmailFocused(false);
+                    }
+                  }}
                 />
+                <BorderGlow className={emailFocused ? "active" : ""} />
                 {!email.includes('@') && (
                   <EmailSuffixButton
                     type="button"
-                    onClick={() => setShowSuffixDropdown(!showSuffixDropdown)}
+                    onClick={handleSuffixButtonClick}
                     ref={emailSuffixButtonRef}
                   >
                     <DownOutlined />
@@ -607,7 +679,10 @@ export default function SignupPage() {
                   required
                   placeholder={intl.formatMessage({ id: "signup.password.placeholder" })}
                   autoComplete="new-password"
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
                 />
+                <BorderGlow className={passwordFocused ? "active" : ""} />
                 <PasswordToggle
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -627,7 +702,10 @@ export default function SignupPage() {
                   required
                   placeholder={intl.formatMessage({ id: "signup.confirmPassword.placeholder" })}
                   autoComplete="new-password"
+                  onFocus={() => setConfirmPasswordFocused(true)}
+                  onBlur={() => setConfirmPasswordFocused(false)}
                 />
+                <BorderGlow className={confirmPasswordFocused ? "active" : ""} />
                 <PasswordToggle
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -659,7 +737,7 @@ export default function SignupPage() {
         技术应是为人民服务
       </PhilosophyQuote>
       <PoweredBy>
-        © 2024 ProTX Team. All rights reserved.
+        Powered by ProTX
       </PoweredBy>
     </PageContainer>
   );
