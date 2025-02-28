@@ -62,5 +62,6 @@ export default {
   'signup.verificationCode.success': 'تم إرسال رمز التحقق',
   'signup.verificationCode.error': 'فشل في إرسال الرمز',
   'signup.verificationCode.required': 'الرجاء إدخال رمز التحقق',
-  'signup.verificationCode.invalid': 'تنسيق رمز التحقق غير صالح'
+  'signup.verificationCode.invalid': 'تنسيق رمز التحقق غير صالح',
+  'signup.announcement': 'وظيفة التسجيل قيد الصيانة اليوم!'
 }; 
