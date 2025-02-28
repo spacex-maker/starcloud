@@ -553,6 +553,21 @@ const PhilosophyQuote = styled.div`
   }
 `;
 
+const ForgotPasswordLink = styled(Link)`
+  text-align: right;
+  font-size: 0.875rem;
+  color: var(--ant-color-text-secondary);
+  text-decoration: none;
+  margin-top: 0.5rem;
+  display: block;
+  padding: 0.25rem 0;
+  transition: color 0.3s ease;
+  
+  &:hover {
+    color: var(--ant-color-primary);
+  }
+`;
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -717,7 +732,6 @@ export default function LoginPage() {
                     autoComplete="off"
                     onFocus={() => setEmailFocused(true)}
                     onBlur={(e) => {
-                      // 检查点击是否在下拉按钮上，如果是则不失去焦点
                       if (
                         emailSuffixButtonRef.current && 
                         !emailSuffixButtonRef.current.contains(e.relatedTarget)
@@ -774,6 +788,9 @@ export default function LoginPage() {
                     {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
                   </PasswordToggle>
                 </InputWrapper>
+                <ForgotPasswordLink to="/reset-password">
+                  <FormattedMessage id="login.forgotPassword" defaultMessage="忘记密码？" />
+                </ForgotPasswordLink>
               </FormItem>
 
               {error && <ErrorText>{error}</ErrorText>}
