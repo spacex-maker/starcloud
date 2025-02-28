@@ -106,7 +106,12 @@ const ActionBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
+  gap: 16px;
+  
+  .ant-space {
+    gap: 12px !important;
+  }
 `;
 
 const PathContainer = styled.div`
@@ -175,6 +180,134 @@ const ContentContainer = styled.div`
   margin-top: 64px; // 为固定头部留出空间
   display: flex;
   overflow: hidden; // 防止内容溢出
+`;
+
+// 添加新的样式组件
+const RoundedButton = styled(Button)`
+  border-radius: 20px;
+  height: 36px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+  
+  &.ant-btn-default {
+    background-color: ${props => props.theme.mode === 'dark' 
+      ? 'rgba(255, 255, 255, 0.08)'
+      : 'rgba(0, 0, 0, 0.02)'};
+    color: var(--ant-color-text);
+    
+    &:hover {
+      background-color: ${props => props.theme.mode === 'dark'
+        ? 'rgba(255, 255, 255, 0.12)'
+        : 'rgba(0, 0, 0, 0.04)'};
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+  }
+  
+  &.ant-btn-text {
+    padding: 0 12px;
+    box-shadow: none;
+    background: transparent;
+    
+    &:hover {
+      background-color: ${props => props.theme.mode === 'dark'
+        ? 'rgba(255, 255, 255, 0.08)'
+        : 'rgba(0, 0, 0, 0.04)'};
+    }
+  }
+  
+  &.ant-btn-primary {
+    background-color: var(--ant-color-primary);
+    color: white;
+    
+    &:hover {
+      background-color: var(--ant-color-primary-hover);
+      box-shadow: 0 1px 3px var(--ant-color-primary-3);
+    }
+  }
+  
+  &:active {
+    transform: translateY(1px);
+  }
+  
+  .anticon {
+    font-size: 16px;
+  }
+  
+  &.ant-btn-loading {
+    opacity: 0.8;
+  }
+`;
+
+const RoundedSearch = styled(Input)`
+  border-radius: 24px;
+  height: 44px;
+  padding: 0 16px;
+  width: 300px;
+  border: none;
+  background-color: ${props => props.theme.mode === 'dark'
+    ? 'rgba(255, 255, 255, 0.04)'
+    : 'rgba(0, 0, 0, 0.02)'};
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: ${props => props.theme.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.08)'
+      : 'rgba(0, 0, 0, 0.04)'};
+  }
+  
+  &:focus, &.ant-input-affix-wrapper-focused {
+    background-color: ${props => props.theme.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.12)'
+      : 'white'};
+    box-shadow: 0 1px 6px ${props => props.theme.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.1)'
+      : 'rgba(0, 0, 0, 0.1)'};
+  }
+  
+  .ant-input {
+    background: transparent;
+    font-size: 14px;
+    
+    &::placeholder {
+      color: var(--ant-color-text-quaternary);
+    }
+  }
+  
+  .ant-input-prefix {
+    margin-right: 12px;
+    color: var(--ant-color-text-quaternary);
+  }
+  
+  .ant-input-clear-icon {
+    color: var(--ant-color-text-quaternary);
+    margin-left: 8px;
+    
+    &:hover {
+      color: var(--ant-color-text-secondary);
+    }
+  }
+`;
+
+// 修改表格操作按钮的样式
+const TableActionButton = styled(RoundedButton)`
+  min-width: 32px;
+  height: 32px;
+  padding: 0 12px;
+  box-shadow: none;
+  
+  &:hover {
+    background-color: ${props => props.danger 
+      ? 'var(--ant-color-error-bg)'
+      : `color-mix(in srgb, var(--ant-color-primary) 8%, transparent)`};
+    color: ${props => props.danger 
+      ? 'var(--ant-color-error)'
+      : 'var(--ant-color-primary)'};
+  }
 `;
 
 const CloudDrivePage = () => {
@@ -712,27 +845,28 @@ const CloudDrivePage = () => {
     {
       title: '操作',
       key: 'action',
-      width: 120,
+      width: 180,
       fixed: 'right',
+      align: 'center',
       render: (_, record) => (
         <Space size={4}>
           {record.type === 'file' && record.downloadUrl && (
-            <Button 
-              type="text" 
+            <TableActionButton
+              type="text"
               icon={<DownloadOutlined />}
               onClick={() => window.open(record.downloadUrl)}
             >
               下载
-            </Button>
+            </TableActionButton>
           )}
-          <Button 
-            type="text" 
-            danger 
+          <TableActionButton
+            type="text"
+            danger
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record)}
           >
             删除
-          </Button>
+          </TableActionButton>
         </Space>
       ),
     },
@@ -851,36 +985,35 @@ const CloudDrivePage = () => {
                       showUploadList={false}
                       beforeUpload={(file, fileList) => {
                         handleUpload(fileList);
-                        return false; // 阻止默认上传
+                        return false;
                       }}
                       disabled={isUploading}
                     >
-                      <Button 
-                        type="primary" 
+                      <RoundedButton
+                        type="primary"
                         icon={<CloudUploadOutlined />}
                         loading={isUploading}
                       >
                         上传文件
-                      </Button>
+                      </RoundedButton>
                     </Upload>
-                    <Button 
+                    <RoundedButton
                       icon={<FolderOutlined />}
                       onClick={() => setNewFolderModalVisible(true)}
                     >
                       新建文件夹
-                    </Button>
-                    <Button
+                    </RoundedButton>
+                    <RoundedButton
                       icon={<ReloadOutlined />}
                       onClick={() => loadFiles(currentParentId)}
                       loading={loading}
                     >
                       刷新
-                    </Button>
+                    </RoundedButton>
                   </Space>
-                  <Input
+                  <RoundedSearch
                     placeholder="搜索文件"
                     prefix={<SearchOutlined />}
-                    style={{ width: 200 }}
                     value={searchText}
                     onChange={(e) => handleSearch(e.target.value)}
                     allowClear

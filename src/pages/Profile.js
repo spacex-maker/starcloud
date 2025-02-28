@@ -4,14 +4,13 @@ import SimpleHeader from "components/headers/simple.js";
 import { ReactComponent as EditIcon } from "feather-icons/dist/icons/edit-2.svg";
 import { ReactComponent as SaveIcon } from "feather-icons/dist/icons/check.svg";
 import { ReactComponent as CancelIcon } from "feather-icons/dist/icons/x.svg";
-import Modal from 'react-modal';
+import { Modal } from 'antd';
 import { motion } from "framer-motion";
 import tw from "twin.macro";
-
-// 确保只设置一次 appElement
-if (typeof window !== 'undefined') {
-  Modal.setAppElement('#root');
-}
+import { Button, Input } from "antd";
+import { UserOutlined, CloudUploadOutlined, ProfileOutlined, ContactsOutlined, ToolOutlined } from "@ant-design/icons";
+import { Space } from "antd";
+import { message } from "antd";
 
 const PageWrapper = styled.div`
   ${tw`
@@ -392,134 +391,171 @@ const EditButton = styled.button`
   }
 `;
 
-const modalStyles = {
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0)',
-    zIndex: 1000,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'background-color 0.3s ease-out'
-  },
-  content: {
-    position: 'relative',
-    top: 'auto',
-    left: 'auto',
-    right: 'auto',
-    bottom: 'auto',
-    maxWidth: '600px',
-    width: '90%',
-    margin: '20px',
-    padding: 0,
-    border: 'none',
-    borderRadius: '1.25rem',
-    backgroundColor: '#ffffff',
-    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    transform: 'translateY(20px)',
-    opacity: 0,
-    transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+const StyledModal = styled(Modal)`
+  .ant-modal-content {
+    border-radius: 16px;
+    padding: 0;
+    background: ${props => props.theme.mode === 'dark' ? '#1c1c1e' : '#ffffff'};
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   }
-};
 
-const ModalHeader = tw.div`
-  p-4 
-  border-b border-gray-200 dark:border-gray-700 
-  flex items-center justify-between
+  .ant-modal-header {
+    padding: 24px 32px;
+    border-bottom: none;
+    margin: 0;
+    
+    .ant-modal-title {
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--ant-color-text);
+    }
+  }
+
+  .ant-modal-body {
+    padding: 0 32px 32px;
+  }
+
+  .ant-modal-footer {
+    margin: 0;
+    padding: 20px 32px;
+    border-top: 1px solid var(--ant-color-border);
+  }
 `;
 
-const ModalTitle = tw.h2`
-  text-lg font-bold 
-  text-gray-900 dark:text-gray-100
+const FormSection = styled.div`
+  margin-bottom: 40px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 `;
 
-const ModalContent = tw.div`p-4`;
+const SectionTitle = styled.div`
+  margin-bottom: 20px;
 
-const ModalFooter = tw.div`
-  p-4 
-  border-t border-gray-200 dark:border-gray-700 
-  flex justify-end gap-4
+  h3 {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ant-color-text);
+    margin: 0;
+  }
+
+  p {
+    font-size: 13px;
+    color: var(--ant-color-text-secondary);
+    margin: 4px 0 0 0;
+    line-height: 1.5;
+  }
 `;
 
-const FormLabel = tw.label`
-  block 
-  text-xs font-medium 
-  text-gray-700 dark:text-gray-300 
-  mb-1
+const FormRow = styled.div`
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
 `;
 
-const FormInput = tw.input`
-  w-full 
-  px-3 py-2
-  text-sm 
-  rounded-lg
-  border border-gray-300 dark:border-gray-600 
-  bg-white dark:bg-gray-700 
-  text-gray-900 dark:text-gray-100 
-  placeholder-gray-500 dark:placeholder-gray-400
-  focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:ring-opacity-25 
-  transition duration-200
+const FormItem = styled.div`
+  flex: 1;
 `;
 
-const FormTextarea = tw.textarea`
-  w-full 
-  px-3 py-2
-  text-sm 
-  rounded-lg
-  border border-gray-300 dark:border-gray-600 
-  bg-white dark:bg-gray-700 
-  text-gray-900 dark:text-gray-100 
-  placeholder-gray-500 dark:placeholder-gray-400
-  focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:ring-opacity-25 
-  transition duration-200
-  min-h-[100px]
-  resize-none
+const FormLabel = styled.label`
+  display: block;
+  font-size: 13px;
+  color: var(--ant-color-text-secondary);
+  margin-bottom: 8px;
 `;
 
-const AvatarUploadSection = tw.div`
-  flex flex-col items-center 
-  mb-6
+const StyledInput = styled(Input)`
+  border-radius: 8px;
+  border: 1px solid var(--ant-color-border);
+  padding: 8px 12px;
+  font-size: 15px;
+  transition: all 0.2s;
+
+  &:hover, &:focus {
+    border-color: var(--ant-color-primary);
+  }
+`;
+
+const StyledTextArea = styled(Input.TextArea)`
+  border-radius: 8px;
+  border: 1px solid var(--ant-color-border);
+  padding: 8px 12px;
+  font-size: 15px;
+  min-height: 100px;
+  transition: all 0.2s;
+
+  &:hover, &:focus {
+    border-color: var(--ant-color-primary);
+  }
 `;
 
 const AvatarUpload = styled.div`
-  ${tw`
-    relative 
-    cursor-pointer 
-    mb-4
-  `}
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background: var(--ant-color-bg-elevated);
+  border-radius: 12px;
 `;
 
-const UploadOverlay = styled.div`
-  ${tw`
-    absolute inset-0 
-    bg-black bg-opacity-50 
-    rounded-full 
-    flex items-center justify-center 
-    opacity-0 
-    hover:opacity-100 
-    transition-opacity duration-200
-  `}
+const AvatarPreview = styled.div`
+  width: 80px;
+  height: 80px;
+  border-radius: 40px;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 `;
 
-const UploadLabel = tw.label`
-  text-white 
-  text-sm 
-  cursor-pointer 
-  flex items-center gap-2 
-  hover:underline
+const UploadInfo = styled.div`
+  flex: 1;
+
+  h4 {
+    font-size: 15px;
+    font-weight: 500;
+    margin: 0 0 4px 0;
+  }
+
+  p {
+    font-size: 13px;
+    color: var(--ant-color-text-secondary);
+    margin: 0 0 12px 0;
+  }
 `;
 
-export default () => {
+// 添加样式组件
+const ConstructionBanner = styled.div`
+  position: fixed;
+  top: 64px;  // SimpleHeader 的高度
+  left: 0;
+  right: 0;
+  background: var(--ant-color-warning-bg);
+  padding: 8px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--ant-color-warning);
+  border-bottom: 1px solid var(--ant-color-warning-border);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+`;
+
+const ProfilePage = () => {
   const [userInfo, setUserInfo] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [afterOpen, setAfterOpen] = useState(false);
   const [editedInfo, setEditedInfo] = useState({});
   const [selectedFile, setSelectedFile] = useState(null);
   const [activeTab, setActiveTab] = useState('basic');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const storedUserInfo = localStorage.getItem('userInfo');
@@ -530,43 +566,41 @@ export default () => {
     }
   }, []);
 
-  const handleAvatarChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditedInfo(prev => ({
-          ...prev,
-          avatar: reader.result
-        }));
-        setSelectedFile(file);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleEdit = () => {
-    setEditedInfo({...userInfo});
+  const handleEditClick = () => {
+    setEditedInfo({
+      username: userInfo?.username || '',
+      nickname: userInfo?.nickname || '',
+      bio: userInfo?.bio || '',
+      email: userInfo?.email || '',
+      phone: userInfo?.phone || '',
+      avatar: userInfo?.avatar || ''
+    });
     setIsModalOpen(true);
   };
 
-  const handleClose = () => {
-    setAfterOpen(false);
-    setTimeout(() => {
-      setIsModalOpen(false);
-    }, 300);
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        message.error('图片大小不能超过 2MB');
+        return;
+      }
+      setSelectedFile(file);
+    }
   };
 
   const handleSave = async () => {
+    setLoading(true);
     try {
-      if (selectedFile) {
-        // TODO: 实现头像上传逻辑
-      }
-      setUserInfo(editedInfo);
-      localStorage.setItem('userInfo', JSON.stringify(editedInfo));
-      handleClose();
+      // 处理保存逻辑
+      // TODO: 实现实际的保存功能
+      
+      message.success('保存成功');
+      setIsModalOpen(false);
     } catch (error) {
-      console.error('保存失败:', error);
+      message.error('保存失败');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -585,113 +619,41 @@ export default () => {
 
   const currentModalStyles = {
     overlay: {
-      ...modalStyles.overlay,
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       backgroundColor: afterOpen ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)'
     },
     content: {
-      ...modalStyles.content,
+      position: 'relative',
+      top: 'auto',
+      left: 'auto',
+      right: 'auto',
+      bottom: 'auto',
+      maxWidth: '600px',
+      width: '90%',
+      margin: '20px',
+      padding: 0,
+      border: 'none',
+      borderRadius: '1.25rem',
+      backgroundColor: document.documentElement.classList.contains('dark') ? '#1F2937' : '#ffffff',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
       transform: afterOpen ? 'translateY(0)' : 'translateY(20px)',
       opacity: afterOpen ? 1 : 0,
-      backgroundColor: document.documentElement.classList.contains('dark') ? '#1F2937' : '#ffffff'
+      transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
     }
   };
-
-  // 将 Modal 组件的渲染条件化
-  const modalElement = isModalOpen ? (
-    <Modal
-      isOpen={true}
-      onRequestClose={handleClose}
-      onAfterOpen={handleAfterOpen}
-      style={currentModalStyles}
-      contentLabel="编辑个人信息"
-      closeTimeoutMS={300}
-      shouldCloseOnOverlayClick={true}
-    >
-      <ModalHeader>
-        <ModalTitle>编辑个人信息</ModalTitle>
-        <StyledButton 
-          onClick={handleClose}
-          css={tw`p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full`}
-        >
-          <CancelIcon />
-        </StyledButton>
-      </ModalHeader>
-      
-      <ModalContent>
-        <AvatarUploadSection>
-          <AvatarUpload className="group">
-            <Avatar src={editedInfo.avatar} />
-            <UploadOverlay className="group-hover:opacity-100">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarChange}
-                style={{ display: 'none' }}
-                id="avatar-upload"
-              />
-              <UploadLabel htmlFor="avatar-upload">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                更换头像
-              </UploadLabel>
-            </UploadOverlay>
-          </AvatarUpload>
-          <p tw="text-sm text-gray-500 dark:text-gray-400">
-            支持 jpg、png、gif 格式，最大 5MB
-          </p>
-        </AvatarUploadSection>
-
-        <div tw="space-y-6">
-          <div>
-            <FormLabel>昵称</FormLabel>
-            <FormInput
-              type="text"
-              value={editedInfo.nickname || ''}
-              onChange={e => handleChange('nickname', e.target.value)}
-              placeholder="请输入昵称"
-            />
-          </div>
-          <div>
-            <FormLabel>手机号码</FormLabel>
-            <FormInput
-              type="tel"
-              value={editedInfo.phoneNumber || ''}
-              onChange={e => handleChange('phoneNumber', e.target.value)}
-              placeholder="请输入手机号码"
-            />
-          </div>
-          <div>
-            <FormLabel>个人简介</FormLabel>
-            <FormTextarea
-              value={editedInfo.description || ''}
-              onChange={e => handleChange('description', e.target.value)}
-              placeholder="请输入个人简介"
-            />
-          </div>
-        </div>
-      </ModalContent>
-
-      <ModalFooter>
-        <StyledButton onClick={handleClose}>
-          <CancelIcon />
-          取消
-        </StyledButton>
-        <StyledButton primary onClick={handleSave}>
-          <SaveIcon />
-          保存
-        </StyledButton>
-      </ModalFooter>
-    </Modal>
-  ) : null;
 
   if (!userInfo) return <div>加载中...</div>;
 
   return (
     <PageWrapper>
       <SimpleHeader />
+      <ConstructionBanner>
+        <ToolOutlined /> 本页面正在建设中...
+      </ConstructionBanner>
       <Container>
         <Content>
           <ProfileHeader
@@ -730,7 +692,7 @@ export default () => {
               </Stats>
             </UserInfo>
             
-            <EditButton onClick={handleEdit}>
+            <EditButton onClick={handleEditClick}>
               <EditIcon />
               编辑资料
             </EditButton>
@@ -804,7 +766,105 @@ export default () => {
           </TabsContainer>
         </Content>
       </Container>
-      {modalElement}
+      <StyledModal
+        title="编辑个人资料"
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        width={600}
+        footer={[
+          <Button key="cancel" onClick={() => setIsModalOpen(false)}>
+            取消
+          </Button>,
+          <Button
+            key="save"
+            type="primary"
+            onClick={handleSave}
+            loading={loading}
+          >
+            保存
+          </Button>
+        ]}
+      >
+        <FormSection>
+          <SectionTitle>
+            <h3>头像</h3>
+          </SectionTitle>
+          <AvatarUpload>
+            <AvatarPreview>
+              <img src={editedInfo.avatar || userInfo?.avatar} alt="Avatar" />
+            </AvatarPreview>
+            <UploadInfo>
+              <Button icon={<CloudUploadOutlined />}>
+                更换头像
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                />
+              </Button>
+            </UploadInfo>
+          </AvatarUpload>
+        </FormSection>
+
+        <FormSection>
+          <SectionTitle>
+            <h3>基本信息</h3>
+          </SectionTitle>
+          <FormRow>
+            <FormItem>
+              <FormLabel>用户名</FormLabel>
+              <StyledInput
+                value={editedInfo.username || ''}
+                onChange={(e) => setEditedInfo({...editedInfo, username: e.target.value})}
+                placeholder="请输入用户名"
+              />
+            </FormItem>
+            <FormItem>
+              <FormLabel>昵称</FormLabel>
+              <StyledInput
+                value={editedInfo.nickname || ''}
+                onChange={(e) => setEditedInfo({...editedInfo, nickname: e.target.value})}
+                placeholder="请输入昵称"
+              />
+            </FormItem>
+          </FormRow>
+          <FormItem>
+            <FormLabel>个人简介</FormLabel>
+            <StyledTextArea
+              value={editedInfo.bio || ''}
+              onChange={(e) => setEditedInfo({...editedInfo, bio: e.target.value})}
+              placeholder="介绍一下自己..."
+            />
+          </FormItem>
+        </FormSection>
+
+        <FormSection>
+          <SectionTitle>
+            <h3>联系方式</h3>
+          </SectionTitle>
+          <FormRow>
+            <FormItem>
+              <FormLabel>电子邮箱</FormLabel>
+              <StyledInput
+                value={editedInfo.email || ''}
+                onChange={(e) => setEditedInfo({...editedInfo, email: e.target.value})}
+                placeholder="请输入邮箱"
+              />
+            </FormItem>
+            <FormItem>
+              <FormLabel>手机号码</FormLabel>
+              <StyledInput
+                value={editedInfo.phone || ''}
+                onChange={(e) => setEditedInfo({...editedInfo, phone: e.target.value})}
+                placeholder="请输入手机号"
+              />
+            </FormItem>
+          </FormRow>
+        </FormSection>
+      </StyledModal>
     </PageWrapper>
   );
-}; 
+};
+
+export default ProfilePage; 
