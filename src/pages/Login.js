@@ -317,6 +317,7 @@ const PasswordToggle = styled.button`
   justify-content: center;
   transition: all 0.3s;
   font-size: 1.1rem;
+  z-index: 3;
   
   &:hover {
     color: var(--ant-color-text);
@@ -640,10 +641,12 @@ export default function LoginPage() {
     const value = e.target.value;
     setEmail(value);
     
-    if (value.length > 0 && !value.includes('@')) {
-      setShowSuffixDropdown(true);
-    } else {
+    // 只有当输入了@并且@后面有内容时才隐藏下拉框
+    const atIndex = value.indexOf('@');
+    if (atIndex !== -1 && value.length > atIndex + 1) {
       setShowSuffixDropdown(false);
+    } else {
+      setShowSuffixDropdown(true);
     }
   };
 
