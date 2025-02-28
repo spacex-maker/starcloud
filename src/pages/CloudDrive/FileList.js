@@ -35,6 +35,9 @@ const FileList = ({
   handlePreview,
   handleDelete,
   isImageFile,
+  selectedRowKeys,
+  onSelectChange,
+  onDownload,
 }) => {
   const columns = [
     {
@@ -114,7 +117,7 @@ const FileList = ({
             <TableActionButton
               type="text"
               icon={<DownloadOutlined />}
-              onClick={() => window.open(record.downloadUrl)}
+              onClick={() => onDownload(record)}
             >
               下载
             </TableActionButton>
@@ -132,6 +135,15 @@ const FileList = ({
     },
   ];
 
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: onSelectChange,
+    getCheckboxProps: (record) => ({
+      disabled: record.type === 'folder', // 禁用文件夹的选择
+      style: { opacity: record.type === 'folder' ? 0.5 : 1 }, // 使文件夹的复选框显示为灰色
+    }),
+  };
+
   return (
     <Table
       columns={columns}
@@ -147,6 +159,7 @@ const FileList = ({
       }}
       size="middle"
       rowKey="key"
+      rowSelection={rowSelection}
     />
   );
 };
