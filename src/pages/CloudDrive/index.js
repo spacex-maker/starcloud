@@ -1,5 +1,5 @@
 import React, { useState, useEffect} from 'react';
-import { Layout,Button, Space, Input, Upload, Modal, Image } from 'antd';
+import { Layout,Button, Space, Input, Upload, Modal, Image, Table, Typography, Grid } from 'antd';
 import {
   FolderOutlined,
   CloudUploadOutlined,
@@ -7,6 +7,9 @@ import {
   ReloadOutlined,
   DownloadOutlined,
   DeleteOutlined,
+  WarningFilled,
+  FileOutlined,
+  FileImageOutlined,
 } from '@ant-design/icons';
 import tw, { styled } from 'twin.macro';
 import SimpleHeader from "components/headers/simple";
@@ -29,36 +32,78 @@ import { useNavigate } from 'react-router-dom';
 
 const { Content, Sider } = Layout;
 const { confirm } = Modal;
+const { Text } = Typography;
 
 const StyledLayout = styled.div`
-  display: flex;
+  ${tw`flex h-full w-full`}
   height: calc(100vh - 64px);
   background: var(--ant-color-bg-container);
+  position: relative;
 `;
 
 const MainLayout = styled.main`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  ${tw`flex flex-col flex-1`}
   overflow: hidden;
   background: var(--ant-color-bg-container);
+  min-width: 0;
+  transition: margin-left 0.2s ease-in-out;
+  
+  @media (max-width: 768px) {
+    margin-left: ${props => props.collapsed ? 0 : '200px'};
+  }
 `;
 
 const StyledContent = styled.div`
-  flex: 1;
-  padding: 24px;
+  ${tw`flex-1`}
+  padding: 0;
   overflow: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 `;
 
 const ActionBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  padding: 8px 16px;
   gap: 16px;
+  border-bottom: 1px solid ${props => props.theme.mode === 'dark'
+    ? 'rgba(255, 255, 255, 0.08)'
+    : 'rgba(0, 0, 0, 0.06)'};
   
   .ant-space {
-    gap: 12px !important;
+    gap: 8px !important;
+    
+    @media (max-width: 768px) {
+      gap: 4px !important;
+    }
+  }
+  
+  .action-button-text {
+    @media (max-width: 768px) {
+      display: none;
+    }
+  }
+`;
+
+const PathContainer = styled.div`
+  padding: 4px 16px;
+  border-bottom: 1px solid ${props => props.theme.mode === 'dark'
+    ? 'rgba(255, 255, 255, 0.08)'
+    : 'rgba(0, 0, 0, 0.06)'};
+`;
+
+const FileListContainer = styled.div`
+  flex: 1;
+  padding: 0 16px;
+  
+  .ant-table-wrapper {
+    height: 100%;
+  }
+
+  .ant-table {
+    background: transparent;
   }
 `;
 
@@ -71,20 +116,35 @@ const PageContainer = styled.div`
 `;
 
 const ContentContainer = styled.div`
-  flex: 1;
-  margin-top: 64px; // 为固定头部留出空间
+  ${tw`flex flex-1`}
+  margin-top: 64px;
   display: flex;
-  overflow: hidden; // 防止内容溢出
+  overflow: hidden;
+  width: 100%;
 `;
 
 // 添加新的样式组件
 const RoundedButton = styled(Button)`
-  border-radius: 20px;
-  height: 36px;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  @media (min-width: 769px) {
+    border-radius: 20px;
+    height: 36px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  @media (max-width: 768px) {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
   transition: all 0.2s ease;
   
   &.ant-btn-default {
@@ -102,7 +162,9 @@ const RoundedButton = styled(Button)`
   }
   
   &.ant-btn-text {
-    padding: 0 12px;
+    @media (min-width: 769px) {
+      padding: 0 12px;
+    }
     box-shadow: none;
     background: transparent;
     
@@ -236,6 +298,9 @@ const CloudDrivePage = () => {
     total: 0
   });
   const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState(window.innerWidth < 769);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 769);
+  const screens = Grid.useBreakpoint();
 
   // 添加登录检查
   useEffect(() => {
@@ -263,6 +328,17 @@ const CloudDrivePage = () => {
       );
     }
   }, [userInfo]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 769;
+      setIsMobile(mobile);
+      setCollapsed(mobile);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // 添加分页变化处理函数
   const handlePageChange = (page, pageSize) => {
@@ -614,7 +690,15 @@ const CloudDrivePage = () => {
       }
       
       // 刷新文件列表
-      await loadFiles(currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText);
+      await loadFiles(
+        currentParentId, 
+        setLoading, 
+        setFiles, 
+        setFilteredFiles, 
+        setSearchText,
+        setPagination,
+        pagination || { currentPage: 1, pageSize: 10, total: 0 }
+      );
     } catch (error) {
       console.error('上传过程中发生错误:', error);
       message.error('上传过程中发生错误: ' + (error.message || '未知错误'));
@@ -657,7 +741,16 @@ const CloudDrivePage = () => {
       okType: 'danger',
       cancelText: '取消',
       onOk() {
-        deleteFile(record, setLoading, currentParentId, setFiles, setFilteredFiles, setSearchText);
+        deleteFile(
+          record, 
+          setLoading, 
+          currentParentId, 
+          setFiles, 
+          setFilteredFiles, 
+          setSearchText,
+          setPagination,
+          pagination
+        );
       },
       onCancel() {
         // User cancelled deletion, no action needed
@@ -820,7 +913,15 @@ const CloudDrivePage = () => {
         setNewFolderName('');
         
         // 刷新文件列表
-        loadFiles(currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText);
+        loadFiles(
+          currentParentId, 
+          setLoading, 
+          setFiles, 
+          setFilteredFiles, 
+          setSearchText,
+          setPagination,
+          pagination
+        );
       } else {
         throw new Error(response.data.message || '创建文件夹失败');
       }
@@ -901,13 +1002,95 @@ const CloudDrivePage = () => {
     }
 
     const selectedItems = filteredFiles.filter(file => selectedRowKeys.includes(file.key));
-    const fileNames = selectedItems.map(file => file.name).join('、');
+    const maxDisplayItems = 5; // 最大显示数量
 
-    confirm({
-      title: '确认删除',
-      content: `确定要删除以下 ${selectedRowKeys.length} 个文件吗？此操作不可恢复。\n${fileNames}`,
+    Modal.confirm({
+      title: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <DeleteOutlined style={{ color: '#ff4d4f', fontSize: '20px' }} />
+          <span>确认删除 {selectedRowKeys.length} 个文件？</span>
+        </div>
+      ),
+      icon: null,
+      width: 520,
+      content: (
+        <div>
+          <div style={{ 
+            padding: '12px',
+            background: 'var(--ant-color-error-bg)',
+            border: '1px solid var(--ant-color-error-border)',
+            borderRadius: '8px',
+            marginBottom: '16px'
+          }}>
+            <Text type="danger">
+              <WarningFilled style={{ marginRight: '8px' }} />
+              此操作将永久删除以下文件，且无法恢复
+            </Text>
+          </div>
+          <div style={{ 
+            maxHeight: '200px',
+            overflow: 'auto',
+            border: '1px solid var(--ant-color-border)',
+            borderRadius: '8px'
+          }}>
+            <Table
+              size="small"
+              pagination={false}
+              showHeader={false}
+              dataSource={selectedItems.slice(0, maxDisplayItems)}
+              columns={[
+                {
+                  key: 'icon',
+                  width: 40,
+                  render: (_, record) => (
+                    <div style={{ padding: '0 8px' }}>
+                      {record.type === 'folder' ? (
+                        <FolderOutlined style={{ color: '#ffd591', fontSize: '16px' }} />
+                      ) : isImageFile(record.name) ? (
+                        <FileImageOutlined style={{ color: '#85a5ff', fontSize: '16px' }} />
+                      ) : (
+                        <FileOutlined style={{ color: '#91d5ff', fontSize: '16px' }} />
+                      )}
+                    </div>
+                  )
+                },
+                {
+                  key: 'name',
+                  render: (_, record) => (
+                    <Text ellipsis style={{ width: '300px' }} title={record.name}>
+                      {record.name}
+                    </Text>
+                  )
+                },
+                {
+                  key: 'size',
+                  width: 100,
+                  align: 'right',
+                  render: (_, record) => (
+                    <Text type="secondary" style={{ padding: '0 8px' }}>
+                      {record.type === 'folder' ? '-' : formatSize(record.size)}
+                    </Text>
+                  )
+                }
+              ]}
+            />
+            {selectedItems.length > maxDisplayItems && (
+              <div style={{ 
+                padding: '8px', 
+                borderTop: '1px solid var(--ant-color-border)',
+                color: 'var(--ant-color-text-secondary)',
+                textAlign: 'center'
+              }}>
+                还有 {selectedItems.length - maxDisplayItems} 个文件未显示
+              </div>
+            )}
+          </div>
+        </div>
+      ),
       okText: '删除',
-      okType: 'danger',
+      okButtonProps: {
+        danger: true,
+      },
       cancelText: '取消',
       onOk: async () => {
         try {
@@ -930,7 +1113,15 @@ const CloudDrivePage = () => {
             message.success(`成功删除 ${selectedRowKeys.length} 个文件`);
             setSelectedRowKeys([]); // 清空选择
             // 刷新文件列表
-            await loadFiles(currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText);
+            await loadFiles(
+              currentParentId, 
+              setLoading, 
+              setFiles, 
+              setFilteredFiles, 
+              setSearchText,
+              setPagination,
+              pagination
+            );
           } else {
             throw new Error(response.data.message || '删除失败');
           }
@@ -1128,18 +1319,15 @@ const CloudDrivePage = () => {
               selectedKeys={selectedKeys}
               onSelect={handleMenuSelect}
               onAboutClick={() => setIsAboutModalVisible(true)}
+              collapsed={collapsed}
+              onCollapse={setCollapsed}
             />
             
-            <MainLayout>
+            <MainLayout collapsed={collapsed}>
               <StyledContent>
-                <PathHistory
-                  pathHistory={pathHistory}
-                  onHomeClick={handleHomeClick}
-                  onPathClick={handlePathClick}
-                />
-                
+                {/* 1. 操作栏 */}
                 <ActionBar>
-                  <Space>
+                  <Space size={screens.md ? 8 : 4}>
                     <Upload
                       multiple
                       showUploadList={false}
@@ -1153,30 +1341,34 @@ const CloudDrivePage = () => {
                         type="primary"
                         icon={<CloudUploadOutlined />}
                         loading={uploadStates.isUploading}
+                        title="上传文件"
                       >
-                        上传文件
+                        <span className="action-button-text">上传文件</span>
                       </RoundedButton>
                     </Upload>
                     <RoundedButton
                       icon={<FolderOutlined />}
                       onClick={() => setNewFolderModalVisible(true)}
+                      title="新建文件夹"
                     >
-                      新建文件夹
+                      <span className="action-button-text">新建文件夹</span>
                     </RoundedButton>
                     {selectedRowKeys.length > 0 && (
                       <>
                         <RoundedButton
                           icon={<DownloadOutlined />}
                           onClick={handleBatchDownload}
+                          title="批量下载"
                         >
-                          批量下载
+                          <span className="action-button-text">批量下载</span>
                         </RoundedButton>
                         <RoundedButton
                           danger
                           icon={<DeleteOutlined />}
                           onClick={handleBatchDelete}
+                          title="批量删除"
                         >
-                          批量删除
+                          <span className="action-button-text">批量删除</span>
                         </RoundedButton>
                       </>
                     )}
@@ -1192,8 +1384,9 @@ const CloudDrivePage = () => {
                         pagination
                       )}
                       loading={loading}
+                      title="刷新"
                     >
-                      刷新
+                      <span className="action-button-text">刷新</span>
                     </RoundedButton>
                   </Space>
                   <RoundedSearch
@@ -1205,20 +1398,32 @@ const CloudDrivePage = () => {
                   />
                 </ActionBar>
 
-                <FileList
-                  loading={loading}
-                  filteredFiles={filteredFiles}
-                  searchText={searchText}
-                  handleFolderClick={handleFolderClick}
-                  handlePreview={handlePreview}
-                  handleDelete={handleDelete}
-                  isImageFile={isImageFile}
-                  selectedRowKeys={selectedRowKeys}
-                  onSelectChange={handleSelectChange}
-                  onDownload={startDownload}
-                  pagination={pagination}
-                  onPageChange={handlePageChange}
-                />
+                {/* 2. 路径导航 */}
+                <PathContainer>
+                  <PathHistory
+                    pathHistory={pathHistory}
+                    onHomeClick={handleHomeClick}
+                    onPathClick={handlePathClick}
+                  />
+                </PathContainer>
+
+                {/* 3. 文件列表 */}
+                <FileListContainer>
+                  <FileList
+                    loading={loading}
+                    filteredFiles={filteredFiles}
+                    searchText={searchText}
+                    handleFolderClick={handleFolderClick}
+                    handlePreview={handlePreview}
+                    handleDelete={handleDelete}
+                    isImageFile={isImageFile}
+                    selectedRowKeys={selectedRowKeys}
+                    onSelectChange={handleSelectChange}
+                    onDownload={startDownload}
+                    pagination={pagination}
+                    onPageChange={handlePageChange}
+                  />
+                </FileListContainer>
               </StyledContent>
             </MainLayout>
           </StyledLayout>

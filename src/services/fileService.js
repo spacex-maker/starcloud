@@ -179,7 +179,16 @@ export const checkDuplicates = (files, existingFiles = []) => {
   return { duplicates, unique };
 };
 
-export const deleteFile = async (record, setLoading, currentParentId, setFiles, setFilteredFiles, setSearchText) => {
+export const deleteFile = async (
+  record, 
+  setLoading, 
+  currentParentId, 
+  setFiles, 
+  setFilteredFiles, 
+  setSearchText,
+  setPagination,
+  pagination
+) => {
   try {
     setLoading(true);
     
@@ -193,8 +202,16 @@ export const deleteFile = async (record, setLoading, currentParentId, setFiles, 
     
     if (response.data && response.data.success) {
       message.success('删除成功');
-      // Refresh file list
-      await loadFiles(currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText);
+      // Refresh file list with pagination
+      await loadFiles(
+        currentParentId, 
+        setLoading, 
+        setFiles, 
+        setFilteredFiles, 
+        setSearchText,
+        setPagination,
+        pagination
+      );
     } else {
       throw new Error(response.data.message || '删除失败');
     }

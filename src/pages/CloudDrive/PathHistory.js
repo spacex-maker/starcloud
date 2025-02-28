@@ -1,55 +1,52 @@
 import React from 'react';
-import { HomeOutlined, RightOutlined } from '@ant-design/icons';
-import tw, { styled } from 'twin.macro';
+import { Breadcrumb } from 'antd';
+import { HomeOutlined } from '@ant-design/icons';
+import styled from 'styled-components';
 
-const PathContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 0;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--ant-color-border);
-`;
-
-const PathItem = styled.span`
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  color: var(--ant-color-text-secondary);
-  font-size: 14px;
+const StyledBreadcrumb = styled(Breadcrumb)`
+  margin: 4px 0;
+  padding: 0;
+  line-height: normal;
   
-  &:hover {
-    color: var(--ant-color-primary);
+  .ant-breadcrumb-link {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    
+    &:hover {
+      color: var(--ant-color-primary);
+    }
+  }
+
+  .ant-breadcrumb-separator {
+    margin: 0 4px;
   }
 `;
 
-const PathSeparator = styled(RightOutlined)`
-  color: var(--ant-color-text-quaternary);
-  font-size: 12px;
-`;
-
-const HomeIcon = styled(HomeOutlined)`
-  color: var(--ant-color-text-secondary);
-  cursor: pointer;
-  
-  &:hover {
-    color: var(--ant-color-primary);
-  }
-`;
-
-const PathHistory = ({ pathHistory = [], onHomeClick, onPathClick }) => {
+const PathHistory = ({ pathHistory, onHomeClick, onPathClick }) => {
   return (
-    <PathContainer>
-      <HomeIcon onClick={onHomeClick} />
-      {pathHistory.map((path, index) => (
-        <React.Fragment key={path.id || index}>
-          <PathSeparator />
-          <PathItem onClick={() => onPathClick(index)}>
-            {path.name}
-          </PathItem>
-        </React.Fragment>
-      ))}
-    </PathContainer>
+    <StyledBreadcrumb
+      items={[
+        {
+          title: (
+            <HomeOutlined
+              style={{ cursor: 'pointer' }}
+              onClick={onHomeClick}
+            />
+          ),
+        },
+        ...pathHistory.map((path, index) => ({
+          title: (
+            <span
+              style={{ cursor: 'pointer' }}
+              onClick={() => onPathClick(index)}
+            >
+              {path.name}
+            </span>
+          ),
+        })),
+      ]}
+    />
   );
 };
 

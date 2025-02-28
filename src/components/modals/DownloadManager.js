@@ -10,11 +10,13 @@ import {
 } from '@ant-design/icons';
 import styled from 'styled-components';
 
+const MOBILE_BREAKPOINT = 768;
+
 const DownloadContainer = styled.div`
   position: fixed;
   bottom: ${props => props.collapsed ? '20px' : '40px'};
   right: 20px;
-  width: 360px;
+  width: ${props => props.isMobile ? 'auto' : '360px'};
   background: ${props => props.theme.mode === 'dark' 
     ? 'rgba(0, 0, 0, 0.8)' 
     : 'rgba(255, 255, 255, 0.9)'};
@@ -23,13 +25,37 @@ const DownloadContainer = styled.div`
   border: 1px solid ${props => props.theme.mode === 'dark'
     ? 'rgba(255, 255, 255, 0.1)'
     : 'rgba(0, 0, 0, 0.06)'};
-  border-radius: 8px;
+  border-radius: ${props => props.isMobile ? '50%' : '8px'};
   box-shadow: ${props => props.theme.mode === 'dark'
     ? '0 8px 32px rgba(0, 0, 0, 0.3)'
     : '0 8px 32px rgba(0, 0, 0, 0.08)'};
   z-index: 1000;
   transition: all 0.3s ease;
   color: var(--ant-color-text);
+  
+  ${props => props.isMobile && !props.expanded && `
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    
+    &:hover {
+      transform: scale(1.05);
+    }
+    
+    &:active {
+      transform: scale(0.95);
+    }
+  `}
+  
+  ${props => props.isMobile && props.expanded && `
+    width: calc(100% - 40px);
+    max-width: 360px;
+    border-radius: 12px;
+  `}
 `;
 
 const DownloadHeader = styled.div`
@@ -203,17 +229,66 @@ const formatSize = (bytes) => {
   return `${value.toFixed(2)} ${units[unitIndex]}`;
 };
 
+const DownloadBubbleIndicator = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .download-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--ant-color-primary);
+    color: white;
+    border-radius: 50%;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    padding: 0 4px;
+  }
+  
+  .download-icon {
+    font-size: 24px;
+    color: var(--ant-color-text);
+  }
+`;
+
 const DownloadManager = ({ downloads, onCancel, onClear, onCollapse }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [downloadUrls, setDownloadUrls] = useState(new Map());
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= MOBILE_BREAKPOINT);
+  const [expanded, setExpanded] = useState(false);
   
   const activeDownloads = downloads.filter(d => d.status === 'downloading');
   const completedDownloads = downloads.filter(d => ['completed', 'error'].includes(d.status));
   
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= MOBILE_BREAKPOINT;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setExpanded(false);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const handleCollapse = () => {
-    setCollapsed(!collapsed);
-    if (onCollapse) {
-      onCollapse(!collapsed);
+    if (isMobile) {
+      setExpanded(!expanded);
+    } else {
+      setCollapsed(!collapsed);
+      if (onCollapse) {
+        onCollapse(!collapsed);
+      }
     }
   };
 
@@ -269,90 +344,96 @@ const DownloadManager = ({ downloads, onCancel, onClear, onCollapse }) => {
     };
   }, []);
 
-  if (collapsed) {
+  if (isMobile && !expanded) {
     return (
-      <DownloadContainer collapsed>
-        <DownloadHeader>
-          <div className="title">
-            <DownloadOutlined />
-            {activeDownloads.length > 0 && (
-              <span>{activeDownloads.length} 个下载进行中</span>
-            )}
-          </div>
-          <div className="actions">
-            <IconButton
-              type="text"
-              icon={<UpOutlined />}
-              onClick={handleCollapse}
-            />
-          </div>
-        </DownloadHeader>
+      <DownloadContainer isMobile onClick={handleCollapse}>
+        <DownloadBubbleIndicator>
+          <DownloadOutlined className="download-icon" />
+          {activeDownloads.length > 0 && (
+            <div className="download-count">{activeDownloads.length}</div>
+          )}
+        </DownloadBubbleIndicator>
       </DownloadContainer>
     );
   }
 
   return (
-    <DownloadContainer>
+    <DownloadContainer isMobile={isMobile} expanded={expanded} collapsed={collapsed}>
       <DownloadHeader>
         <div className="title">
           <DownloadOutlined />
-          <span>下载管理器</span>
+          Downloads {activeDownloads.length > 0 && `(${activeDownloads.length})`}
         </div>
         <div className="actions">
+          {(activeDownloads.length > 0 || completedDownloads.length > 0) && (
+            <IconButton
+              type="text"
+              icon={<DeleteOutlined />}
+              onClick={onClear}
+              title="Clear completed"
+            />
+          )}
           <IconButton
             type="text"
-            icon={<DeleteOutlined />}
-            onClick={onClear}
-            disabled={completedDownloads.length === 0}
-          />
-          <IconButton
-            type="text"
-            icon={<MinusOutlined />}
+            icon={isMobile ? <CloseOutlined /> : (collapsed ? <UpOutlined /> : <DownOutlined />)}
             onClick={handleCollapse}
+            title={collapsed ? 'Expand' : 'Collapse'}
           />
         </div>
       </DownloadHeader>
-      <DownloadList>
-        {downloads.map((download) => (
-          <DownloadItem key={download.id}>
-            <div className="item-header">
-              <div className="filename">{download.filename}</div>
-              {download.status === 'downloading' && (
-                <IconButton
-                  type="text"
-                  icon={<CloseOutlined />}
-                  onClick={() => onCancel(download.id)}
+      {!collapsed && (
+        <DownloadList>
+          {activeDownloads.map((download) => (
+            <DownloadItem key={download.id}>
+              <div className="item-header">
+                <div className="filename">{download.filename}</div>
+                {download.status === 'downloading' && (
+                  <IconButton
+                    type="text"
+                    icon={<CloseOutlined />}
+                    onClick={() => onCancel(download.id)}
+                  />
+                )}
+              </div>
+              <div className="item-progress">
+                <Progress
+                  percent={download.progress}
+                  status={download.status === 'error' ? 'exception' : undefined}
+                  strokeColor={download.status === 'completed' ? '#52c41a' : undefined}
+                  size="small"
                 />
-              )}
-            </div>
-            <div className="item-progress">
-              <Progress
-                percent={download.progress}
-                status={download.status === 'error' ? 'exception' : undefined}
-                strokeColor={download.status === 'completed' ? '#52c41a' : undefined}
-                size="small"
-              />
-              {download.status === 'downloading' && (
-                <div className="download-size">
-                  <span>{formatSize(download.loadedBytes)}</span>
-                  <span className="size-divider">/</span>
+                {download.status === 'downloading' && (
+                  <div className="download-size">
+                    <span>{formatSize(download.loadedBytes)}</span>
+                    <span className="size-divider">/</span>
+                    <span>{formatSize(download.totalBytes)}</span>
+                  </div>
+                )}
+              </div>
+              <div className="item-info">
+                <span>
+                  {download.status === 'downloading' && formatSpeed(download.speed)}
+                  {download.status === 'completed' && '已完成'}
+                  {download.status === 'error' && '下载失败'}
+                </span>
+                {download.status !== 'downloading' && (
+                  <span>{formatSize(download.totalBytes)}</span>
+                )}
+              </div>
+            </DownloadItem>
+          ))}
+          {completedDownloads.map((download) => (
+            <DownloadItem key={download.id}>
+              <div className="item-header">
+                <div className="filename">{download.filename}</div>
+                <div className="item-info">
                   <span>{formatSize(download.totalBytes)}</span>
                 </div>
-              )}
-            </div>
-            <div className="item-info">
-              <span>
-                {download.status === 'downloading' && formatSpeed(download.speed)}
-                {download.status === 'completed' && '已完成'}
-                {download.status === 'error' && '下载失败'}
-              </span>
-              {download.status !== 'downloading' && (
-                <span>{formatSize(download.totalBytes)}</span>
-              )}
-            </div>
-          </DownloadItem>
-        ))}
-      </DownloadList>
+              </div>
+            </DownloadItem>
+          ))}
+        </DownloadList>
+      )}
     </DownloadContainer>
   );
 };
