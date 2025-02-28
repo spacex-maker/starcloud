@@ -65,6 +65,7 @@ const TableContainer = styled.div`
   min-height: 0;
   display: flex;
   flex-direction: column;
+  padding-left: 8px;  // 添加左边距
   
   .ant-table-wrapper {
     flex: 1;
@@ -190,8 +191,6 @@ const RoundedButton = styled(Button)`
   display: flex;
   align-items: center;
   gap: 8px;
-  border: none;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
   
   &.ant-btn-default {
@@ -221,12 +220,28 @@ const RoundedButton = styled(Button)`
   }
   
   &.ant-btn-primary {
-    background-color: var(--ant-color-primary);
-    color: white;
+    background-color: #1677ff;
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 2px 4px rgba(22, 119, 255, 0.2);
     
     &:hover {
-      background-color: var(--ant-color-primary-hover);
-      box-shadow: 0 1px 3px var(--ant-color-primary-3);
+      background-color: #4096ff;
+      box-shadow: 0 4px 8px rgba(22, 119, 255, 0.3);
+    }
+    
+    &:active {
+      background-color: #0958d9;
+      box-shadow: 0 2px 4px rgba(22, 119, 255, 0.2);
+    }
+    
+    &.ant-btn-loading {
+      opacity: 0.8;
+      background-color: #4096ff;
+    }
+    
+    .anticon {
+      color: #ffffff;
     }
   }
   
@@ -236,10 +251,6 @@ const RoundedButton = styled(Button)`
   
   .anticon {
     font-size: 16px;
-  }
-  
-  &.ant-btn-loading {
-    opacity: 0.8;
   }
 `;
 
@@ -782,9 +793,9 @@ const CloudDrivePage = () => {
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
-      width: '50%',
+      width: '40%',
       render: (text, record) => (
-        <div>
+        <div style={{ paddingLeft: '16px' }}>
           <Space>
             {record.type === 'folder' ? (
               <FolderOutlined style={{ color: '#ffd591' }} />
