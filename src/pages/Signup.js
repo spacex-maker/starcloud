@@ -344,6 +344,59 @@ const ErrorText = styled.div`
   margin-top: 0.5rem;
 `;
 
+// 修改规则提示组件的样式
+const RuleHint = styled.div`
+  font-size: 0.75rem;
+  color: var(--ant-color-text-secondary);
+  margin-top: 0.25rem;
+  padding-left: 1rem;
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: ${props => props.theme.mode === 'dark' 
+    ? 'var(--ant-color-bg-container)' 
+    : '#ffffff'};
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 0.75rem;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  
+  &.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    &.valid {
+      color: var(--ant-color-success);
+    }
+    
+    &.invalid {
+      color: var(--ant-color-error);
+    }
+  }
+`;
+
 const Footer = styled.div`
   text-align: center;
   margin-top: 2rem;
@@ -494,6 +547,75 @@ const SelectedCountryContent = styled.div`
   }
 `;
 
+// 添加发送验证码时的脉冲动画
+const sendingPulse = keyframes`
+  0% {
+    transform: translateY(-50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-50%) scale(0.95);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-50%) scale(1);
+    opacity: 1;
+  }
+`;
+
+// 添加发光扩散动画
+const glowRipple = keyframes`
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+`;
+
+const VerifyCodeButton = styled.button`
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--ant-color-primary);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  transition: all 0.3s;
+  z-index: 3;
+  border-radius: 4px;
+
+  &:disabled {
+    color: var(--ant-color-text-disabled);
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    color: var(--ant-color-primary-hover);
+  }
+
+  &.sending {
+    animation: ${sendingPulse} 1.5s ease-in-out infinite;
+    background: var(--ant-color-primary);
+    color: white;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: var(--ant-color-primary);
+      animation: ${glowRipple} 1.5s ease-out infinite;
+      z-index: -1;
+    }
+  }
+`;
+
 export default function SignupPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
@@ -526,6 +648,25 @@ export default function SignupPage() {
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const countryDropdownRef = useRef(null);
   const countryButtonRef = useRef(null);
+  
+  // 添加用户名和密码验证状态
+  const [usernameRules, setUsernameRules] = useState({
+    length: false,
+    format: false
+  });
+  
+  const [passwordRules, setPasswordRules] = useState({
+    length: false,
+    lowercase: false,
+    uppercase: false,
+    number: false,
+    special: false
+  });
+  
+  const [code, setCode] = useState('');
+  const [countdown, setCountdown] = useState(0);
+  const [isSending, setIsSending] = useState(false);
+  const [codeFocused, setCodeFocused] = useState(false);
   
   // 获取支持的语言列表
   useEffect(() => {
@@ -592,30 +733,116 @@ export default function SignupPage() {
     label: language.languageNameNative
   }));
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
+  // 添加用户名验证函数
+  const validateUsername = (value) => {
+    setUsernameRules({
+      length: value.length >= 4 && value.length <= 10,
+      format: /^[a-zA-Z0-9_-]+$/.test(value)
+    });
+  };
+  
+  // 添加密码验证函数
+  const validatePassword = (value) => {
+    setPasswordRules({
+      length: value.length >= 6 && value.length <= 20,
+      lowercase: /[a-z]/.test(value),
+      uppercase: /[A-Z]/.test(value),
+      number: /[0-9]/.test(value),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
+    });
+  };
+  
+  // 修改用户名输入处理函数
+  const handleUsernameChange = (e) => {
+    const value = e.target.value;
+    setUsername(value);
+    validateUsername(value);
+  };
+  
+  // 修改密码输入处理函数
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setPassword(value);
+    validatePassword(value);
+  };
 
-    if (password !== confirmPassword) {
-      setError("两次输入的密码不一致");
-      return;
-    }
+  const startCountdown = () => {
+    setCountdown(300); // 5分钟 = 300秒
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
-    if (!username || !email || !password || !countryCode) {
-      setError("请填写所有必填字段");
-      return;
-    }
-
-    // 验证用户名长度
-    if (username.length < 4 || username.length > 10) {
-      setError("用户名长度必须在4-10个字符之间");
+  const handleSendCode = async () => {
+    if (!email) {
+      setError(intl.formatMessage({ id: 'signup.error.emailRequired' }));
       return;
     }
 
     // 验证邮箱格式
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError("请输入有效的邮箱地址");
+      setError(intl.formatMessage({ id: 'signup.error.emailInvalid' }));
+      return;
+    }
+
+    setIsSending(true);
+
+    try {
+      const response = await axios.post('/base/productx/user/register-send-email', {
+        email
+      });
+
+      if (response.data.success) {
+        message.success(intl.formatMessage({ id: 'signup.verificationCode.success' }));
+        startCountdown();
+      } else {
+        setError(response.data.message || intl.formatMessage({ id: 'signup.verificationCode.error' }));
+      }
+    } catch (error) {
+      setError(error.response?.data?.message || intl.formatMessage({ id: 'signup.verificationCode.error' }));
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // 修改注册提交函数
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!username || !email || !password || !countryCode || !code) {
+      setError(intl.formatMessage({ id: 'signup.error.allFieldsRequired' }));
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError(intl.formatMessage({ id: 'signup.error.passwordMismatch' }));
+      return;
+    }
+
+    // 验证用户名长度
+    if (username.length < 4 || username.length > 10) {
+      setError(intl.formatMessage({ id: 'signup.username.rule.length' }));
+      return;
+    }
+
+    // 验证邮箱格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError(intl.formatMessage({ id: 'signup.error.emailInvalid' }));
+      return;
+    }
+
+    // 验证验证码长度
+    if (code.length !== 6) {
+      setError(intl.formatMessage({ id: 'signup.verificationCode.invalid' }));
       return;
     }
 
@@ -626,18 +853,19 @@ export default function SignupPage() {
         username,
         email,
         password,
-        countryCode
+        countryCode,
+        code
       });
 
       if (result.success) {
-        message.success("注册成功");
+        message.success(intl.formatMessage({ id: 'signup.success' }));
         navigate("/login");
       } else {
-        setError(result.message || "注册失败，请检查输入信息");
+        setError(result.message || intl.formatMessage({ id: 'signup.error.default' }));
       }
     } catch (error) {
       console.error('注册错误:', error);
-      setError(error.response?.data?.message || "注册失败，请稍后重试");
+      setError(error.response?.data?.message || intl.formatMessage({ id: 'signup.error.default' }));
     } finally {
       setLoading(false);
     }
@@ -782,7 +1010,7 @@ export default function SignupPage() {
                   <Input
                     type="text"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={handleUsernameChange}
                     required
                     placeholder={intl.formatMessage({ id: "signup.username.placeholder" })}
                     autoComplete="off"
@@ -790,6 +1018,16 @@ export default function SignupPage() {
                     onBlur={() => setUsernameFocused(false)}
                   />
                   <BorderGlow className={usernameFocused ? "active" : ""} />
+                  <RuleHint className={usernameFocused ? "show" : ""}>
+                    <ul>
+                      <li className={usernameRules.length ? 'valid' : 'invalid'}>
+                        • <FormattedMessage id="signup.username.rule.length" defaultMessage="用户名长度为4-10个字符" />
+                      </li>
+                      <li className={usernameRules.format ? 'valid' : 'invalid'}>
+                        • <FormattedMessage id="signup.username.rule.format" defaultMessage="仅支持字母、数字、下划线和连字符" />
+                      </li>
+                    </ul>
+                  </RuleHint>
                 </InputWrapper>
               </FormItem>
 
@@ -843,9 +1081,41 @@ export default function SignupPage() {
               <FormItem>
                 <InputWrapper>
                   <Input
+                    type="text"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    required
+                    placeholder={intl.formatMessage({ id: 'signup.verificationCode.placeholder' })}
+                    maxLength={6}
+                    onFocus={() => setCodeFocused(true)}
+                    onBlur={() => setCodeFocused(false)}
+                  />
+                  <BorderGlow className={codeFocused ? "active" : ""} />
+                  <VerifyCodeButton
+                    type="button"
+                    onClick={handleSendCode}
+                    disabled={countdown > 0}
+                    className={isSending ? 'sending' : ''}
+                  >
+                    {isSending 
+                      ? intl.formatMessage({ id: 'signup.verificationCode.sending' })
+                      : countdown > 0 
+                        ? intl.formatMessage(
+                            { id: 'signup.verificationCode.retry' },
+                            { seconds: Math.floor(countdown) }
+                          )
+                        : intl.formatMessage({ id: 'signup.verificationCode.send' })
+                    }
+                  </VerifyCodeButton>
+                </InputWrapper>
+              </FormItem>
+
+              <FormItem>
+                <InputWrapper>
+                  <Input
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={handlePasswordChange}
                     required
                     placeholder={intl.formatMessage({ id: "signup.password.placeholder" })}
                     autoComplete="new-password"
@@ -860,6 +1130,25 @@ export default function SignupPage() {
                   >
                     {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
                   </PasswordToggle>
+                  <RuleHint className={passwordFocused ? "show" : ""}>
+                    <ul>
+                      <li className={passwordRules.length ? 'valid' : 'invalid'}>
+                        • <FormattedMessage id="signup.password.rule.length" defaultMessage="密码长度为6-20个字符" />
+                      </li>
+                      <li className={passwordRules.lowercase ? 'valid' : 'invalid'}>
+                        • <FormattedMessage id="signup.password.rule.lowercase" defaultMessage="包含小写字母" />
+                      </li>
+                      <li className={passwordRules.uppercase ? 'valid' : 'invalid'}>
+                        • <FormattedMessage id="signup.password.rule.uppercase" defaultMessage="包含大写字母" />
+                      </li>
+                      <li className={passwordRules.number ? 'valid' : 'invalid'}>
+                        • <FormattedMessage id="signup.password.rule.number" defaultMessage="包含数字" />
+                      </li>
+                      <li className={passwordRules.special ? 'valid' : 'invalid'}>
+                        • <FormattedMessage id="signup.password.rule.special" defaultMessage="包含特殊字符" />
+                      </li>
+                    </ul>
+                  </RuleHint>
                 </InputWrapper>
               </FormItem>
 

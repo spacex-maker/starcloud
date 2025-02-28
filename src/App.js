@@ -7,6 +7,7 @@ import 'antd/dist/reset.css'; // 只需要这一个样式文件即可
 import SaaSProductLandingPage from "./demos/SaaSProductLandingPage";
 import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";
+import ResetPasswordPage from "./pages/ResetPassword";
 import JoinUs from "pages/JoinUs";
 import Navigation from "pages/Navigation";
 import ProfilePage from "pages/Profile";
@@ -110,6 +111,7 @@ export default function App() {
               <Route path="/" element={<CloudDrivePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Routes>
           </Router>
