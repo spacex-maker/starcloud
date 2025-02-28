@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Menu } from 'antd';
-import { FolderOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { FolderOutlined, InfoCircleOutlined, BulbOutlined } from '@ant-design/icons';
 import { styled } from 'twin.macro';
+import FeedbackModal from '../../components/modals/FeedbackModal';
 
 const StyledSider = styled.aside`
   background: var(--ant-color-bg-container);
@@ -12,7 +13,7 @@ const StyledSider = styled.aside`
   flex-shrink: 0;
 
   .ant-menu {
-    height: calc(100% - 120px);
+    height: calc(100% - 180px);
     border-right: none;
     padding: 8px;
     background: transparent;
@@ -36,11 +37,17 @@ const StyledSider = styled.aside`
   }
 `;
 
-const AboutButton = styled.button`
+const BottomButtons = styled.div`
   position: absolute;
   bottom: 24px;
   left: 16px;
   right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const ActionButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
@@ -50,14 +57,25 @@ const AboutButton = styled.button`
   cursor: pointer;
   padding: 8px 16px;
   border-radius: 4px;
-  width: calc(100% - 32px);
+  width: 100%;
   
   &:hover {
     background: var(--ant-color-bg-elevated);
   }
+
+  ${props => props.primary && `
+    color: var(--ant-color-primary);
+    background: var(--ant-color-primary-bg);
+    
+    &:hover {
+      background: var(--ant-color-primary-bg-hover);
+    }
+  `}
 `;
 
 const SideMenu = ({ selectedKeys, onSelect, onAboutClick }) => {
+  const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
+
   const menuItems = [
     {
       key: 'all',
@@ -89,10 +107,24 @@ const SideMenu = ({ selectedKeys, onSelect, onAboutClick }) => {
         onSelect={({ key }) => onSelect(key)}
         items={menuItems}
       />
-      <AboutButton onClick={onAboutClick}>
-        <InfoCircleOutlined />
-        关于我们
-      </AboutButton>
+      <BottomButtons>
+        <ActionButton 
+          primary 
+          onClick={() => setIsFeedbackVisible(true)}
+        >
+          <BulbOutlined />
+          提交需求
+        </ActionButton>
+        <ActionButton onClick={onAboutClick}>
+          <InfoCircleOutlined />
+          关于我们
+        </ActionButton>
+      </BottomButtons>
+
+      <FeedbackModal
+        isVisible={isFeedbackVisible}
+        onClose={() => setIsFeedbackVisible(false)}
+      />
     </StyledSider>
   );
 };
