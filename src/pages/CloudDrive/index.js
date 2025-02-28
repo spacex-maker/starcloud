@@ -1,26 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Layout, Menu, Table, Button, Space, Input, Upload, Modal, Image } from 'antd';
+import React, { useState, useEffect} from 'react';
+import { Layout,Button, Space, Input, Upload, Modal, Image } from 'antd';
 import {
   FolderOutlined,
-  FileOutlined,
   CloudUploadOutlined,
-  DeleteOutlined,
-  DownloadOutlined,
   SearchOutlined,
-  HomeOutlined,
-  RightOutlined,
-  InfoCircleOutlined,
-  InboxOutlined,
-  FileImageOutlined,
-  EyeOutlined,
   ReloadOutlined,
+  DownloadOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import tw, { styled } from 'twin.macro';
 import SimpleHeader from "components/headers/simple";
 import AboutModal from "components/modals/AboutModal";
 import { cosService } from 'services/cos';
 import { message } from 'antd';
-import UploadProgressModal from 'components/modals/UploadProgressModal';
 import instance from 'api/axios'; // 导入已配置的 axios 实例
 import { Helmet } from 'react-helmet';
 import DuplicateFilesModal from 'components/modals/DuplicateFilesModal';
@@ -30,6 +22,9 @@ import PathHistory from './PathHistory';
 import SideMenu from './SideMenu';
 import { fetchRootDirectory, loadFiles, checkDuplicates, deleteFile } from 'services/fileService';
 import debounce from 'lodash/debounce';
+import _ from 'lodash';
+import FileUploadModal from 'components/modals/FileUploadModal';
+import DownloadManager from 'components/modals/DownloadManager';
 
 const { Content, Sider } = Layout;
 const { confirm } = Modal;
@@ -52,49 +47,6 @@ const StyledContent = styled.div`
   flex: 1;
   padding: 24px;
   overflow: auto;
-`;
-
-const TableContainer = styled.div`
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  padding-left: 8px;  // 添加左边距
-  
-  .ant-table-wrapper {
-    flex: 1;
-    overflow: hidden;
-    
-    .ant-spin-nested-loading {
-      height: 100%;
-      
-      .ant-spin-container {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        
-        .ant-table {
-          flex: 1;
-          overflow: hidden;
-          
-          .ant-table-container {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            
-            .ant-table-header {
-              flex-shrink: 0;
-            }
-            
-            .ant-table-body {
-              flex: 1;
-              overflow-y: auto;
-            }
-          }
-        }
-      }
-    }
-  }
 `;
 
 const ActionBar = styled.div`
@@ -245,41 +197,6 @@ const RoundedSearch = styled(Input)`
   }
 `;
 
-// 修改表格操作按钮的样式
-const TableActionButton = styled(RoundedButton)`
-  min-width: 32px;
-  height: 32px;
-  padding: 0 12px;
-  box-shadow: none;
-  
-  &:hover {
-    background-color: ${props => props.danger 
-      ? 'var(--ant-color-error-bg)'
-      : `color-mix(in srgb, var(--ant-color-primary) 8%, transparent)`};
-    color: ${props => props.danger 
-      ? 'var(--ant-color-error)'
-      : 'var(--ant-color-primary)'};
-  }
-`;
-
-const Footer = styled.footer`
-  ${tw`
-    text-center
-    py-4
-    text-gray-500 dark:text-gray-400
-    text-sm
-    border-t border-gray-200 dark:border-gray-700
-    mt-auto
-  `}
-`;
-
-const FooterContent = styled.div`
-  ${tw`
-    flex items-center justify-center
-    space-x-1
-  `}
-`;
-
 const CloudDrivePage = () => {
   const [selectedKeys, setSelectedKeys] = useState(['all']);
   const [files, setFiles] = useState([]);
@@ -288,12 +205,7 @@ const CloudDrivePage = () => {
   const [currentParentId, setCurrentParentId] = useState(0);
   const [pathHistory, setPathHistory] = useState([]);
   const [isAboutModalVisible, setIsAboutModalVisible] = useState(false);
-  const [uploadModalVisible, setUploadModalVisible] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState({});
-  const [uploadSpeeds, setUploadSpeeds] = useState({});
-  const [uploadStartTimes, setUploadStartTimes] = useState({});
-  const [uploadFileSizes, setUploadFileSizes] = useState({});
-  const [isUploading, setIsUploading] = useState(false);
+  const [fileUploadModalVisible, setFileUploadModalVisible] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [filteredFiles, setFilteredFiles] = useState([]);
@@ -305,6 +217,13 @@ const CloudDrivePage = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [duplicateFiles, setDuplicateFiles] = useState([]);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [uploadStates, setUploadStates] = useState({
+    files: new Map(),
+    isUploading: false
+  });
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [downloadTasks, setDownloadTasks] = useState([]);
+  const [downloadManagerVisible, setDownloadManagerVisible] = useState(true);
 
   useEffect(() => {
     // 从本地存储获取用户信息
@@ -359,177 +278,321 @@ const CloudDrivePage = () => {
     }
   };
 
-  // 修改 handleUpload 函数
-  const handleUpload = async (fileList) => {
-    if (!userInfo) {
-      message.error('请先登录');
-      return;
-    }
+  // 添加检查文件重复的函数
+  const checkDuplicateFiles = (newFiles) => {
+    // 获取当前目录下的所有文件
+    const currentFiles = files.filter(f => !f.isDirectory);
+    const duplicates = [];
+    const unique = [];
 
-    // 将文件列表转换为数组并去重（基于文件名）
-    const uniqueFiles = Array.from(fileList).reduce((acc, file) => {
-      if (!acc.find(f => f.name === file.name)) {
-        acc.push(file);
+    newFiles.forEach(file => {
+      const existingFile = currentFiles.find(f => f.name === file.name);
+      if (existingFile) {
+        duplicates.push({
+          file,
+          existingFile
+        });
+      } else {
+        unique.push(file);
       }
-      return acc;
-    }, []);
+    });
 
+    return { duplicates, unique };
+  };
+
+  // 修改 handleUpload 函数
+  const handleUpload = async (files) => {
+    const fileList = Array.from(files);
+    
     // 检查重复文件
-    const { duplicates, unique } = checkDuplicates(uniqueFiles);
-    setSelectedFiles(uniqueFiles);
+    const uploadStates = new Map();
+    
+    fileList.forEach(file => {
+      const isDuplicate = filteredFiles.some(existingFile => existingFile.name === file.name);
+      uploadStates.set(file.name, {
+        file,
+        name: file.name,
+        fileSize: file.size,
+        status: 'pending',
+        progress: 0,
+        isDuplicate,
+        action: isDuplicate ? 'ask' : 'upload',
+      });
+    });
+    
+    setUploadStates(prev => ({
+      ...prev,
+      files: uploadStates
+    }));
+    setFileUploadModalVisible(true);
+  };
 
-    if (duplicates.length > 0) {
-      setDuplicateFiles(duplicates);
-      setShowDuplicateModal(true);
+  // 修改 handleStartUpload 函数
+  const handleStartUpload = async () => {
+    setUploadStates(prev => ({
+      ...prev,
+      isUploading: true
+    }));
+    
+    const filesToUpload = Array.from(uploadStates.files.values())
+      .filter(fileState => fileState.status === 'pending')
+      .map(fileState => fileState.file);
+
+    if (filesToUpload.length === 0) {
+      message.info('没有需要上传的文件');
+      setUploadStates(prev => ({
+        ...prev,
+        isUploading: false
+      }));
       return;
     }
 
-    // 只有在没有重复文件时，才直接上传
-    await uploadFiles(unique);
+    try {
+      await uploadFiles(filesToUpload);
+    } catch (error) {
+      console.error('上传过程中发生错误:', error);
+      message.error('上传过程中发生错误: ' + (error.message || '未知错误'));
+    } finally {
+      setUploadStates(prev => ({
+        ...prev,
+        isUploading: false
+      }));
+    }
+  };
+
+  // 处理批量重复文件决策
+  const handleBatchDuplicateDecision = (action) => {
+    setUploadStates(prev => {
+      const newFiles = new Map(prev.files);
+      Array.from(newFiles.values())
+        .filter(file => file.isDuplicate)
+        .forEach(file => {
+          newFiles.set(file.file.name, {
+            ...file,
+            action: action,
+            status: action === 'skip' ? 'skipped' : 'pending'
+          });
+        });
+      return {
+        ...prev,
+        files: newFiles
+      };
+    });
+    setShowDuplicateModal(false);
+  };
+
+  // 处理单个文件的重复决策
+  const handleDuplicateDecision = (fileName, action) => {
+    setUploadStates(prev => {
+      const newFiles = new Map(prev.files);
+      const fileState = newFiles.get(fileName);
+      if (fileState) {
+        newFiles.set(fileName, {
+          ...fileState,
+          action,
+          status: action === 'skip' ? 'skipped' : 'pending'
+        });
+      }
+      return {
+        ...prev,
+        files: newFiles
+      };
+    });
   };
 
   // 修改 uploadFiles 函数
   const uploadFiles = async (filesToUpload) => {
-    setUploadModalVisible(true);
-    setIsUploading(true);
-    
-    const progressTracker = {};
-    const speedTracker = {};
-    
-    // 初始化状态
-    const newStartTimes = {};
-    const newFileSizes = {};
-    filesToUpload.forEach(file => {
-      newStartTimes[file.name] = Date.now();
-      newFileSizes[file.name] = file.size;
-      progressTracker[file.name] = 0;
-      speedTracker[file.name] = '0 KB/s';
-    });
-    
-    setUploadStartTimes(newStartTimes);
-    setUploadFileSizes(newFileSizes);
-    
-    // 使用防抖更新UI状态
-    const debouncedUpdateProgress = debounce(() => {
-      setUploadProgress({...progressTracker});
-      setUploadSpeeds({...speedTracker});
-    }, 100);
+    // 初始化上传状态
+    const initialUploadStates = new Map(filesToUpload.map(file => [
+      file.name,
+      {
+        progress: 0,
+        speed: 0,
+        startTime: Date.now(),
+        fileSize: file.size,
+        isCompleted: false,
+        lastProgress: 0,
+        lastTime: Date.now(),
+        uploadCompleted: false,
+        fileCreated: false,
+        status: 'pending',
+        isDuplicate: uploadStates.files.get(file.name)?.isDuplicate || false,
+        file
+      }
+    ]));
+
+    setUploadStates(prev => ({
+      isUploading: true,
+      files: initialUploadStates
+    }));
 
     try {
       const fullPath = `${userInfo.username}/${currentPath}`;
       const controller = new AbortController();
       
-      const uploadPromises = filesToUpload.map(file => {
-        let isCompleted = false; // 添加标志来追踪是否已完成
+      // 并行上传所有文件
+      const uploadPromises = filesToUpload.map(async file => {
+        try {
+          // 更新状态为上传中，保持 isDuplicate 状态
+          setUploadStates(prev => {
+            const newFiles = new Map(prev.files);
+            const state = newFiles.get(file.name);
+            newFiles.set(file.name, {
+              ...state,
+              status: 'uploading',
+              startTime: Date.now(),
+              lastTime: Date.now(),
+              lastProgress: 0,
+              speed: 0
+            });
+            return { ...prev, files: newFiles };
+          });
 
-        return new Promise(async (resolve, reject) => {
-          try {
-            let lastProgress = 0;
-            let lastTime = Date.now();
-            
-            const uploadResult = await cosService.uploadFile(
-              file,
-              fullPath,
-              (progress) => {
-                // 如果已经完成，不再处理进度更新
-                if (isCompleted) return;
-                
-                // 确保进度不会倒退或重复完成
-                if (progress < lastProgress) return;
-                
+          // 上传到对象存储
+          const uploadResult = await cosService.uploadFile(
+            file,
+            fullPath,
+            (progress) => {
+              setUploadStates(prev => {
+                const state = prev.files.get(file.name);
+                if (!state || state.uploadCompleted) return prev;
+
                 const now = Date.now();
-                const timeDiff = (now - lastTime) / 1000;
-                const progressDiff = progress - lastProgress;
-                const actualSpeed = (progressDiff / 100) * file.size / timeDiff;
+                const timeDiff = (now - state.lastTime) / 1000; // 转换为秒
                 
-                progressTracker[file.name] = Math.round(progress);
-                speedTracker[file.name] = formatSpeed(actualSpeed);
-                
-                lastProgress = progress;
-                lastTime = now;
-                
-                // 当进度达到100%时，标记为完成
-                if (progress >= 100) {
-                  isCompleted = true;
+                if (timeDiff >= 0.5) { // 每0.5秒更新一次速度
+                  const progressDiff = progress - state.lastProgress;
+                  const uploadedBytes = (progressDiff / 100) * file.size;
+                  const speed = uploadedBytes / timeDiff;
+                  
+                  const newFiles = new Map(prev.files);
+                  newFiles.set(file.name, {
+                    ...state,
+                    progress: Math.round(progress),
+                    speed: speed,
+                    lastProgress: progress,
+                    lastTime: now
+                  });
+                  
+                  return {
+                    ...prev,
+                    files: newFiles
+                  };
                 }
                 
-                debouncedUpdateProgress();
-              },
-              controller.signal
-            );
+                return prev;
+              });
+            },
+            controller.signal
+          );
 
-            // 只有在上传成功后才创建文件记录
-            if (!isCompleted) {
-              isCompleted = true;
-              progressTracker[file.name] = 100;
-              speedTracker[file.name] = '已完成';
-              debouncedUpdateProgress();
-            }
-
-            await instance.post('/productx/file-storage/create-directory', {
-              parentId: currentParentId,
-              isDirectory: false,
-              name: file.name,
-              extension: file.name.split('.').pop(),
-              size: file.size,
-              storagePath: uploadResult.key,
-              hash: uploadResult.etag?.replace(/"/g, ''),
-              mimeType: file.type,
-              storageType: 'COS',
-              downloadUrl: uploadResult.url,
-              visibility: 'PRIVATE'
+          // 更新状态为创建文件记录
+          setUploadStates(prev => {
+            const newFiles = new Map(prev.files);
+            const state = newFiles.get(file.name);
+            newFiles.set(file.name, {
+              ...state,
+              status: 'creating',
+              progress: 100,
+              speed: 0
             });
+            return { ...prev, files: newFiles };
+          });
 
-            resolve(uploadResult);
-          } catch (error) {
-            if (!isCompleted) {
-              progressTracker[file.name] = -1;
-              speedTracker[file.name] = '上传失败';
-              debouncedUpdateProgress();
-            }
-            reject(error);
-          }
-        });
+          // 创建文件记录
+          await instance.post('/productx/file-storage/create-directory', {
+            parentId: currentParentId,
+            isDirectory: false,
+            name: file.name,
+            extension: file.name.split('.').pop(),
+            size: file.size,
+            storagePath: uploadResult.key,
+            hash: uploadResult.etag?.replace(/"/g, ''),
+            mimeType: file.type,
+            storageType: 'COS',
+            downloadUrl: uploadResult.url,
+            visibility: 'PRIVATE'
+          });
+
+          // 更新为上传成功状态
+          setUploadStates(prev => {
+            const newFiles = new Map(prev.files);
+            const state = newFiles.get(file.name);
+            newFiles.set(file.name, {
+              ...state,
+              status: 'success',
+              uploadCompleted: true,
+              fileCreated: true,
+              speed: 0
+            });
+            return { ...prev, files: newFiles };
+          });
+
+          return { success: true, file };
+        } catch (error) {
+          // 更新为失败状态
+          setUploadStates(prev => {
+            const newFiles = new Map(prev.files);
+            const state = newFiles.get(file.name);
+            newFiles.set(file.name, {
+              ...state,
+              status: 'error',
+              progress: 0,
+              speed: 0,
+              errorMessage: error.message
+            });
+            return { ...prev, files: newFiles };
+          });
+
+          return { success: false, file, error };
+        }
       });
 
-      await Promise.all(uploadPromises);
-      message.success('上传成功');
+      // 等待所有上传完成
+      const results = await Promise.all(uploadPromises);
       
-      // 确保所有防抖更新都已执行
-      debouncedUpdateProgress.flush();
+      // 统计成功和失败的数量
+      const successCount = results.filter(r => r.success).length;
+      const failureCount = results.filter(r => !r.success).length;
+      
+      // 显示上传结果
+      if (failureCount === 0) {
+        message.success(`成功上传 ${successCount} 个文件`);
+      } else {
+        message.warning(`${successCount} 个文件上传成功，${failureCount} 个文件上传失败`);
+      }
       
       // 刷新文件列表
       await loadFiles(currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText);
     } catch (error) {
-      console.error('上传失败:', error);
-      message.error('上传失败: ' + (error.message || '未知错误'));
+      console.error('上传过程中发生错误:', error);
+      message.error('上传过程中发生错误: ' + (error.message || '未知错误'));
     } finally {
-      debouncedUpdateProgress.cancel();
-      setIsUploading(false);
+      setUploadStates(prev => ({
+        ...prev,
+        isUploading: false
+      }));
     }
   };
 
-  // Add new function to handle duplicate resolution
-  const handleDuplicateResolution = async (action) => {
+  // 修改 handleDuplicateResolution 函数
+  const handleDuplicateResolution = (action) => {
+    setUploadStates(prev => {
+      const newFiles = new Map(prev.files);
+      Array.from(newFiles.values())
+        .filter(file => file.isDuplicate)
+        .forEach(file => {
+          newFiles.set(file.file.name, {
+            ...file,
+            action: action
+          });
+        });
+      return {
+        ...prev,
+        files: newFiles
+      };
+    });
     setShowDuplicateModal(false);
-    
-    if (action === 'overwrite') {
-      // Upload all files including duplicates
-      await uploadFiles(selectedFiles);
-    } else if (action === 'skip') {
-      // Upload only unique files
-      const { unique } = checkDuplicates(selectedFiles);
-      if (unique.length > 0) {
-        await uploadFiles(unique);
-      } else {
-        // 如果没有可上传的文件，显示提示
-        message.info('没有新文件需要上传');
-      }
-    }
-    
-    // Clear selected files after upload
-    setSelectedFiles([]);
-    setDuplicateFiles([]);
   };
 
   const handleDelete = (record) => {
@@ -700,6 +763,283 @@ const CloudDrivePage = () => {
     // 这里可以添加其他菜单选择的处理逻辑
   };
 
+  const handleCloseUploadModal = () => {
+    if (!uploadStates.isUploading) {
+      setFileUploadModalVisible(false);
+      setUploadStates(prev => ({
+        ...prev,
+        files: new Map()
+      }));
+    }
+  };
+
+  // 处理文件移除
+  const handleRemoveFiles = (fileNames) => {
+    const newUploadStates = { ...uploadStates };
+    const newFiles = new Map(newUploadStates.files);
+    
+    fileNames.forEach(fileName => {
+      newFiles.delete(fileName);
+    });
+    
+    newUploadStates.files = newFiles;
+    setUploadStates(newUploadStates);
+    message.success('已移除选中的文件');
+  };
+
+  // 处理添加更多文件
+  const handleAddFiles = (newFiles) => {
+    const newUploadStates = new Map(uploadStates.files);
+    
+    newFiles.forEach(file => {
+      const isDuplicate = filteredFiles.some(existingFile => existingFile.name === file.name) ||
+                         Array.from(newUploadStates.keys()).includes(file.name);
+      
+      newUploadStates.set(file.name, {
+        file,
+        name: file.name,
+        fileSize: file.size,
+        status: 'pending',
+        progress: 0,
+        isDuplicate,
+        action: 'upload' // 所有文件都设置为上传
+      });
+    });
+    
+    setUploadStates(prev => ({
+      ...prev,
+      files: newUploadStates
+    }));
+    
+    message.success(`已添加 ${newFiles.length} 个文件`);
+  };
+
+  // 处理多选变化
+  const handleSelectChange = (newSelectedRowKeys) => {
+    setSelectedRowKeys(newSelectedRowKeys);
+  };
+
+  // 处理批量删除
+  const handleBatchDelete = () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('请选择要删除的文件');
+      return;
+    }
+
+    const selectedItems = filteredFiles.filter(file => selectedRowKeys.includes(file.key));
+    const fileNames = selectedItems.map(file => file.name).join('、');
+
+    confirm({
+      title: '确认删除',
+      content: `确定要删除以下 ${selectedRowKeys.length} 个文件吗？此操作不可恢复。\n${fileNames}`,
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          setLoading(true);
+          
+          // 并行删除所有选中的文件
+          const deletePromises = selectedItems.map(async (file) => {
+            if (file.storagePath) {
+              await cosService.deleteFile(file.storagePath);
+            }
+            return file.id;
+          });
+          
+          await Promise.all(deletePromises);
+          
+          // 删除数据库记录
+          const response = await instance.post('/productx/file-storage/delete', selectedRowKeys);
+          
+          if (response.data && response.data.success) {
+            message.success(`成功删除 ${selectedRowKeys.length} 个文件`);
+            setSelectedRowKeys([]); // 清空选择
+            // 刷新文件列表
+            await loadFiles(currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText);
+          } else {
+            throw new Error(response.data.message || '删除失败');
+          }
+        } catch (error) {
+          console.error('批量删除失败:', error);
+          message.error('批量删除失败: ' + (error.message || '未知错误'));
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  };
+
+  // 处理下载任务
+  const startDownload = async (file) => {
+    try {
+      if (!file.downloadUrl) {
+        throw new Error('下载链接不存在');
+      }
+
+      const xhr = new XMLHttpRequest();
+      const downloadId = Date.now().toString();
+
+      // 创建新的下载任务，确保文件大小被正确转换为数字
+      const newTask = {
+        id: downloadId,
+        filename: file.name,
+        size: Number(file.size) || 0,
+        progress: 0,
+        speed: 0,
+        status: 'downloading',
+        xhr: xhr,
+        totalBytes: Number(file.size) || 0,
+        loadedBytes: 0
+      };
+
+      // 显示下载管理器
+      setDownloadManagerVisible(true);
+      
+      // 添加新的下载任务
+      setDownloadTasks(prev => [...prev, newTask]);
+
+      xhr.open('GET', file.downloadUrl, true);
+      xhr.responseType = 'blob';
+
+      let lastLoaded = 0;
+      let lastTime = Date.now();
+
+      xhr.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const now = Date.now();
+          const timeElapsed = (now - lastTime) / 1000; // 转换为秒
+          const loadedDiff = event.loaded - lastLoaded;
+          const speed = timeElapsed > 0 ? loadedDiff / timeElapsed : 0;
+          const totalBytes = Number(event.total) || Number(file.size) || 0;
+          const loadedBytes = Number(event.loaded) || 0;
+
+          setDownloadTasks(prev => 
+            prev.map(task => 
+              task.id === downloadId
+                ? {
+                    ...task,
+                    progress: Math.round((loadedBytes / totalBytes) * 100),
+                    speed: speed,
+                    totalBytes: totalBytes,
+                    loadedBytes: loadedBytes
+                  }
+                : task
+            )
+          );
+
+          lastLoaded = loadedBytes;
+          lastTime = now;
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const blob = xhr.response;
+          
+          // 创建下载链接
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = file.name;
+          
+          // 显示保存位置提示
+          message.success(
+            <span>
+              文件将保存到下载目录：<br />
+              <strong style={{ wordBreak: 'break-all' }}>~/Downloads/{file.name}</strong>
+            </span>,
+            4
+          );
+          
+          // 触发下载
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          // 更新下载状态
+          setDownloadTasks(prev =>
+            prev.map(task =>
+              task.id === downloadId
+                ? { ...task, status: 'completed', progress: 100, speed: 0 }
+                : task
+            )
+          );
+
+          // 清理
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+          }, 1000);
+        } else {
+          throw new Error('下载失败');
+        }
+      };
+
+      xhr.onerror = () => {
+        setDownloadTasks(prev =>
+          prev.map(task =>
+            task.id === downloadId
+              ? { ...task, status: 'error', progress: 0, speed: 0 }
+              : task
+          )
+        );
+      };
+
+      xhr.send();
+    } catch (error) {
+      console.error('下载失败:', error);
+      message.error('下载失败: ' + (error.message || '未知错误'));
+    }
+  };
+
+  // 处理取消下载
+  const handleCancelDownload = (downloadId) => {
+    setDownloadTasks(prev => {
+      const task = prev.find(t => t.id === downloadId);
+      if (task && task.xhr) {
+        task.xhr.abort();
+      }
+      return prev.map(t =>
+        t.id === downloadId
+          ? { ...t, status: 'error', progress: 0, speed: 0 }
+          : t
+      );
+    });
+  };
+
+  // 清除已完成的下载
+  const handleClearDownloads = () => {
+    setDownloadTasks(prev => prev.filter(task => task.status === 'downloading'));
+  };
+
+  // 修改批量下载函数
+  const handleBatchDownload = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('请选择要下载的文件');
+      return;
+    }
+
+    const selectedItems = filteredFiles.filter(file => 
+      selectedRowKeys.includes(file.key) && !file.isDirectory
+    );
+
+    if (selectedItems.length === 0) {
+      message.error('没有可下载的文件');
+      return;
+    }
+
+    // 显示下载管理器
+    setDownloadManagerVisible(true);
+
+    // 开始下载所有选中的文件
+    selectedItems.forEach(file => {
+      startDownload(file);
+    });
+
+    // 清除选中状态
+    setSelectedRowKeys([]);
+  };
+
   return (
     <>
       <Helmet>
@@ -733,12 +1073,12 @@ const CloudDrivePage = () => {
                         handleUpload(fileList);
                         return false;
                       }}
-                      disabled={isUploading}
+                      disabled={uploadStates.isUploading}
                     >
                       <RoundedButton
                         type="primary"
                         icon={<CloudUploadOutlined />}
-                        loading={isUploading}
+                        loading={uploadStates.isUploading}
                       >
                         上传文件
                       </RoundedButton>
@@ -749,6 +1089,23 @@ const CloudDrivePage = () => {
                     >
                       新建文件夹
                     </RoundedButton>
+                    {selectedRowKeys.length > 0 && (
+                      <>
+                        <RoundedButton
+                          icon={<DownloadOutlined />}
+                          onClick={handleBatchDownload}
+                        >
+                          批量下载
+                        </RoundedButton>
+                        <RoundedButton
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={handleBatchDelete}
+                        >
+                          批量删除
+                        </RoundedButton>
+                      </>
+                    )}
                     <RoundedButton
                       icon={<ReloadOutlined />}
                       onClick={() => loadFiles(currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText)}
@@ -774,39 +1131,17 @@ const CloudDrivePage = () => {
                   handlePreview={handlePreview}
                   handleDelete={handleDelete}
                   isImageFile={isImageFile}
+                  selectedRowKeys={selectedRowKeys}
+                  onSelectChange={handleSelectChange}
+                  onDownload={startDownload}
                 />
               </StyledContent>
-              
-              <Footer>
-                <FooterContent>
-                  <span>©{new Date().getFullYear()}</span>
-                  <span>MyStorageX</span>
-                  <span>版权所有</span>
-                </FooterContent>
-              </Footer>
             </MainLayout>
           </StyledLayout>
 
           <AboutModal 
             isVisible={isAboutModalVisible}
             onClose={() => setIsAboutModalVisible(false)}
-          />
-          <UploadProgressModal
-            visible={uploadModalVisible}
-            uploading={isUploading}
-            progress={uploadProgress}
-            speeds={uploadSpeeds}
-            startTimes={uploadStartTimes}
-            fileSizes={uploadFileSizes}
-            onClose={() => {
-              if (!isUploading) {
-                setUploadModalVisible(false);
-                setUploadProgress({});
-                setUploadSpeeds({});
-                setUploadStartTimes({});
-                setUploadFileSizes({});
-              }
-            }}
           />
 
           <NewFolderModal
@@ -844,6 +1179,24 @@ const CloudDrivePage = () => {
             }}
             onSkip={() => handleDuplicateResolution('skip')}
             onOverwrite={() => handleDuplicateResolution('overwrite')}
+          />
+
+          <FileUploadModal
+            visible={fileUploadModalVisible}
+            uploadingFiles={uploadStates.files}
+            isUploading={uploadStates.isUploading}
+            onStartUpload={handleStartUpload}
+            onCancel={handleCloseUploadModal}
+            onDuplicateDecision={handleDuplicateDecision}
+            onRemoveFiles={handleRemoveFiles}
+            onAddFiles={handleAddFiles}
+          />
+
+          <DownloadManager
+            downloads={downloadTasks}
+            onCancel={handleCancelDownload}
+            onClear={handleClearDownloads}
+            onCollapse={(collapsed) => setDownloadManagerVisible(!collapsed)}
           />
         </ContentContainer>
       </PageContainer>
