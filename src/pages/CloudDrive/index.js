@@ -206,7 +206,12 @@ const CloudDrivePage = () => {
   const [pathHistory, setPathHistory] = useState([]);
   const [isAboutModalVisible, setIsAboutModalVisible] = useState(false);
   const [fileUploadModalVisible, setFileUploadModalVisible] = useState(false);
-  const [previewImage, setPreviewImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState({
+    visible: false,
+    url: '',
+    title: '',
+    key: 0
+  });
   const [searchText, setSearchText] = useState('');
   const [filteredFiles, setFilteredFiles] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
@@ -224,6 +229,11 @@ const CloudDrivePage = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [downloadTasks, setDownloadTasks] = useState([]);
   const [downloadManagerVisible, setDownloadManagerVisible] = useState(true);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageSize: 10,
+    total: 0
+  });
 
   useEffect(() => {
     // 从本地存储获取用户信息
@@ -242,12 +252,37 @@ const CloudDrivePage = () => {
         setCurrentParentId,
         setFiles,
         setFilteredFiles,
-        setSearchText
+        setSearchText,
+        setPagination,
+        pagination
       );
     }
   }, [userInfo]);
 
-  // 修改所有使用 loadFiles 的地方
+  // 添加分页变化处理函数
+  const handlePageChange = (page, pageSize) => {
+    setPagination(prev => ({
+      ...prev,
+      currentPage: page,
+      pageSize: pageSize
+    }));
+    
+    // 重新加载当前目录的文件
+    loadFiles(
+      currentParentId,
+      setLoading,
+      setFiles,
+      setFilteredFiles,
+      setSearchText,
+      setPagination,
+      {
+        currentPage: page,
+        pageSize: pageSize
+      }
+    );
+  };
+
+  // 修改文件夹点击处理函数
   const handleFolderClick = async (folder) => {
     try {
       setLoading(true);
@@ -263,12 +298,23 @@ const CloudDrivePage = () => {
       setCurrentPath(newPath);
       setCurrentParentId(folder.id);
       
+      // 重置分页到第一页
+      setPagination(prev => ({
+        ...prev,
+        currentPage: 1
+      }));
+      
       await loadFiles(
         folder.id,
         setLoading,
         setFiles,
         setFilteredFiles,
-        setSearchText
+        setSearchText,
+        setPagination,
+        {
+          ...pagination,
+          currentPage: 1
+        }
       );
     } catch (error) {
       console.error('Failed to navigate to folder:', error);
@@ -656,19 +702,29 @@ const CloudDrivePage = () => {
     try {
       setLoading(true);
       
-      // 重置路径状态
       setPathHistory([]);
       setCurrentPath('');
       
-      // 加载根目录内容
       const targetId = rootDirectoryId || 0;
       setCurrentParentId(targetId);
+      
+      // 重置分页到第一页
+      setPagination(prev => ({
+        ...prev,
+        currentPage: 1
+      }));
+      
       await loadFiles(
         targetId,
         setLoading,
         setFiles,
         setFilteredFiles,
-        setSearchText
+        setSearchText,
+        setPagination,
+        {
+          ...pagination,
+          currentPage: 1
+        }
       );
     } catch (error) {
       console.error('Failed to navigate to home:', error);
@@ -685,16 +741,29 @@ const CloudDrivePage = () => {
     return imageExtensions.includes(ext);
   };
 
-  // 处理图片预览
+  // 修改预览处理函数
   const handlePreview = (file) => {
     if (!file.downloadUrl) {
       message.error('无法预览，下载链接不存在');
       return;
     }
     
+    // 直接设置新的预览状态，使用新的 key 强制重新渲染
     setPreviewImage({
+      visible: true,
       url: file.downloadUrl,
-      title: file.name
+      title: file.name,
+      key: Date.now()  // 使用时间戳作为唯一 key
+    });
+  };
+
+  // 处理预览关闭
+  const handlePreviewClose = () => {
+    setPreviewImage({
+      visible: false,
+      url: '',
+      title: '',
+      key: 0
     });
   };
 
@@ -1108,7 +1177,15 @@ const CloudDrivePage = () => {
                     )}
                     <RoundedButton
                       icon={<ReloadOutlined />}
-                      onClick={() => loadFiles(currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText)}
+                      onClick={() => loadFiles(
+                        currentParentId, 
+                        setLoading, 
+                        setFiles, 
+                        setFilteredFiles, 
+                        setSearchText,
+                        setPagination,
+                        pagination
+                      )}
                       loading={loading}
                     >
                       刷新
@@ -1134,6 +1211,8 @@ const CloudDrivePage = () => {
                   selectedRowKeys={selectedRowKeys}
                   onSelectChange={handleSelectChange}
                   onDownload={startDownload}
+                  pagination={pagination}
+                  onPageChange={handlePageChange}
                 />
               </StyledContent>
             </MainLayout>
@@ -1156,18 +1235,23 @@ const CloudDrivePage = () => {
             loading={creatingFolder}
           />
 
-          {/* 添加图片预览组件 */}
-          <Image
-            style={{ display: 'none' }}
-            preview={{
-              visible: previewImage !== null,
-              src: previewImage?.url,
-              title: previewImage?.title,
-              onVisibleChange: (visible) => {
-                if (!visible) setPreviewImage(null);
-              },
-            }}
-          />
+          {/* 修改图片预览组件，使用 key 强制重新渲染 */}
+          {previewImage.visible && (
+            <Image
+              key={previewImage.key}
+              style={{ display: 'none' }}
+              preview={{
+                visible: true,
+                src: previewImage.url,
+                title: previewImage.title,
+                onVisibleChange: (visible) => {
+                  if (!visible) {
+                    handlePreviewClose();
+                  }
+                },
+              }}
+            />
+          )}
 
           <DuplicateFilesModal
             visible={showDuplicateModal}
