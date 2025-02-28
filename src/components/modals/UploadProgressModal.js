@@ -49,6 +49,10 @@ const ProgressWrapper = styled.div`
 
 const ProgressContainer = styled.div`
   margin-bottom: 16px;
+  
+  .upload-failed {
+    color: var(--ant-color-error);
+  }
 `;
 
 const FileInfo = styled.div`
@@ -133,10 +137,24 @@ const UploadProgressModal = ({
   fileSizes = {}, 
   onClose 
 }) => {
+  const getProgressStatus = (percent) => {
+    if (percent === -1) return 'exception'; // 失败状态
+    if (percent === 100) return 'success';
+    return 'active';
+  };
+
+  const getSpeedDisplay = (speed, percent) => {
+    if (percent === -1) return '上传失败';
+    if (percent === 100) return '已完成';
+    return speed;
+  };
+
   const calculateTotalProgress = () => {
     if (!progress || Object.keys(progress).length === 0) return 0;
-    const total = Object.values(progress).reduce((acc, curr) => acc + curr, 0);
-    return Math.round(total / Object.keys(progress).length);
+    const validProgress = Object.values(progress).filter(p => p !== -1); // 排除失败的文件
+    if (validProgress.length === 0) return 0;
+    const total = validProgress.reduce((acc, curr) => acc + curr, 0);
+    return Math.round(total / validProgress.length);
   };
 
   const calculateTimeElapsed = (startTime) => {
@@ -247,13 +265,15 @@ const UploadProgressModal = ({
             <FileInfo>
               <FileName>
                 {getFileIcon(filename)}
-                <span>{filename}</span>
+                <span className={percent === -1 ? 'upload-failed' : ''}>
+                  {filename}
+                </span>
               </FileName>
-              <SpeedInfo>{formatSpeed(speeds[filename])}</SpeedInfo>
+              <SpeedInfo>{getSpeedDisplay(speeds[filename], percent)}</SpeedInfo>
             </FileInfo>
             <Progress 
-              percent={percent} 
-              status={percent === 100 ? 'success' : 'active'}
+              percent={percent === -1 ? 0 : percent}
+              status={getProgressStatus(percent)}
               strokeColor={{
                 '0%': '#108ee9',
                 '100%': '#87d068',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Layout, Menu, Table, Button, Space, Input, Upload, Modal, Image } from 'antd';
 import {
   FolderOutlined,
@@ -23,41 +23,35 @@ import { message } from 'antd';
 import UploadProgressModal from 'components/modals/UploadProgressModal';
 import instance from 'api/axios'; // 导入已配置的 axios 实例
 import { Helmet } from 'react-helmet';
+import DuplicateFilesModal from 'components/modals/DuplicateFilesModal';
+import FileList from './FileList';
+import NewFolderModal from './NewFolderModal';
+import PathHistory from './PathHistory';
+import SideMenu from './SideMenu';
+import { fetchRootDirectory, loadFiles, checkDuplicates, deleteFile } from 'services/fileService';
+import debounce from 'lodash/debounce';
 
 const { Content, Sider } = Layout;
 const { confirm } = Modal;
 
-const StyledLayout = styled(Layout)`
+const StyledLayout = styled.div`
+  display: flex;
+  height: calc(100vh - 64px);
+  background: var(--ant-color-bg-container);
+`;
+
+const MainLayout = styled.main`
   flex: 1;
-  background: var(--ant-color-bg-container);
-`;
-
-const StyledSider = styled(Sider)`
-  background: var(--ant-color-bg-container);
-  border-right: 1px solid var(--ant-color-border);
-  height: 100%;
-  overflow: auto;
-  
-  .ant-menu {
-    background: transparent;
-    border-right: none;
-  }
-`;
-
-const MainLayout = styled(Layout)`
   display: flex;
   flex-direction: column;
-  height: 100%;
+  overflow: hidden;
+  background: var(--ant-color-bg-container);
 `;
 
-const StyledContent = styled(Content)`
+const StyledContent = styled.div`
   flex: 1;
   padding: 24px;
-  background: var(--ant-color-bg-container);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+  overflow: auto;
 `;
 
 const TableContainer = styled.div`
@@ -113,59 +107,6 @@ const ActionBar = styled.div`
   .ant-space {
     gap: 12px !important;
   }
-`;
-
-const PathContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 0;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--ant-color-border);
-`;
-
-const PathItem = styled.span`
-  ${tw`
-    text-gray-600 dark:text-gray-300
-    hover:text-primary-500 dark:hover:text-primary-400
-    cursor-pointer
-    flex items-center
-    text-sm
-  `}
-`;
-
-const PathSeparator = styled(RightOutlined)`
-  ${tw`
-    text-gray-400 dark:text-gray-600
-    text-xs
-  `}
-`;
-
-// 添加底部商标样式
-const Footer = styled.footer`
-  ${tw`
-    text-center
-    py-4
-    text-gray-500 dark:text-gray-400
-    text-sm
-    border-t border-gray-200 dark:border-gray-700
-    mt-auto
-  `}
-`;
-
-const FooterContent = styled.div`
-  ${tw`
-    flex items-center justify-center
-    space-x-1
-  `}
-`;
-
-const AboutButton = styled(Button)`
-  ${tw`
-    absolute
-  `}
-  bottom: 5rem;
-  left: 1.5rem;
 `;
 
 const PageContainer = styled.div`
@@ -321,6 +262,24 @@ const TableActionButton = styled(RoundedButton)`
   }
 `;
 
+const Footer = styled.footer`
+  ${tw`
+    text-center
+    py-4
+    text-gray-500 dark:text-gray-400
+    text-sm
+    border-t border-gray-200 dark:border-gray-700
+    mt-auto
+  `}
+`;
+
+const FooterContent = styled.div`
+  ${tw`
+    flex items-center justify-center
+    space-x-1
+  `}
+`;
+
 const CloudDrivePage = () => {
   const [selectedKeys, setSelectedKeys] = useState(['all']);
   const [files, setFiles] = useState([]);
@@ -329,7 +288,6 @@ const CloudDrivePage = () => {
   const [currentParentId, setCurrentParentId] = useState(0);
   const [pathHistory, setPathHistory] = useState([]);
   const [isAboutModalVisible, setIsAboutModalVisible] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({});
   const [uploadSpeeds, setUploadSpeeds] = useState({});
@@ -344,6 +302,9 @@ const CloudDrivePage = () => {
   const [newFolderModalVisible, setNewFolderModalVisible] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [creatingFolder, setCreatingFolder] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [duplicateFiles, setDuplicateFiles] = useState([]);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
 
   useEffect(() => {
     // 从本地存储获取用户信息
@@ -356,226 +317,219 @@ const CloudDrivePage = () => {
   useEffect(() => {
     if (userInfo) {
       // 首先获取根目录信息
-      fetchRootDirectory();
+      fetchRootDirectory(
+        setLoading,
+        setRootDirectoryId,
+        setCurrentParentId,
+        setFiles,
+        setFilteredFiles,
+        setSearchText
+      );
     }
   }, [userInfo]);
 
-  // 获取根目录信息
-  const fetchRootDirectory = async () => {
+  // 修改所有使用 loadFiles 的地方
+  const handleFolderClick = async (folder) => {
     try {
       setLoading(true);
       
-      // 请求根目录信息（父级 ID 为 0）
-      const response = await instance.post('/productx/file-storage/list', { 
-        parentId: 0, 
-        status: 'ACTIVE' 
-      });
+      const newHistory = [...pathHistory, {
+        id: folder.id,
+        name: folder.name
+      }];
       
-      if (response.data && response.data.success) {
-        const fileList = response.data.data.data || [];
-        
-        // 如果返回了数据，直接使用第一条作为根目录
-        if (fileList.length > 0) {
-          const rootDir = fileList[0]; // 直接使用第一条数据
-          
-          // 保存根目录 ID
-          setRootDirectoryId(rootDir.id);
-          
-          // 保持加载状态，直接获取第二层数据
-          try {
-            // 使用根目录 ID 加载其内容
-            const secondLevelResponse = await instance.post('/productx/file-storage/list', { 
-              parentId: rootDir.id, 
-              status: 'ACTIVE' 
-            });
-            
-            if (secondLevelResponse.data && secondLevelResponse.data.success) {
-              const secondLevelFiles = secondLevelResponse.data.data.data || [];
-              
-              // 转换数据格式
-              const newFiles = secondLevelFiles.map(file => ({
-                key: file.id.toString(),
-                id: file.id,
-                parentId: file.parentId,
-                name: file.name,
-                type: file.isDirectory ? 'folder' : 'file',
-                size: file.size ? formatSize(file.size) : '-',
-                extension: file.extension,
-                mimeType: file.mimeType,
-                downloadUrl: file.downloadUrl,
-                createTime: file.createTime ? new Date(file.createTime).toLocaleString() : '-',
-                updateTime: file.updateTime ? new Date(file.updateTime).toLocaleString() : '-'
-              }));
-              
-              // 设置文件列表
-              setFiles(newFiles);
-              setFilteredFiles(newFiles);
-              setSearchText('');
-            }
-          } catch (secondLevelError) {
-            console.error('加载第二层数据失败:', secondLevelError);
-            // 出错时不显示错误消息，避免用户看到两个错误消息
-          }
-          
-          // 设置当前父目录 ID
-          setCurrentParentId(rootDir.id);
-        } else {
-          console.warn('未找到根目录');
-          setRootDirectoryId(null);
-          loadFiles(0); // 直接加载 parentId 为 0 的内容
-        }
-      } else {
-        throw new Error(response.data.message || '获取根目录信息失败');
-      }
+      const newPath = newHistory.map(p => p.name).join('/') + '/';
+      
+      setPathHistory(newHistory);
+      setCurrentPath(newPath);
+      setCurrentParentId(folder.id);
+      
+      await loadFiles(
+        folder.id,
+        setLoading,
+        setFiles,
+        setFilteredFiles,
+        setSearchText
+      );
     } catch (error) {
-      console.error('获取根目录信息失败:', error);
-      message.error('获取根目录信息失败: ' + (error.message || '未知错误'));
-      loadFiles(0);
+      console.error('Failed to navigate to folder:', error);
+      message.error('打开文件夹失败: ' + (error.message || '未知错误'));
     } finally {
       setLoading(false);
     }
   };
 
-  // 加载指定目录的内容
-  const loadFiles = async (parentId) => {
-    if (!userInfo) {
-      console.error('User info not available, cannot load files');
-      return;
-    }
-    
-    if (parentId === undefined || parentId === null) {
-      console.error('Invalid parentId:', parentId);
-      message.error('无效的目录ID');
-      return;
-    }
-    
-    console.log('loadFiles called with parentId:', parentId);
-    
-    try {
-      setLoading(true);
-      console.log('Sending request for files with parentId:', parentId);
-      
-      // 使用已配置的 axios 实例发送请求
-      const response = await instance.post('/productx/file-storage/list', { 
-        parentId, 
-        status: 'ACTIVE' 
-      });
-      
-      console.log('Received response:', response.data);
-      
-      // 根据 axios 的响应结构，数据在 response.data 中
-      if (response.data && response.data.success) {
-        const fileList = response.data.data.data || [];
-        console.log('Received files:', fileList.length);
-        
-        // 转换数据格式
-        const newFiles = fileList.map(file => ({
-          key: file.id.toString(),
-          id: file.id,
-          parentId: file.parentId,
-          name: file.name,
-          type: file.isDirectory ? 'folder' : 'file',
-          size: file.size ? formatSize(file.size) : '-',
-          extension: file.extension,
-          mimeType: file.mimeType,
-          downloadUrl: file.downloadUrl,
-          createTime: file.createTime ? new Date(file.createTime).toLocaleString() : '-',
-          updateTime: file.updateTime ? new Date(file.updateTime).toLocaleString() : '-'
-        }));
-        
-        console.log('Setting files state with', newFiles.length, 'files');
-        setFiles(newFiles);
-        setFilteredFiles(newFiles);
-        setSearchText('');
-      } else {
-        throw new Error(response.data.message || '获取文件列表失败');
-      }
-    } catch (error) {
-      console.error('加载文件列表失败:', error);
-      message.error('加载文件列表失败: ' + (error.message || '未知错误'));
-      // 出错时设置空数组，避免显示旧数据
-      setFiles([]);
-      setFilteredFiles([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // 修改 handleUpload 函数
   const handleUpload = async (fileList) => {
     if (!userInfo) {
       message.error('请先登录');
       return;
     }
-    
+
+    // 将文件列表转换为数组并去重（基于文件名）
+    const uniqueFiles = Array.from(fileList).reduce((acc, file) => {
+      if (!acc.find(f => f.name === file.name)) {
+        acc.push(file);
+      }
+      return acc;
+    }, []);
+
+    // 检查重复文件
+    const { duplicates, unique } = checkDuplicates(uniqueFiles);
+    setSelectedFiles(uniqueFiles);
+
+    if (duplicates.length > 0) {
+      setDuplicateFiles(duplicates);
+      setShowDuplicateModal(true);
+      return;
+    }
+
+    // 只有在没有重复文件时，才直接上传
+    await uploadFiles(unique);
+  };
+
+  // 修改 uploadFiles 函数
+  const uploadFiles = async (filesToUpload) => {
     setUploadModalVisible(true);
     setIsUploading(true);
     
+    const progressTracker = {};
+    const speedTracker = {};
+    
+    // 初始化状态
     const newStartTimes = {};
     const newFileSizes = {};
-    const newProgress = {};
-    const newSpeeds = {};
-    
-    // 初始化进度信息
-    fileList.forEach(file => {
+    filesToUpload.forEach(file => {
       newStartTimes[file.name] = Date.now();
       newFileSizes[file.name] = file.size;
-      newProgress[file.name] = 0;
-      newSpeeds[file.name] = '0 KB/s';
+      progressTracker[file.name] = 0;
+      speedTracker[file.name] = '0 KB/s';
     });
     
     setUploadStartTimes(newStartTimes);
     setUploadFileSizes(newFileSizes);
-    setUploadProgress(newProgress);
-    setUploadSpeeds(newSpeeds);
+    
+    // 使用防抖更新UI状态
+    const debouncedUpdateProgress = debounce(() => {
+      setUploadProgress({...progressTracker});
+      setUploadSpeeds({...speedTracker});
+    }, 100);
 
     try {
-      // 构建包含用户名的完整路径
       const fullPath = `${userInfo.username}/${currentPath}`;
+      const controller = new AbortController();
       
-      // 上传所有文件
-      const uploadResults = await Promise.all(fileList.map(file => 
-        cosService.uploadFile(file, fullPath, (progress, speed) => {
-          setUploadProgress(prev => ({
-            ...prev,
-            [file.name]: Math.round(progress)
-          }));
-          
-          setUploadSpeeds(prev => ({
-            ...prev,
-            [file.name]: speed ? formatSpeed(speed) : '0 KB/s'
-          }));
-        })
-      ));
-      
-      // 为每个上传的文件调用后端接口保存信息
-      await Promise.all(uploadResults.map(async (result, index) => {
-        const file = fileList[index];
-        const fileExtension = file.name.split('.').pop();
-        
-        // 调用后端接口保存文件信息
-        await instance.post('/productx/file-storage/create-directory', {
-          parentId: currentParentId,
-          isDirectory: false,
-          name: file.name,
-          extension: fileExtension,
-          size: file.size,
-          storagePath: result.key, // 使用对象存储返回的 key 作为存储路径
-          hash: result.etag, // 使用对象存储返回的 ETag 作为哈希值
-          mimeType: file.type,
-          storageType: 'COS', // 假设使用腾讯云对象存储
-          downloadUrl: result.url, // 使用对象存储返回的 URL
-          visibility: 'PRIVATE'
-        });
-      }));
+      const uploadPromises = filesToUpload.map(file => {
+        let isCompleted = false; // 添加标志来追踪是否已完成
 
+        return new Promise(async (resolve, reject) => {
+          try {
+            let lastProgress = 0;
+            let lastTime = Date.now();
+            
+            const uploadResult = await cosService.uploadFile(
+              file,
+              fullPath,
+              (progress) => {
+                // 如果已经完成，不再处理进度更新
+                if (isCompleted) return;
+                
+                // 确保进度不会倒退或重复完成
+                if (progress < lastProgress) return;
+                
+                const now = Date.now();
+                const timeDiff = (now - lastTime) / 1000;
+                const progressDiff = progress - lastProgress;
+                const actualSpeed = (progressDiff / 100) * file.size / timeDiff;
+                
+                progressTracker[file.name] = Math.round(progress);
+                speedTracker[file.name] = formatSpeed(actualSpeed);
+                
+                lastProgress = progress;
+                lastTime = now;
+                
+                // 当进度达到100%时，标记为完成
+                if (progress >= 100) {
+                  isCompleted = true;
+                }
+                
+                debouncedUpdateProgress();
+              },
+              controller.signal
+            );
+
+            // 只有在上传成功后才创建文件记录
+            if (!isCompleted) {
+              isCompleted = true;
+              progressTracker[file.name] = 100;
+              speedTracker[file.name] = '已完成';
+              debouncedUpdateProgress();
+            }
+
+            await instance.post('/productx/file-storage/create-directory', {
+              parentId: currentParentId,
+              isDirectory: false,
+              name: file.name,
+              extension: file.name.split('.').pop(),
+              size: file.size,
+              storagePath: uploadResult.key,
+              hash: uploadResult.etag?.replace(/"/g, ''),
+              mimeType: file.type,
+              storageType: 'COS',
+              downloadUrl: uploadResult.url,
+              visibility: 'PRIVATE'
+            });
+
+            resolve(uploadResult);
+          } catch (error) {
+            if (!isCompleted) {
+              progressTracker[file.name] = -1;
+              speedTracker[file.name] = '上传失败';
+              debouncedUpdateProgress();
+            }
+            reject(error);
+          }
+        });
+      });
+
+      await Promise.all(uploadPromises);
       message.success('上传成功');
-      loadFiles(currentParentId);
+      
+      // 确保所有防抖更新都已执行
+      debouncedUpdateProgress.flush();
+      
+      // 刷新文件列表
+      await loadFiles(currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText);
     } catch (error) {
       console.error('上传失败:', error);
       message.error('上传失败: ' + (error.message || '未知错误'));
     } finally {
+      debouncedUpdateProgress.cancel();
       setIsUploading(false);
     }
+  };
+
+  // Add new function to handle duplicate resolution
+  const handleDuplicateResolution = async (action) => {
+    setShowDuplicateModal(false);
+    
+    if (action === 'overwrite') {
+      // Upload all files including duplicates
+      await uploadFiles(selectedFiles);
+    } else if (action === 'skip') {
+      // Upload only unique files
+      const { unique } = checkDuplicates(selectedFiles);
+      if (unique.length > 0) {
+        await uploadFiles(unique);
+      } else {
+        // 如果没有可上传的文件，显示提示
+        message.info('没有新文件需要上传');
+      }
+    }
+    
+    // Clear selected files after upload
+    setSelectedFiles([]);
+    setDuplicateFiles([]);
   };
 
   const handleDelete = (record) => {
@@ -588,121 +542,76 @@ const CloudDrivePage = () => {
       okText: '删除',
       okType: 'danger',
       cancelText: '取消',
-      async onOk() {
-        try {
-          setLoading(true);
-          
-          // 1. 先从对象存储中删除文件或文件夹
-          if (record.storagePath) {
-            await cosService.deleteFile(record.storagePath);
-          }
-          
-          // 2. 调用后端接口删除数据库记录
-          const response = await instance.post('/productx/file-storage/delete', [record.id]);
-          
-          if (response.data && response.data.success) {
-            message.success('删除成功');
-            // 刷新文件列表
-            loadFiles(currentParentId);
-          } else {
-            throw new Error(response.data.message || '删除失败');
-          }
-        } catch (error) {
-          console.error('删除失败:', error);
-          message.error('删除失败: ' + (error.message || '未知错误'));
-        } finally {
-          setLoading(false);
-        }
+      onOk() {
+        deleteFile(record, setLoading, currentParentId, setFiles, setFilteredFiles, setSearchText);
       },
       onCancel() {
-        // 用户取消删除，不做任何操作
+        // User cancelled deletion, no action needed
       },
     });
   };
 
-  // 处理文件夹点击
-  const handleFolderClick = (folder) => {
-    console.log('Folder clicked:', folder.name, 'id:', folder.id);
-    
-    // 保存当前路径到历史记录，使用文件夹的ID而不是currentParentId
-    setPathHistory(prev => {
-      const newHistory = [...prev, {
-        id: folder.id,  // 使用文件夹的ID
-        name: folder.name
-      }];
-      console.log('New path history:', newHistory);
-      return newHistory;
-    });
-    
-    // 更新当前路径
-    setCurrentPath(prev => {
-      const newPath = prev ? `${prev}${folder.name}/` : `${folder.name}/`;
-      console.log('New current path:', newPath);
-      return newPath;
-    });
-    
-    // 更新当前父目录ID，这会触发 useEffect 重新加载文件列表
-    setCurrentParentId(folder.id);
-  };
-
-  // 处理路径点击
-  const handlePathClick = (index) => {
-    console.log('Path clicked at index:', index, 'current history:', pathHistory);
-    
-    // 获取目标路径信息
-    const targetPath = pathHistory[index];
-    console.log('Target path:', targetPath);
-    
-    if (!targetPath || targetPath.id === undefined) {
-      console.error('Invalid target path:', targetPath);
-      return;
-    }
-    
-    // 更新路径历史记录 - 保留到点击的索引
-    setPathHistory(prev => {
-      const newHistory = prev.slice(0, index + 1);
-      console.log('Updated path history:', newHistory);
-      return newHistory;
-    });
-    
-    // 更新当前路径
-    const pathParts = [];
-    for (let i = 0; i <= index; i++) {
-      if (pathHistory[i]) {
-        pathParts.push(pathHistory[i].name);
+  // 修改 handlePathClick 函数
+  const handlePathClick = async (index) => {
+    try {
+      setLoading(true);
+      
+      const targetPath = pathHistory[index];
+      if (!targetPath?.id) {
+        throw new Error('无效的路径');
       }
+      
+      // 更新路径历史
+      const newHistory = pathHistory.slice(0, index + 1);
+      
+      // 更新当前路径
+      const newPath = newHistory.map(p => p.name).join('/') + '/';
+      
+      // 更新状态
+      setPathHistory(newHistory);
+      setCurrentPath(newPath);
+      setCurrentParentId(targetPath.id);
+      
+      // 加载目标目录的文件
+      await loadFiles(
+        targetPath.id,
+        setLoading,
+        setFiles,
+        setFilteredFiles,
+        setSearchText
+      );
+    } catch (error) {
+      console.error('Failed to navigate to path:', error);
+      message.error('导航失败: ' + (error.message || '未知错误'));
+    } finally {
+      setLoading(false);
     }
-    const newPath = pathParts.join('/') + (pathParts.length > 0 ? '/' : '');
-    console.log('New current path:', newPath);
-    setCurrentPath(newPath);
-    
-    // 直接调用 loadFiles 加载目标目录内容
-    const parentId = targetPath.id;
-    console.log('Directly loading files for parentId:', parentId);
-    
-    // 直接加载文件
-    loadFiles(parentId);
-    
-    // 更新当前父目录ID
-    setCurrentParentId(parentId);
   };
 
-  // 处理返回根目录
-  const handleHomeClick = () => {
-    console.log('Home icon clicked, loading root directory content');
-    setCurrentPath('');
-    setPathHistory([]);
-    
-    // 显示加载状态
-    setLoading(true);
-    
-    // 使用根目录 ID 加载其内容
-    if (rootDirectoryId) {
-      loadFiles(rootDirectoryId);
-      setCurrentParentId(rootDirectoryId);
-    } else {
-      loadFiles(0);
-      setCurrentParentId(0);
+  // 修改 handleHomeClick 函数
+  const handleHomeClick = async () => {
+    try {
+      setLoading(true);
+      
+      // 重置路径状态
+      setPathHistory([]);
+      setCurrentPath('');
+      
+      // 加载根目录内容
+      const targetId = rootDirectoryId || 0;
+      setCurrentParentId(targetId);
+      await loadFiles(
+        targetId,
+        setLoading,
+        setFiles,
+        setFilteredFiles,
+        setSearchText
+      );
+    } catch (error) {
+      console.error('Failed to navigate to home:', error);
+      message.error('返回主页失败: ' + (error.message || '未知错误'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -774,7 +683,7 @@ const CloudDrivePage = () => {
         setNewFolderName('');
         
         // 刷新文件列表
-        loadFiles(currentParentId);
+        loadFiles(currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText);
       } else {
         throw new Error(response.data.message || '创建文件夹失败');
       }
@@ -786,133 +695,10 @@ const CloudDrivePage = () => {
     }
   };
 
-  // 表格列定义
-  const columns = [
-    {
-      title: '文件名',
-      dataIndex: 'name',
-      key: 'name',
-      ellipsis: true,
-      width: '40%',
-      render: (text, record) => (
-        <div style={{ paddingLeft: '16px' }}>
-          <Space>
-            {record.type === 'folder' ? (
-              <FolderOutlined style={{ color: '#ffd591' }} />
-            ) : isImageFile(text) ? (
-              <FileImageOutlined style={{ color: '#85a5ff' }} />
-            ) : (
-              <FileOutlined style={{ color: '#91d5ff' }} />
-            )}
-            <span
-              style={{ 
-                cursor: record.type === 'folder' ? 'pointer' : 'default',
-                color: record.type === 'folder' ? 'var(--ant-color-primary)' : 'inherit'
-              }}
-              onClick={() => {
-                if (record.type === 'folder') {
-                  handleFolderClick(record);
-                }
-              }}
-            >
-              {text}
-            </span>
-          </Space>
-          {record.type === 'file' && isImageFile(text) && record.downloadUrl && (
-            <Button
-              type="link"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => handlePreview(record)}
-              style={{ marginLeft: 24, padding: 0 }}
-            >
-              预览图片
-            </Button>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: '大小',
-      dataIndex: 'size',
-      key: 'size',
-      width: '15%',    // 固定宽度
-      align: 'right',  // 右对齐
-    },
-    {
-      title: '创建时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
-      width: '20%',    // 固定宽度
-      align: 'center', // 居中对齐
-    },
-    {
-      title: '修改时间',
-      dataIndex: 'updateTime',
-      key: 'updateTime',
-      width: '20%',    // 固定宽度
-      align: 'center', // 居中对齐
-    },
-    {
-      title: '操作',
-      key: 'action',
-      width: 180,
-      fixed: 'right',
-      align: 'center',
-      render: (_, record) => (
-        <Space size={4}>
-          {record.type === 'file' && record.downloadUrl && (
-            <TableActionButton
-              type="text"
-              icon={<DownloadOutlined />}
-              onClick={() => window.open(record.downloadUrl)}
-            >
-              下载
-            </TableActionButton>
-          )}
-          <TableActionButton
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record)}
-          >
-            删除
-          </TableActionButton>
-        </Space>
-      ),
-    },
-  ];
-
-  // 添加一个新的 useEffect 来监听 currentParentId 的变化
-  useEffect(() => {
-    // 避免初始加载时重复请求
-    if (currentParentId !== 0 && currentParentId !== rootDirectoryId && userInfo) {
-      console.log('Loading files for parentId:', currentParentId);
-      loadFiles(currentParentId);
-    }
-  }, [currentParentId, rootDirectoryId, userInfo]);
-
-  // 添加新建文件夹模态框
-  const renderNewFolderModal = () => (
-    <Modal
-      title="新建文件夹"
-      open={newFolderModalVisible}
-      onOk={handleCreateFolder}
-      onCancel={() => {
-        setNewFolderModalVisible(false);
-        setNewFolderName('');
-      }}
-      confirmLoading={creatingFolder}
-    >
-      <Input
-        placeholder="请输入文件夹名称"
-        value={newFolderName}
-        onChange={e => setNewFolderName(e.target.value)}
-        onPressEnter={handleCreateFolder}
-        autoFocus
-      />
-    </Modal>
-  );
+  const handleMenuSelect = (key) => {
+    setSelectedKeys([key]);
+    // 这里可以添加其他菜单选择的处理逻辑
+  };
 
   return (
     <>
@@ -924,70 +710,19 @@ const CloudDrivePage = () => {
         <SimpleHeader />
         <ContentContainer>
           <StyledLayout>
-            <StyledSider width={200}>
-              <Menu
-                mode="inline"
-                selectedKeys={selectedKeys}
-                onSelect={({ key }) => setSelectedKeys([key])}
-                items={[
-                  {
-                    key: 'all',
-                    icon: <FolderOutlined />,
-                    label: '全部文件',
-                  },
-                  {
-                    key: 'images',
-                    icon: <FolderOutlined />,
-                    label: '图片',
-                  },
-                  {
-                    key: 'documents',
-                    icon: <FolderOutlined />,
-                    label: '文档',
-                  },
-                  {
-                    key: 'videos',
-                    icon: <FolderOutlined />,
-                    label: '视频',
-                  },
-                ]}
-              />
-              <AboutButton
-                type="text"
-                icon={<InfoCircleOutlined />}
-                onClick={() => setIsAboutModalVisible(true)}
-              >
-                关于我们
-              </AboutButton>
-            </StyledSider>
+            <SideMenu
+              selectedKeys={selectedKeys}
+              onSelect={handleMenuSelect}
+              onAboutClick={() => setIsAboutModalVisible(true)}
+            />
             
             <MainLayout>
               <StyledContent>
-                <PathContainer>
-                  <HomeOutlined 
-                    style={{ 
-                      color: 'var(--ant-color-text-secondary)',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => {
-                      console.log('Home icon clicked');
-                      handleHomeClick();
-                    }}
-                  />
-                  {pathHistory.map((path, index) => (
-                    <React.Fragment key={index}>
-                      <PathSeparator />
-                      <PathItem 
-                        onClick={() => {
-                          console.log('Path item clicked:', path.name, 'index:', index);
-                          handlePathClick(index);
-                        }}
-                      >
-                        {path.name}
-                      </PathItem>
-                    </React.Fragment>
-                  ))}
-                </PathContainer>
+                <PathHistory
+                  pathHistory={pathHistory}
+                  onHomeClick={handleHomeClick}
+                  onPathClick={handlePathClick}
+                />
                 
                 <ActionBar>
                   <Space>
@@ -1016,7 +751,7 @@ const CloudDrivePage = () => {
                     </RoundedButton>
                     <RoundedButton
                       icon={<ReloadOutlined />}
-                      onClick={() => loadFiles(currentParentId)}
+                      onClick={() => loadFiles(currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText)}
                       loading={loading}
                     >
                       刷新
@@ -1031,20 +766,14 @@ const CloudDrivePage = () => {
                   />
                 </ActionBar>
 
-                <Table
-                  columns={columns}
-                  dataSource={filteredFiles}
+                <FileList
                   loading={loading}
-                  pagination={false}
-                  locale={{
-                    emptyText: searchText ? '没有找到相关文件' : '当前文件夹为空'
-                  }}
-                  scroll={{
-                    y: 'calc(100vh - 300px)',
-                    x: 1200
-                  }}
-                  size="middle"
-                  rowKey="key"
+                  filteredFiles={filteredFiles}
+                  searchText={searchText}
+                  handleFolderClick={handleFolderClick}
+                  handlePreview={handlePreview}
+                  handleDelete={handleDelete}
+                  isImageFile={isImageFile}
                 />
               </StyledContent>
               
@@ -1080,8 +809,17 @@ const CloudDrivePage = () => {
             }}
           />
 
-          {/* 渲染新建文件夹模态框 */}
-          {renderNewFolderModal()}
+          <NewFolderModal
+            visible={newFolderModalVisible}
+            folderName={newFolderName}
+            onFolderNameChange={setNewFolderName}
+            onOk={handleCreateFolder}
+            onCancel={() => {
+              setNewFolderModalVisible(false);
+              setNewFolderName('');
+            }}
+            loading={creatingFolder}
+          />
 
           {/* 添加图片预览组件 */}
           <Image
@@ -1094,6 +832,18 @@ const CloudDrivePage = () => {
                 if (!visible) setPreviewImage(null);
               },
             }}
+          />
+
+          <DuplicateFilesModal
+            visible={showDuplicateModal}
+            duplicateFiles={duplicateFiles}
+            onCancel={() => {
+              setShowDuplicateModal(false);
+              setSelectedFiles([]);
+              setDuplicateFiles([]);
+            }}
+            onSkip={() => handleDuplicateResolution('skip')}
+            onOverwrite={() => handleDuplicateResolution('overwrite')}
           />
         </ContentContainer>
       </PageContainer>
