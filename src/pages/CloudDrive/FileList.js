@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Space, Button } from 'antd';
+import { Table, Space, Button, Tooltip, Typography } from 'antd';
 import {
   FolderOutlined,
   FileOutlined,
@@ -9,6 +9,8 @@ import {
   EyeOutlined,
 } from '@ant-design/icons';
 import { styled } from 'twin.macro';
+
+const { Text } = Typography;
 
 // 从原文件复制相关样式
 const TableActionButton = styled(Button)`
@@ -27,6 +29,43 @@ const TableActionButton = styled(Button)`
   }
 `;
 
+// 添加文件名容器样式
+const FileNameContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .filename-text {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .preview-button {
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  
+  &:hover .preview-button {
+    opacity: 1;
+  }
+`;
+
+// 添加智能省略函数
+const getSmartEllipsis = (filename) => {
+  if (filename.length <= 30) return filename;
+  
+  const ext = filename.lastIndexOf('.') !== -1 
+    ? filename.slice(filename.lastIndexOf('.')) 
+    : '';
+  
+  const name = filename.slice(0, filename.length - ext.length);
+  const start = name.slice(0, 15);
+  const end = name.slice(-10);
+  
+  return `${start}...${end}${ext}`;
+};
+
 const FileList = ({
   loading,
   filteredFiles,
@@ -38,6 +77,8 @@ const FileList = ({
   selectedRowKeys,
   onSelectChange,
   onDownload,
+  pagination,
+  onPageChange
 }) => {
   const columns = [
     {
@@ -47,41 +88,44 @@ const FileList = ({
       ellipsis: true,
       width: '40%',
       render: (text, record) => (
-        <div style={{ paddingLeft: '16px' }}>
+        <FileNameContainer>
           <Space>
             {record.type === 'folder' ? (
-              <FolderOutlined style={{ color: '#ffd591' }} />
+              <FolderOutlined style={{ color: '#ffd591', fontSize: '16px' }} />
             ) : isImageFile(text) ? (
-              <FileImageOutlined style={{ color: '#85a5ff' }} />
+              <FileImageOutlined style={{ color: '#85a5ff', fontSize: '16px' }} />
             ) : (
-              <FileOutlined style={{ color: '#91d5ff' }} />
+              <FileOutlined style={{ color: '#91d5ff', fontSize: '16px' }} />
             )}
-            <span
-              style={{ 
-                cursor: record.type === 'folder' ? 'pointer' : 'default',
-                color: record.type === 'folder' ? 'var(--ant-color-primary)' : 'inherit'
-              }}
-              onClick={() => {
-                if (record.type === 'folder') {
-                  handleFolderClick(record);
-                }
-              }}
-            >
-              {text}
-            </span>
+            <Tooltip title={text}>
+              <Text
+                className="filename-text"
+                style={{ 
+                  cursor: record.type === 'folder' ? 'pointer' : 'default',
+                  color: record.type === 'folder' ? 'var(--ant-color-primary)' : 'inherit'
+                }}
+                onClick={() => {
+                  if (record.type === 'folder') {
+                    handleFolderClick(record);
+                  }
+                }}
+              >
+                {getSmartEllipsis(text)}
+              </Text>
+            </Tooltip>
           </Space>
           {record.type === 'file' && isImageFile(text) && record.downloadUrl && (
             <Button
-              type="link"
+              type="text"
               size="small"
               icon={<EyeOutlined />}
               onClick={() => handlePreview(record)}
-              style={{ marginLeft: 24, padding: 0 }}
+              className="preview-button"
             >
-              预览图片
+              预览
             </Button>
           )}
-        </div>
+        </FileNameContainer>
       ),
     },
     {
@@ -149,7 +193,16 @@ const FileList = ({
       columns={columns}
       dataSource={filteredFiles}
       loading={loading}
-      pagination={false}
+      pagination={{
+        current: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        total: pagination.total,
+        showSizeChanger: true,
+        showQuickJumper: true,
+        showTotal: (total) => `共 ${total} 项`,
+        onChange: onPageChange,
+        onShowSizeChange: onPageChange
+      }}
       locale={{
         emptyText: searchText ? '没有找到相关文件' : '当前文件夹为空'
       }}

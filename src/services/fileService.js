@@ -12,7 +12,16 @@ const formatSize = (bytes) => {
 };
 
 // 获取根目录信息
-export const fetchRootDirectory = async (setLoading, setRootDirectoryId, setCurrentParentId, setFiles, setFilteredFiles, setSearchText) => {
+export const fetchRootDirectory = async (
+  setLoading, 
+  setRootDirectoryId, 
+  setCurrentParentId, 
+  setFiles, 
+  setFilteredFiles, 
+  setSearchText,
+  setPagination,
+  pagination
+) => {
   try {
     setLoading(true);
     
@@ -33,10 +42,11 @@ export const fetchRootDirectory = async (setLoading, setRootDirectoryId, setCurr
         setRootDirectoryId(rootDir.id);
         
         try {
-          // 使用根目录 ID 加载其内容
+          // 使用根目录 ID 加载其内容，添加分页参数
           const secondLevelResponse = await instance.post('/productx/file-storage/list', { 
-            parentId: rootDir.id, 
-            status: 'ACTIVE' 
+            parentId: rootDir.id,
+            pageSize: pagination.pageSize,
+            currentPage: pagination.currentPage
           });
           
           if (secondLevelResponse.data && secondLevelResponse.data.success) {
@@ -46,24 +56,32 @@ export const fetchRootDirectory = async (setLoading, setRootDirectoryId, setCurr
             const newFiles = secondLevelFiles.map(file => ({
               key: file.id.toString(),
               id: file.id,
-              parentId: file.parentId,
               name: file.name,
               type: file.isDirectory ? 'folder' : 'file',
-              size: file.size ? formatSize(file.size) : '-',
-              extension: file.extension,
-              mimeType: file.mimeType,
+              size: formatSize(file.size),
               downloadUrl: file.downloadUrl,
               createTime: file.createTime ? new Date(file.createTime).toLocaleString() : '-',
-              updateTime: file.updateTime ? new Date(file.updateTime).toLocaleString() : '-'
+              updateTime: file.updateTime ? new Date(file.updateTime).toLocaleString() : '-',
+              storagePath: file.storagePath,
+              isDirectory: file.isDirectory
             }));
             
             // 设置文件列表
             setFiles(newFiles);
             setFilteredFiles(newFiles);
             setSearchText('');
+
+            // 更新分页信息
+            setPagination({
+              ...pagination,
+              total: secondLevelResponse.data.data.totalNum,
+              currentPage: pagination.currentPage,
+              pageSize: pagination.pageSize
+            });
           }
         } catch (secondLevelError) {
           console.error('加载第二层数据失败:', secondLevelError);
+          message.error('加载文件列表失败: ' + (secondLevelError.message || '未知错误'));
         }
         
         // 设置当前父目录 ID
@@ -71,7 +89,8 @@ export const fetchRootDirectory = async (setLoading, setRootDirectoryId, setCurr
       } else {
         console.warn('未找到根目录');
         setRootDirectoryId(null);
-        loadFiles(0, setLoading, setFiles, setFilteredFiles, setSearchText); // 直接加载 parentId 为 0 的内容
+        // 直接加载 parentId 为 0 的内容，并传入分页参数
+        loadFiles(0, setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination);
       }
     } else {
       throw new Error(response.data.message || '获取根目录信息失败');
@@ -79,65 +98,62 @@ export const fetchRootDirectory = async (setLoading, setRootDirectoryId, setCurr
   } catch (error) {
     console.error('获取根目录信息失败:', error);
     message.error('获取根目录信息失败: ' + (error.message || '未知错误'));
-    loadFiles(0, setLoading, setFiles, setFilteredFiles, setSearchText);
+    // 加载 parentId 为 0 的内容时也传入分页参数
+    loadFiles(0, setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination);
   } finally {
     setLoading(false);
   }
 };
 
-// 加载指定目录的内容
-export const loadFiles = async (parentId, setLoading, setFiles, setFilteredFiles, setSearchText) => {
-  if (parentId === undefined || parentId === null) {
-    console.error('Invalid parentId:', parentId);
-    message.error('无效的目录ID');
-    return;
-  }
-  
-  console.log('loadFiles called with parentId:', parentId);
-  
+// 修改加载文件的函数以支持分页
+export const loadFiles = async (
+  parentId,
+  setLoading,
+  setFiles,
+  setFilteredFiles,
+  setSearchText,
+  setPagination,
+  pagination
+) => {
   try {
     setLoading(true);
-    console.log('Sending request for files with parentId:', parentId);
-    
-    const response = await instance.post('/productx/file-storage/list', { 
-      parentId, 
-      status: 'ACTIVE' 
+    const response = await instance.post('/productx/file-storage/list', {
+      parentId: parentId,
+      pageSize: pagination.pageSize,
+      currentPage: pagination.currentPage
     });
-    
-    console.log('Received response:', response.data);
-    
+
     if (response.data && response.data.success) {
-      const fileList = response.data.data.data || [];
-      console.log('Received files:', fileList.length);
-      
-      // 转换数据格式
-      const newFiles = fileList.map(file => ({
-        key: file.id.toString(),
+      const fileList = response.data.data.data.map(file => ({
+        key: file.id,
         id: file.id,
-        parentId: file.parentId,
         name: file.name,
+        size: formatSize(file.size),
         type: file.isDirectory ? 'folder' : 'file',
-        size: file.size ? formatSize(file.size) : '-',
-        extension: file.extension,
-        mimeType: file.mimeType,
-        downloadUrl: file.downloadUrl,
         createTime: file.createTime ? new Date(file.createTime).toLocaleString() : '-',
-        updateTime: file.updateTime ? new Date(file.updateTime).toLocaleString() : '-'
+        updateTime: file.updateTime ? new Date(file.updateTime).toLocaleString() : '-',
+        downloadUrl: file.downloadUrl,
+        storagePath: file.storagePath,
+        isDirectory: file.isDirectory
       }));
-      
-      console.log('Setting files state with', newFiles.length, 'files');
-      setFiles(newFiles);
-      setFilteredFiles(newFiles);
+
+      setFiles(fileList);
+      setFilteredFiles(fileList);
       setSearchText('');
+      
+      // 更新分页信息
+      setPagination({
+        ...pagination,
+        total: response.data.data.totalNum,
+        currentPage: pagination.currentPage,
+        pageSize: pagination.pageSize
+      });
     } else {
-      throw new Error(response.data.message || '获取文件列表失败');
+      throw new Error(response.data.message || '加载文件失败');
     }
   } catch (error) {
-    console.error('加载文件列表失败:', error);
-    message.error('加载文件列表失败: ' + (error.message || '未知错误'));
-    // 出错时设置空数组，避免显示旧数据
-    setFiles([]);
-    setFilteredFiles([]);
+    console.error('加载文件失败:', error);
+    message.error('加载文件失败: ' + (error.message || '未知错误'));
   } finally {
     setLoading(false);
   }
