@@ -61,6 +61,53 @@ const FileSize = styled.span`
   font-size: 12px;
 `;
 
+// 修改进度文本样式组件
+const ProgressText = styled.span`
+  color: var(--ant-color-text);
+  font-size: 12px;
+  white-space: nowrap;
+  
+  .uploaded {
+    color: var(--ant-color-primary);
+  }
+  
+  .total {
+    color: var(--ant-color-text-secondary);
+  }
+`;
+
+const StatusHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  
+  .status-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .speed {
+    font-size: 12px;
+    color: var(--ant-color-text-secondary);
+  }
+`;
+
+// 添加总进度文本样式组件
+const TotalProgressText = styled.div`
+  margin-top: 8px;
+  font-size: 12px;
+  
+  .uploaded {
+    color: var(--ant-color-primary);
+  }
+  
+  .total {
+    color: var(--ant-color-text-secondary);
+  }
+`;
+
 const ConflictResolution = styled.div`
   display: flex;
   gap: 4px;
@@ -114,6 +161,9 @@ const formatBytes = (bytes) => {
 };
 
 const getFileIcon = (filename) => {
+  if (!filename || typeof filename !== 'string') {
+    return <FileOutlined style={{ color: '#8c8c8c' }} className="icon" />;
+  }
   const ext = filename.split('.').pop()?.toLowerCase();
   switch (ext) {
     case 'pdf': return <FilePdfOutlined style={{ color: '#ff4d4f' }} className="icon" />;
@@ -312,11 +362,14 @@ const FileUploadModal = ({
       key: 'name',
       render: (text, record) => (
         <FileName>
-          {getFileIcon(record.file.name)}
-          <span className="name">{record.file.name}</span>
+          {getFileIcon(record.file?.name || text)}
+          <Tooltip title={record.file?.name || text}>
+            <Text className="name" ellipsis>{record.file?.name || text}</Text>
+          </Tooltip>
           {record.isDuplicate && (
             <DuplicateTag>
-              <WarningFilled /> 有同名文件
+              <WarningFilled />
+              重复文件
             </DuplicateTag>
           )}
         </FileName>
@@ -324,32 +377,58 @@ const FileUploadModal = ({
     },
     {
       title: '大小',
-      dataIndex: 'fileSize',
+      dataIndex: 'size',
       key: 'size',
-      width: 100,
-      render: size => <FileSize>{formatBytes(size)}</FileSize>,
+      width: 120,
+      render: (_, record) => (
+        <FileSize>{formatBytes(record.fileSize)}</FileSize>
+      ),
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 280,
-      render: (status, record) => (
-        <Space>
-          {getStatusIcon(status)}
-          <span>{getStatusText(status, record.isDuplicate)}</span>
-          {status === 'uploading' && (
-            <>
-              <span>({Math.round(record.progress)}%)</span>
-              {record.speed > 0 && (
-                <span style={{ color: '#8c8c8c', fontSize: '12px' }}>
-                  • {formatSpeed(record.speed)}
-                </span>
-              )}
-            </>
-          )}
-        </Space>
-      ),
+      width: 240,
+      render: (_, record) => {
+        if (record.status === 'uploading' || record.status === 'creating') {
+          return (
+            <Space direction="vertical" size={1} style={{ width: '100%' }}>
+              <StatusHeader>
+                <div className="status-left">
+                  {getStatusIcon(record.status)}
+                  <Text type="secondary">{getStatusText(record.status, record.isDuplicate)}</Text>
+                </div>
+                {record.speed > 0 && (
+                  <span className="speed">{formatSpeed(record.speed)}</span>
+                )}
+              </StatusHeader>
+              <Progress 
+                percent={record.progress || 0} 
+                size="small" 
+                status={record.status === 'error' ? 'exception' : 'active'}
+                style={{ margin: 0, lineHeight: 1 }}
+              />
+              <ProgressText>
+                <span className="uploaded">{formatBytes(record.fileSize * (record.progress || 0) / 100)}</span>
+                <span className="total"> / {formatBytes(record.fileSize)}</span>
+              </ProgressText>
+            </Space>
+          );
+        }
+        
+        return (
+          <Space>
+            {getStatusIcon(record.status)}
+            <Text type={
+              record.status === 'success' ? 'success' :
+              record.status === 'error' ? 'danger' :
+              'secondary'
+            }>
+              {getStatusText(record.status, record.isDuplicate)}
+            </Text>
+          </Space>
+        );
+      },
     },
     {
       title: '操作',
@@ -443,12 +522,12 @@ const FileUploadModal = ({
         <div style={{ marginBottom: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             <Space>
-              <span>总进度</span>
-              <span>{uploadStats.progress}%</span>
+              <Text>总进度</Text>
+              <Text type="primary">{uploadStats.progress}%</Text>
             </Space>
             <Space>
-              <span>速度：{formatSpeed(uploadStats.speed)}</span>
-              <span>剩余时间：{formatTime(uploadStats.remainingTime)}</span>
+              <Text type="secondary">速度：{formatSpeed(uploadStats.speed)}</Text>
+              <Text type="secondary">剩余时间：{formatTime(uploadStats.remainingTime)}</Text>
             </Space>
           </div>
           <Progress 
@@ -459,9 +538,10 @@ const FileUploadModal = ({
               '100%': '#87d068',
             }}
           />
-          <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(0, 0, 0, 0.45)' }}>
-            已上传：{formatBytes(uploadStats.uploadedSize)} / {formatBytes(uploadStats.totalSize)}
-          </div>
+          <TotalProgressText>
+            已上传：<span className="uploaded">{formatBytes(uploadStats.uploadedSize)}</span>
+            <span className="total"> / {formatBytes(uploadStats.totalSize)}</span>
+          </TotalProgressText>
         </div>
       )}
       

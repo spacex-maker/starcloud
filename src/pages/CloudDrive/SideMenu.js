@@ -1,147 +1,250 @@
-import React, { useState } from 'react';
-import { Menu } from 'antd';
-import { FolderOutlined, InfoCircleOutlined, BulbOutlined } from '@ant-design/icons';
-import { styled } from 'twin.macro';
-import FeedbackModal from '../../components/modals/FeedbackModal';
+import React, { useState, useEffect } from 'react';
+import { Layout, Menu } from 'antd';
+import {
+  CloudOutlined,
+  StarOutlined,
+  FolderOutlined,
+  DeleteOutlined,
+  InfoCircleOutlined,
+  CommentOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+} from '@ant-design/icons';
+import styled from 'styled-components';
+import FeedbackModal from 'components/modals/FeedbackModal';
 
-const StyledSider = styled.aside`
-  background: var(--ant-color-bg-container);
-  border-right: 1px solid var(--ant-color-border);
-  height: 100%;
-  width: 200px;
+const { Sider } = Layout;
+
+const StyledSider = styled(Sider)`
+  background: ${props => props.theme.mode === 'dark' 
+    ? '#141414'
+    : '#fff'} !important;
+  border-right: 1px solid ${props => props.theme.mode === 'dark'
+    ? 'rgba(255, 255, 255, 0.08)'
+    : 'rgba(0, 0, 0, 0.06)'};
+  height: calc(100vh - 64px);
+  overflow: auto;
   position: relative;
-  flex-shrink: 0;
 
-  .ant-menu {
-    height: calc(100% - 180px);
-    border-right: none;
-    padding: 8px;
-    background: transparent;
+  .ant-layout-sider-children {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: ${props => props.theme.mode === 'dark' 
+      ? '#141414'
+      : '#fff'};
   }
 
+  // 添加响应式样式
+  @media (max-width: 768px) {
+    position: fixed !important;
+    z-index: 999;
+    height: 100vh !important;
+    top: 0;
+    left: 0;
+    transition: all 0.2s ease-in-out;
+    box-shadow: ${props => props.collapsed ? 'none' : '2px 0 8px rgba(0, 0, 0, 0.15)'};
+    transform: ${props => props.collapsed ? 'translateX(-100%)' : 'translateX(0)'};
+  }
+`;
+
+const StyledMenu = styled(Menu)`
+  flex: 1;
+  border-inline-end: none !important;
+  padding: 8px;
+  
   .ant-menu-item {
-    border-radius: 4px;
-    margin: 4px 0;
+    border-radius: 6px;
+    margin: 4px 0 !important;
     
     &:hover {
-      background-color: var(--ant-color-bg-elevated);
+      background-color: ${props => props.theme.mode === 'dark'
+        ? 'rgba(255, 255, 255, 0.08)'
+        : 'rgba(0, 0, 0, 0.04)'} !important;
     }
     
     &.ant-menu-item-selected {
-      background-color: var(--ant-color-primary-bg);
-      
-      &:hover {
-        background-color: var(--ant-color-primary-bg);
-      }
+      background-color: ${props => props.theme.mode === 'dark'
+        ? 'rgba(255, 255, 255, 0.12)'
+        : 'rgba(0, 0, 0, 0.06)'} !important;
     }
   }
 `;
 
-const BottomButtons = styled.div`
-  position: absolute;
-  bottom: 24px;
-  left: 16px;
-  right: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-const ActionButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--ant-color-text-secondary);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 8px 16px;
-  border-radius: 4px;
-  width: 100%;
+const BottomMenu = styled(Menu)`
+  border-inline-end: none !important;
+  padding: 8px;
+  border-top: 1px solid ${props => props.theme.mode === 'dark'
+    ? 'rgba(255, 255, 255, 0.08)'
+    : 'rgba(0, 0, 0, 0.06)'};
   
-  &:hover {
-    background: var(--ant-color-bg-elevated);
-  }
-
-  ${props => props.primary && `
-    color: var(--ant-color-primary);
-    background: var(--ant-color-primary-bg);
+  .ant-menu-item {
+    border-radius: 6px;
+    margin: 4px 0 !important;
     
     &:hover {
-      background: var(--ant-color-primary-bg-hover);
+      background-color: ${props => props.theme.mode === 'dark'
+        ? 'rgba(255, 255, 255, 0.08)'
+        : 'rgba(0, 0, 0, 0.04)'} !important;
     }
-  `}
+  }
 `;
 
-const SideMenu = ({ selectedKeys, onSelect, onAboutClick }) => {
+// 添加折叠按钮样式
+const CollapseTrigger = styled.div`
+  position: fixed;
+  left: ${props => props.collapsed ? '0' : '200px'};
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 48px;
+  background: ${props => props.theme.mode === 'dark' ? '#1f1f1f' : '#fff'};
+  border: 1px solid ${props => props.theme.mode === 'dark'
+    ? 'rgba(255, 255, 255, 0.08)'
+    : 'rgba(0, 0, 0, 0.06)'};
+  border-left: none;
+  border-radius: 0 24px 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+  
+  &:hover {
+    background: ${props => props.theme.mode === 'dark' ? '#2a2a2a' : '#fafafa'};
+  }
+  
+  @media (min-width: 769px) {
+    display: none;
+  }
+`;
+
+// 添加遮罩层样式
+const Overlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 998;
+  display: ${props => props.visible ? 'block' : 'none'};
+  
+  @media (min-width: 769px) {
+    display: none;
+  }
+`;
+
+const SideMenu = ({ selectedKeys, onSelect, onAboutClick, collapsed, onCollapse }) => {
   const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 769);
 
-  const handleFeedbackClick = () => {
-    console.log('Opening feedback modal');
-    setIsFeedbackVisible(true);
-  };
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 769;
+      setIsMobile(mobile);
+      if (!mobile) {
+        onCollapse(false);
+      } else {
+        onCollapse(true);
+      }
+    };
 
-  const handleFeedbackClose = () => {
-    console.log('Closing feedback modal');
-    setIsFeedbackVisible(false);
-  };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [onCollapse]);
 
-  const menuItems = [
+  const mainMenuItems = [
     {
       key: 'all',
-      icon: <FolderOutlined />,
-      label: '全部文件',
+      icon: <CloudOutlined />,
+      label: '全部文件'
     },
     {
-      key: 'images',
-      icon: <FolderOutlined />,
-      label: '图片',
+      key: 'starred',
+      icon: <StarOutlined />,
+      label: '收藏夹'
     },
     {
-      key: 'documents',
+      key: 'folders',
       icon: <FolderOutlined />,
-      label: '文档',
+      label: '文件夹'
     },
     {
-      key: 'videos',
-      icon: <FolderOutlined />,
-      label: '视频',
-    },
+      key: 'trash',
+      icon: <DeleteOutlined />,
+      label: '回收站'
+    }
   ];
 
-  console.log('Current modal state:', isFeedbackVisible);
+  const bottomMenuItems = [
+    {
+      key: 'feedback',
+      icon: <CommentOutlined />,
+      label: '提交需求'
+    },
+    {
+      key: 'about',
+      icon: <InfoCircleOutlined />,
+      label: '关于'
+    }
+  ];
+
+  const handleMenuSelect = ({ key }) => {
+    if (!['about', 'feedback'].includes(key)) {
+      onSelect(key);
+      if (isMobile) {
+        onCollapse(true);
+      }
+    } else if (key === 'about') {
+      onAboutClick();
+      if (isMobile) {
+        onCollapse(true);
+      }
+    } else if (key === 'feedback') {
+      setIsFeedbackVisible(true);
+      if (isMobile) {
+        onCollapse(true);
+      }
+    }
+  };
 
   return (
-    <StyledSider>
-      <Menu
-        mode="inline"
-        selectedKeys={selectedKeys}
-        onSelect={({ key }) => onSelect(key)}
-        items={menuItems}
+    <>
+      <StyledSider width={200} collapsed={collapsed}>
+        <StyledMenu
+          mode="inline"
+          selectedKeys={selectedKeys}
+          items={mainMenuItems}
+          onSelect={handleMenuSelect}
+        />
+        <BottomMenu
+          mode="inline"
+          selectedKeys={[]}
+          items={bottomMenuItems}
+          onSelect={handleMenuSelect}
+        />
+      </StyledSider>
+
+      <CollapseTrigger
+        onClick={() => onCollapse(!collapsed)}
+        collapsed={collapsed}
+      >
+        {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+      </CollapseTrigger>
+
+      <Overlay 
+        visible={!collapsed && isMobile} 
+        onClick={() => onCollapse(true)}
       />
-      <BottomButtons>
-        <ActionButton 
-          primary 
-          type="button"
-          onClick={handleFeedbackClick}
-        >
-          <BulbOutlined />
-          提交需求
-        </ActionButton>
-        <ActionButton 
-          type="button" 
-          onClick={onAboutClick}
-        >
-          <InfoCircleOutlined />
-          关于我们
-        </ActionButton>
-      </BottomButtons>
 
       <FeedbackModal
         open={isFeedbackVisible}
-        onClose={handleFeedbackClose}
+        onClose={() => setIsFeedbackVisible(false)}
       />
-    </StyledSider>
+    </>
   );
 };
 
