@@ -76,6 +76,16 @@ const ActionButton = styled.button`
 const SideMenu = ({ selectedKeys, onSelect, onAboutClick }) => {
   const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
 
+  const handleFeedbackClick = () => {
+    console.log('Opening feedback modal');
+    setIsFeedbackVisible(true);
+  };
+
+  const handleFeedbackClose = () => {
+    console.log('Closing feedback modal');
+    setIsFeedbackVisible(false);
+  };
+
   const menuItems = [
     {
       key: 'all',
@@ -99,6 +109,8 @@ const SideMenu = ({ selectedKeys, onSelect, onAboutClick }) => {
     },
   ];
 
+  console.log('Current modal state:', isFeedbackVisible);
+
   return (
     <StyledSider>
       <Menu
@@ -110,20 +122,24 @@ const SideMenu = ({ selectedKeys, onSelect, onAboutClick }) => {
       <BottomButtons>
         <ActionButton 
           primary 
-          onClick={() => setIsFeedbackVisible(true)}
+          type="button"
+          onClick={handleFeedbackClick}
         >
           <BulbOutlined />
           提交需求
         </ActionButton>
-        <ActionButton onClick={onAboutClick}>
+        <ActionButton 
+          type="button" 
+          onClick={onAboutClick}
+        >
           <InfoCircleOutlined />
           关于我们
         </ActionButton>
       </BottomButtons>
 
       <FeedbackModal
-        isVisible={isFeedbackVisible}
-        onClose={() => setIsFeedbackVisible(false)}
+        open={isFeedbackVisible}
+        onClose={handleFeedbackClose}
       />
     </StyledSider>
   );
