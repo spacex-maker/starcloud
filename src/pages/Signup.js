@@ -541,9 +541,23 @@ const SelectedCountryContent = styled.div`
   padding: 0 16px;
   gap: 12px;
   color: var(--ant-color-text);
+  background: transparent !important;
+  z-index: 2;
+  position: relative;
+  width: 100%;
   
   &.placeholder {
     color: #8E99AB;
+  }
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: transparent !important;
+    pointer-events: none;
   }
 `;
 
@@ -616,31 +630,40 @@ const VerifyCodeButton = styled.button`
   }
 `;
 
-// 添加公告样式组件
-const Announcement = styled.div`
-  background: ${props => props.theme.mode === 'dark' 
-    ? 'var(--ant-color-error-bg)' 
-    : '#fff2f0'};
-  border: 1px solid ${props => props.theme.mode === 'dark'
-    ? 'var(--ant-color-error-border)'
-    : '#ffccc7'};
-  color: var(--ant-color-error);
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 24px;
-  text-align: center;
-  font-weight: 500;
-  animation: fadeIn 0.3s ease-in-out;
+// 添加专门的国家选择器样式组件
+const CountrySelector = styled.div`
+  width: 100%;
+  height: 50px;
+  border-radius: 9999px;
+  border: 1px solid ${props => props.theme.mode === 'dark' 
+    ? 'var(--ant-color-border)' 
+    : '#e5e7eb'};
+  background: transparent !important;
+  color: var(--ant-color-text);
+  font-size: 0.875rem;
+  transition: all 0.3s;
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
 
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  &:hover {
+    border-color: var(--ant-color-primary);
+  }
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: transparent !important;
+    pointer-events: none;
+  }
+
+  .ant-select-selector {
+    background: transparent !important;
   }
 `;
 
@@ -966,20 +989,11 @@ export default function SignupPage() {
             <Logo>
               <FormattedMessage id="signup.title" />
             </Logo>
-            <Announcement>
-              <FormattedMessage id="signup.announcement" />
-            </Announcement>
             <Form onSubmit={handleSubmit} autoComplete="off">
               <FormItem>
                 <InputWrapper>
-                  <Input
-                    as="div"
+                  <CountrySelector
                     onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                    style={{ 
-                      padding: 0,
-                      height: '50px',
-                      lineHeight: '50px'
-                    }}
                   >
                     <SelectedCountryContent className={!countryCode ? 'placeholder' : ''}>
                       {countryCode && countries.find(c => c.code === countryCode) ? (
@@ -997,7 +1011,7 @@ export default function SignupPage() {
                         <span>选择国家/地区</span>
                       )}
                     </SelectedCountryContent>
-                  </Input>
+                  </CountrySelector>
                   <BorderGlow className={countryFocused ? "active" : ""} />
                   <EmailSuffixButton
                     type="button"
