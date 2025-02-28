@@ -60,5 +60,6 @@ export default {
   'signup.verificationCode.success': 'Code de vérification envoyé',
   'signup.verificationCode.error': 'Échec de l\'envoi du code',
   'signup.verificationCode.required': 'Veuillez entrer le code de vérification',
-  'signup.verificationCode.invalid': 'Format de code de vérification invalide'
+  'signup.verificationCode.invalid': 'Format de code de vérification invalide',
+  'signup.announcement': 'La fonction d\'inscription est en maintenance aujourd\'hui !'
 }; 

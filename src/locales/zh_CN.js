@@ -72,5 +72,6 @@ export default {
   'login.verificationCode.required': '请输入验证码',
   'login.verificationCode.invalid': '验证码格式不正确',
   'signup.error.allFieldsRequired': '请填写所有必填字段',
-  'signup.error.emailInvalid': '请输入有效的邮箱地址'
+  'signup.error.emailInvalid': '请输入有效的邮箱地址',
+  'signup.announcement': '注册功能今日维护中！'
 }; 

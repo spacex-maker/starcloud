@@ -58,5 +58,6 @@ export default {
   'signup.verificationCode.success': 'Код подтверждения отправлен',
   'signup.verificationCode.error': 'Ошибка отправки кода',
   'signup.verificationCode.required': 'Пожалуйста, введите код подтверждения',
-  'signup.verificationCode.invalid': 'Неверный формат кода подтверждения'
+  'signup.verificationCode.invalid': 'Неверный формат кода подтверждения',
+  'signup.announcement': 'Функция регистрации сегодня на техническом обслуживании!'
 }; 
