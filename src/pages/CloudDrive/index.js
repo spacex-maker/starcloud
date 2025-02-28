@@ -25,6 +25,7 @@ import debounce from 'lodash/debounce';
 import _ from 'lodash';
 import FileUploadModal from 'components/modals/FileUploadModal';
 import DownloadManager from 'components/modals/DownloadManager';
+import { useNavigate } from 'react-router-dom';
 
 const { Content, Sider } = Layout;
 const { confirm } = Modal;
@@ -234,14 +235,18 @@ const CloudDrivePage = () => {
     pageSize: 10,
     total: 0
   });
+  const navigate = useNavigate();
 
+  // 添加登录检查
   useEffect(() => {
-    // 从本地存储获取用户信息
     const storedUserInfo = localStorage.getItem('userInfo');
-    if (storedUserInfo) {
-      setUserInfo(JSON.parse(storedUserInfo));
+    if (!storedUserInfo) {
+      message.warning('请先登录');
+      navigate('/login');
+      return;
     }
-  }, []);
+    setUserInfo(JSON.parse(storedUserInfo));
+  }, [navigate]);
 
   useEffect(() => {
     if (userInfo) {

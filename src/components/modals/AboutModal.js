@@ -178,6 +178,65 @@ const NoticeBox = styled.div`
   border-radius: var(--ant-border-radius-base);
 `;
 
+const TeamContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+  padding: 1rem 0;
+`;
+
+const TeamMemberCard = styled.div`
+  background: var(--ant-color-bg-container);
+  border: 1px solid var(--ant-color-border);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const MemberAvatar = styled.div`
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  overflow: hidden;
+  background: var(--ant-color-primary-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const MemberName = styled.h4`
+  margin: 0;
+  color: var(--ant-color-text);
+  font-size: 1rem;
+  font-weight: 600;
+`;
+
+const MemberTitle = styled.div`
+  color: var(--ant-color-text-secondary);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+`;
+
+const MemberDescription = styled.div`
+  color: var(--ant-color-text-secondary);
+  font-size: 0.75rem;
+  margin-top: 0.75rem;
+  line-height: 1.4;
+`;
+
 const AboutModal = ({ isVisible, onClose }) => {
   // 存储套餐数据
   const storagePlans = [
@@ -280,6 +339,38 @@ const AboutModal = ({ isVisible, onClose }) => {
     if (feature.includes('API')) return <ApiOutlined />;
     return <CheckCircleOutlined />;
   };
+
+  // 添加团队成员数据
+  const teamMembers = [
+    {
+      id: 1,
+      name: '张三',
+      title: '首席执行官',
+      description: '拥有10年云存储行业经验，致力于为用户提供最佳的存储解决方案。',
+      avatar: null
+    },
+    {
+      id: 2,
+      name: '李四',
+      title: '技术总监',
+      description: '专注于云存储技术研发，曾主导多个大型存储项目的架构设计。',
+      avatar: null
+    },
+    {
+      id: 3,
+      name: '王五',
+      title: '产品经理',
+      description: '深耕用户体验设计，持续优化产品功能，提升用户满意度。',
+      avatar: null
+    },
+    {
+      id: 4,
+      name: '赵六',
+      title: '客户服务主管',
+      description: '拥有丰富的客户服务经验，致力于为用户提供优质的技术支持。',
+      avatar: null
+    }
+  ];
 
   const items = [
     {
@@ -409,6 +500,33 @@ const AboutModal = ({ isVisible, onClose }) => {
         </div>
       ),
     },
+    {
+      key: '4',
+      label: '团队成员',
+      children: (
+        <div>
+          <AboutContent>
+            <p>我们的团队由行业资深专家组成，致力于为用户提供最优质的云存储服务。每位成员都具备丰富的经验和专业知识，为产品的持续发展提供强大动力。</p>
+          </AboutContent>
+          <TeamContainer>
+            {teamMembers.map(member => (
+              <TeamMemberCard key={member.id}>
+                <MemberAvatar>
+                  {member.avatar ? (
+                    <img src={member.avatar} alt={member.name} />
+                  ) : (
+                    <TeamOutlined style={{ fontSize: '2rem', color: 'var(--ant-color-primary)' }} />
+                  )}
+                </MemberAvatar>
+                <MemberName>{member.name}</MemberName>
+                <MemberTitle>{member.title}</MemberTitle>
+                <MemberDescription>{member.description}</MemberDescription>
+              </TeamMemberCard>
+            ))}
+          </TeamContainer>
+        </div>
+      ),
+    }
   ];
 
   return (
