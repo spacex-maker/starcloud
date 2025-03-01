@@ -1,15 +1,8 @@
 import instance from 'api/axios';
 import { message } from 'antd';
 import { cosService } from 'services/cos';
+import { formatFileSize } from 'utils/format';
 
-// 格式化文件大小的工具函数
-const formatSize = (bytes) => {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
 
 // 获取根目录信息
 export const fetchRootDirectory = async (
@@ -58,7 +51,7 @@ export const fetchRootDirectory = async (
               id: file.id,
               name: file.name,
               type: file.isDirectory ? 'folder' : 'file',
-              size: file.size,
+              size: formatFileSize(file.size),
               downloadUrl: file.downloadUrl,
               createTime: file.createTime ? new Date(file.createTime).toLocaleString() : '-',
               updateTime: file.updateTime ? new Date(file.updateTime).toLocaleString() : '-',
@@ -128,7 +121,7 @@ export const loadFiles = async (
         key: file.id,
         id: file.id,
         name: file.name,
-        size: formatSize(file.size),
+        size: formatFileSize(file.size),
         type: file.isDirectory ? 'folder' : 'file',
         createTime: file.createTime ? new Date(file.createTime).toLocaleString() : '-',
         updateTime: file.updateTime ? new Date(file.updateTime).toLocaleString() : '-',

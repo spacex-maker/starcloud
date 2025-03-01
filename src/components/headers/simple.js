@@ -65,7 +65,8 @@ const Header = styled.header`
   left: 0;
   right: 0;
   width: 100%;
-  z-index: 50;
+  height: 64px;
+  z-index: 100;
   background: var(--ant-color-bg-container);
   border-bottom: 1px solid var(--ant-color-border);
   padding: 0 24px;

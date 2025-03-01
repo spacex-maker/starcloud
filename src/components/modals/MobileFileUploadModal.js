@@ -22,7 +22,6 @@ import {
 } from '@ant-design/icons';
 import { getEllipsisFileName } from '../../utils';
 import {
-  StyledModal,
   FileList,
   DuplicateTag,
   FileItem,
@@ -32,6 +31,7 @@ import {
   ActionBar,
   UploadProgress,
 } from './MobileFileUploadModal.styles';
+import { formatSpeed } from 'utils/format';
 
 const { Text } = Typography;
 
@@ -98,20 +98,6 @@ const getStatusText = (status, isDuplicate) => {
     case 'skipped': return '已跳过';
     default: return '未知状态';
   }
-};
-
-const formatSpeed = (bytesPerSecond) => {
-  if (!bytesPerSecond) return '0 KB/s';
-  const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
-  let value = bytesPerSecond;
-  let unitIndex = 0;
-  
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex++;
-  }
-  
-  return `${value.toFixed(2)} ${units[unitIndex]}`;
 };
 
 const MobileFileUploadModal = ({
@@ -316,34 +302,30 @@ const MobileFileUploadModal = ({
   };
 
   return (
-    <StyledModal
+    <Modal
       open={visible}
       title={`文件上传 ${isUploading ? `(${fileStats.succeeded}/${fileStats.total})` : ''}`}
       width="100vw"
       style={{ 
-        top: 0,
-        padding: 0,
+        position: 'fixed',
         margin: 0,
+        padding: 0,
         maxWidth: '100vw',
-        overflow: 'hidden'
+        top: 0,
+        zIndex: 1000
+      }}
+      bodyStyle={{ 
+        minHeight: '100vh',
+        margin: 0,
+        padding: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'transparent'
       }}
       maskClosable={false}
       closable={!isUploading}
       onCancel={onCancel}
-      getContainer={() => document.body}
-      keyboard={false}
-      footer={[
-        <div key="right" className="footer-right">
-          <Button 
-            type="primary"
-            onClick={onStartUpload}
-            disabled={!canStartUpload}
-            block
-          >
-            开始上传
-          </Button>
-        </div>
-      ]}
+      footer={null}
     >
       {isUploading && (
         <UploadProgress>
@@ -406,7 +388,7 @@ const MobileFileUploadModal = ({
         dataSource={Array.from(uploadingFiles.values())}
         renderItem={renderItem}
       />
-    </StyledModal>
+    </Modal>
   );
 };
 

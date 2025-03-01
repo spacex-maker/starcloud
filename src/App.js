@@ -52,17 +52,64 @@ export default function App() {
     token: {
       colorPrimary: '#3b82f6',
       borderRadius: 4,
-      fontSize: 13,
+      fontSize: 14,
+      fontSizeSM: 12,
+      fontSizeLG: 16,
+      fontSizeXL: 20,
+      lineHeight: 1.5715,
+      // 暗色模式颜色系统
+      colorBgBase: isDark ? '#141414' : '#ffffff',
+      colorBgContainer: isDark ? '#1f1f1f' : '#ffffff',
+      colorBgElevated: isDark ? '#1f1f1f' : '#ffffff',
+      colorBgLayout: isDark ? '#141414' : '#f0f2f5',
+      colorBgSpotlight: isDark ? '#1f1f1f' : '#ffffff',
+      colorBgMask: 'rgba(0, 0, 0, 0.45)',
+      colorText: isDark ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)',
+      colorTextSecondary: isDark ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 0, 0, 0.65)',
+      colorBorder: isDark ? '#303030' : '#d9d9d9',
+      colorSplit: isDark ? '#303030' : '#f0f0f0',
     },
     components: {
       Button: {
+        borderRadius: 20,
+        controlHeight: 36,
+        paddingContentHorizontal: 20,
+      },
+      Input: {
+        borderRadius: 20,
+        controlHeight: 36,
+      },
+      Select: {
         borderRadius: 4,
       },
-      Card: {
-        borderRadius: 8,
+      Pagination: {
+        borderRadius: 4,
+      },
+      Checkbox: {
+        borderRadius: 4,
+      },
+      Modal: {
+        borderRadius: 20,
+        contentBorderRadius: 20,
+        headerBg: 'var(--ant-color-bg-container)',
+      },
+      Drawer: {
+        borderRadius: 20,
+      },
+      Dropdown: {
+        borderRadius: 20,
+      },
+      Popover: {
+        borderRadius: 20,
+      },
+      Tooltip: {
+        borderRadius: 20,
       },
       Message: {
         zIndex: 1050,
+      },
+      Card: {
+        borderRadius: 8,
       },
     },
   }), [isDark]);

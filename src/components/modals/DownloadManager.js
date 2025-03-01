@@ -9,6 +9,7 @@ import {
   DownOutlined,
 } from '@ant-design/icons';
 import styled from 'styled-components';
+import { formatFileSize, formatSpeed } from 'utils/format';
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -198,37 +199,6 @@ const IconButton = styled(Button)`
   }
 `;
 
-const formatSpeed = (bytesPerSecond) => {
-  if (!bytesPerSecond) return '0 KB/s';
-  const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
-  let value = bytesPerSecond;
-  let unitIndex = 0;
-  
-  while (value > 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex++;
-  }
-  
-  return `${value.toFixed(2)} ${units[unitIndex]}`;
-};
-
-const formatSize = (bytes) => {
-  // 确保输入是数字
-  const size = Number(bytes);
-  if (!size || isNaN(size)) return '0 B';
-  
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let value = size;
-  let unitIndex = 0;
-  
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex++;
-  }
-  
-  return `${value.toFixed(2)} ${units[unitIndex]}`;
-};
-
 const DownloadBubbleIndicator = styled.div`
   position: relative;
   width: 100%;
@@ -404,9 +374,9 @@ const DownloadManager = ({ downloads, onCancel, onClear, onCollapse }) => {
                 />
                 {download.status === 'downloading' && (
                   <div className="download-size">
-                    <span>{formatSize(download.loadedBytes)}</span>
+                    <span>{formatFileSize(download.loadedBytes)}</span>
                     <span className="size-divider">/</span>
-                    <span>{formatSize(download.totalBytes)}</span>
+                    <span>{formatFileSize(download.totalBytes)}</span>
                   </div>
                 )}
               </div>
@@ -417,7 +387,7 @@ const DownloadManager = ({ downloads, onCancel, onClear, onCollapse }) => {
                   {download.status === 'error' && '下载失败'}
                 </span>
                 {download.status !== 'downloading' && (
-                  <span>{formatSize(download.totalBytes)}</span>
+                  <span>{formatFileSize(download.totalBytes)}</span>
                 )}
               </div>
             </DownloadItem>
@@ -427,7 +397,7 @@ const DownloadManager = ({ downloads, onCancel, onClear, onCollapse }) => {
               <div className="item-header">
                 <div className="filename">{download.filename}</div>
                 <div className="item-info">
-                  <span>{formatSize(download.totalBytes)}</span>
+                  <span>{formatFileSize(download.totalBytes)}</span>
                 </div>
               </div>
             </DownloadItem>

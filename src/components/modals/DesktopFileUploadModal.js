@@ -1,58 +1,19 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Modal, Button, Progress, Table, Space, Badge, Tooltip, Typography, message, Upload } from 'antd';
 import { 
-  FileOutlined,
-  FileImageOutlined,
-  FilePdfOutlined,
-  FileWordOutlined,
-  FileExcelOutlined,
-  FilePptOutlined,
-  FileZipOutlined,
-  FileTextOutlined,
-  FileMarkdownOutlined,
-  ClockCircleOutlined,
-  CheckCircleFilled,
-  CloseCircleFilled,
   WarningFilled,
   DeleteOutlined,
-  LoadingOutlined,
-  SwapOutlined,
-  StopOutlined,
   PlusOutlined,
   LockOutlined,
 } from '@ant-design/icons';
 import styled from 'styled-components';
-import { getEllipsisFileName } from '../../utils';
+import { getEllipsisFileName, formatFileSize as formatBytes, formatSpeed, formatTime } from '../../utils/format';
+import { getFileIcon } from '../../utils/fileIcon';
+import { getStatusIcon, getStatusText } from '../../utils/uploadStatus';
 
 const { Text } = Typography;
 
 // 样式组件
-const StyledModal = styled(Modal)`
-  .ant-modal-content {
-    min-height: 520px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .ant-modal-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .ant-modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    
-    .footer-left,
-    .footer-right {
-      display: flex;
-      gap: 8px;
-    }
-  }
-`;
-
 const FileName = styled.div`
   display: flex;
   align-items: center;
@@ -134,92 +95,6 @@ const DuplicateTag = styled.span`
   gap: 4px;
 `;
 
-// 工具函数
-const formatBytes = (bytes) => {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
-
-const getFileIcon = (filename) => {
-  if (!filename || typeof filename !== 'string') {
-    return <FileOutlined style={{ color: '#8c8c8c' }} className="icon" />;
-  }
-  const ext = filename.split('.').pop()?.toLowerCase();
-  switch (ext) {
-    case 'pdf': return <FilePdfOutlined style={{ color: '#ff4d4f' }} className="icon" />;
-    case 'doc':
-    case 'docx': return <FileWordOutlined style={{ color: '#1677ff' }} className="icon" />;
-    case 'xls':
-    case 'xlsx': return <FileExcelOutlined style={{ color: '#52c41a' }} className="icon" />;
-    case 'ppt':
-    case 'pptx': return <FilePptOutlined style={{ color: '#fa8c16' }} className="icon" />;
-    case 'jpg':
-    case 'jpeg':
-    case 'png':
-    case 'gif': return <FileImageOutlined style={{ color: '#13c2c2' }} className="icon" />;
-    case 'zip':
-    case 'rar': return <FileZipOutlined style={{ color: '#722ed1' }} className="icon" />;
-    case 'txt': return <FileTextOutlined style={{ color: '#8c8c8c' }} className="icon" />;
-    case 'md': return <FileMarkdownOutlined style={{ color: '#1677ff' }} className="icon" />;
-    default: return <FileOutlined style={{ color: '#8c8c8c' }} className="icon" />;
-  }
-};
-
-const getStatusIcon = (status) => {
-  switch (status) {
-    case 'success':
-      return <CheckCircleFilled style={{ color: '#52c41a' }} />;
-    case 'error':
-      return <CloseCircleFilled style={{ color: '#ff4d4f' }} />;
-    case 'uploading':
-      return <LoadingOutlined style={{ color: '#1677ff' }} />;
-    case 'creating':
-      return <LoadingOutlined style={{ color: '#722ed1' }} />;
-    case 'skipped':
-      return <CloseCircleFilled style={{ color: '#8c8c8c' }} />;
-    case 'pending':
-      return <ClockCircleOutlined style={{ color: '#8c8c8c' }} />;
-    default:
-      return <ClockCircleOutlined style={{ color: '#8c8c8c' }} />;
-  }
-};
-
-const getStatusText = (status, isDuplicate) => {
-  switch (status) {
-    case 'pending': return isDuplicate ? '等待覆盖' : '等待上传';
-    case 'uploading': return isDuplicate ? '覆盖中' : '上传中';
-    case 'creating': return '创建文件记录';
-    case 'success': return '上传成功';
-    case 'error': return '上传失败';
-    case 'skipped': return '已跳过';
-    default: return '未知状态';
-  }
-};
-
-const formatSpeed = (bytesPerSecond) => {
-  if (!bytesPerSecond) return '0 KB/s';
-  const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
-  let value = bytesPerSecond;
-  let unitIndex = 0;
-  
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex++;
-  }
-  
-  return `${value.toFixed(2)} ${units[unitIndex]}`;
-};
-
-const formatTime = (seconds) => {
-  if (!seconds || seconds === Infinity) return '计算中...';
-  if (seconds < 60) return `${Math.ceil(seconds)}秒`;
-  if (seconds < 3600) return `${Math.ceil(seconds / 60)}分钟`;
-  return `${Math.floor(seconds / 3600)}小时${Math.ceil((seconds % 3600) / 60)}分钟`;
-};
-
 const DesktopFileUploadModal = ({
   visible,
   uploadingFiles = new Map(),
@@ -239,6 +114,8 @@ const DesktopFileUploadModal = ({
     console.warn('onEncryptFiles callback is not provided');
     message.warning('加密文件功能未实现');
   },
+  onEncryptComplete,
+  existingFiles = [],
 }) => {
   // 选中的文件列表
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
@@ -355,7 +232,12 @@ const DesktopFileUploadModal = ({
       .map(file => file.file);
 
     if (typeof onEncryptFiles === 'function') {
-      onEncryptFiles(selectedFiles);
+      onEncryptFiles(selectedFiles, (encryptedFiles, originalFiles) => {
+        if (typeof onEncryptComplete === 'function') {
+          onEncryptComplete(encryptedFiles, originalFiles);
+        }
+        setSelectedRowKeys([]); // 清空选择
+      });
     }
   };
 
@@ -378,6 +260,12 @@ const DesktopFileUploadModal = ({
             <DuplicateTag>
               <WarningFilled />
               重复文件
+            </DuplicateTag>
+          )}
+          {record.isEncrypted && (
+            <DuplicateTag style={{ color: '#52c41a' }}>
+              <LockOutlined />
+              已加密
             </DuplicateTag>
           )}
         </FileName>
@@ -496,7 +384,7 @@ const DesktopFileUploadModal = ({
   }, [isUploading, tableData]);
 
   return (
-    <StyledModal
+    <Modal
       open={visible}
       title={`文件上传 ${isUploading ? `(${fileStats.succeeded}/${fileStats.total})` : ''}`}
       width={800}
@@ -504,7 +392,7 @@ const DesktopFileUploadModal = ({
       closable={!isUploading}
       onCancel={onCancel}
       footer={[
-        <div key="right" className="footer-right">
+        <div key="right" className="footer-right" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
           <Button 
             type="primary"
             onClick={onStartUpload}
@@ -514,6 +402,11 @@ const DesktopFileUploadModal = ({
           </Button>
         </div>
       ]}
+      bodyStyle={{ 
+        minHeight: '520px',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
     >
       {isUploading && (
         <div style={{ marginBottom: 24 }}>
@@ -548,7 +441,23 @@ const DesktopFileUploadModal = ({
             showUploadList={false}
             multiple
             beforeUpload={(file, fileList) => {
-              onAddFiles(fileList);
+              // 检查文件是否与现有文件重复
+              const duplicateFiles = fileList.filter(newFile => 
+                existingFiles.some(existingFile => existingFile.name === newFile.name) ||
+                Array.from(uploadingFiles.keys()).includes(newFile.name)
+              );
+              
+              // 如果有重复文件，标记它们
+              if (duplicateFiles.length > 0) {
+                const filesWithDuplicateFlag = fileList.map(file => ({
+                  file,
+                  isDuplicate: existingFiles.some(existingFile => existingFile.name === file.name) ||
+                              Array.from(uploadingFiles.keys()).includes(file.name)
+                }));
+                onAddFiles(filesWithDuplicateFlag);
+              } else {
+                onAddFiles(fileList.map(file => ({ file, isDuplicate: false })));
+              }
               return false;
             }}
             disabled={isUploading}
@@ -572,6 +481,7 @@ const DesktopFileUploadModal = ({
             icon={<LockOutlined />}
             onClick={handleEncryptFiles}
             disabled={isUploading || selectedRowKeys.length === 0}
+            type="button"
           >
             加密
           </Button>
@@ -593,7 +503,7 @@ const DesktopFileUploadModal = ({
           overflowX: 'auto'
         }}
       />
-    </StyledModal>
+    </Modal>
   );
 };
 

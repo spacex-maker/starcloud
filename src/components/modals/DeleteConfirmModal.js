@@ -7,6 +7,7 @@ import {
   FileImageOutlined,
   FileOutlined,
 } from '@ant-design/icons';
+import { formatFileSize } from 'utils/format';
 
 const { Text } = Typography;
 
@@ -75,7 +76,7 @@ const DeleteConfirmModal = ({
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Text type="secondary">大小：</Text>
-                <Text>{isFolder ? '-' : formatSize(record.size)}</Text>
+                <Text>{isFolder ? '-' : formatFileSize(record.size)}</Text>
               </div>
               {record.createdAt && (
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>

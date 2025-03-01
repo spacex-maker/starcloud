@@ -24,9 +24,13 @@ const StyledSider = styled(Sider)`
   border-right: 1px solid ${props => props.theme.mode === 'dark'
     ? 'rgba(255, 255, 255, 0.08)'
     : 'rgba(0, 0, 0, 0.06)'};
+  position: fixed;
+  left: 0;
+  top: 64px;
+  bottom: 0;
   height: calc(100vh - 64px);
   overflow: auto;
-  position: relative;
+  z-index: 99;
 
   .ant-layout-sider-children {
     display: flex;
