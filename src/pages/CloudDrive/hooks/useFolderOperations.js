@@ -1,0 +1,168 @@
+import { useState } from 'react';
+import { message } from 'antd';
+import { cosService } from 'services/cos';
+import instance from 'api/axios';
+import { loadFiles } from 'services/fileService';
+
+export const useFolderOperations = (currentParentId, userInfo, currentPath, pagination, setPagination, setFiles, setFilteredFiles, setSearchText, setLoading) => {
+  const [newFolderModalVisible, setNewFolderModalVisible] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [pathHistory, setPathHistory] = useState([]);
+  const [currentParentIdState, setCurrentParentIdState] = useState(currentParentId);
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) {
+      message.error('文件夹名称不能为空');
+      return;
+    }
+    
+    try {
+      setCreatingFolder(true);
+      const fullPath = userInfo ? `${userInfo.username}/${currentPath}${newFolderName}/` : '';
+      
+      // 1. 先在对象存储创建文件夹
+      await cosService.createFolder(fullPath);
+      
+      // 2. 调用后端接口保存信息
+      const response = await instance.post('/productx/file-storage/create-directory', {
+        parentId: currentParentId,
+        isDirectory: true,
+        name: newFolderName,
+        size: 0,
+        storagePath: fullPath,
+        visibility: 'PRIVATE'
+      });
+      
+      if (response.data && response.data.success) {
+        message.success('文件夹创建成功');
+        setNewFolderModalVisible(false);
+        setNewFolderName('');
+        
+        // 刷新文件列表
+        await loadFiles(
+          currentParentId, 
+          setLoading,
+          setFiles,
+          setFilteredFiles,
+          setSearchText,
+          setPagination,
+          pagination
+        );
+      } else {
+        throw new Error(response.data.message || '创建文件夹失败');
+      }
+    } catch (error) {
+      console.error('创建文件夹失败:', error);
+      message.error('创建文件夹失败: ' + (error.message || '未知错误'));
+    } finally {
+      setCreatingFolder(false);
+    }
+  };
+
+  const handleFolderClick = async (folder) => {
+    try {
+      const newHistory = [...pathHistory, {
+        id: folder.id,
+        name: folder.name
+      }];
+      
+      const newPath = newHistory.map(p => p.name).join('/') + '/';
+      
+      setPathHistory(newHistory);
+      setCurrentParentIdState(folder.id);
+      
+      // 重置分页到第一页
+      setPagination(prev => ({
+        ...prev,
+        currentPage: 1
+      }));
+      
+      await loadFiles(
+        folder.id,
+        setLoading,
+        setFiles,
+        setFilteredFiles,
+        setSearchText,
+        setPagination,
+        {
+          ...pagination,
+          currentPage: 1
+        }
+      );
+    } catch (error) {
+      console.error('Failed to navigate to folder:', error);
+      message.error('打开文件夹失败: ' + (error.message || '未知错误'));
+    }
+  };
+
+  const handlePathClick = async (index) => {
+    try {
+      const targetPath = pathHistory[index];
+      if (!targetPath?.id) {
+        throw new Error('无效的路径');
+      }
+      
+      const newHistory = pathHistory.slice(0, index + 1);
+      const newPath = newHistory.map(p => p.name).join('/') + '/';
+      
+      setPathHistory(newHistory);
+      setCurrentParentIdState(targetPath.id);
+      
+      await loadFiles(
+        targetPath.id,
+        setLoading,
+        setFiles,
+        setFilteredFiles,
+        setSearchText,
+        setPagination,
+        pagination
+      );
+    } catch (error) {
+      console.error('Failed to navigate to path:', error);
+      message.error('导航失败: ' + (error.message || '未知错误'));
+    }
+  };
+
+  const handleHomeClick = async (rootDirectoryId) => {
+    try {
+      setPathHistory([]);
+      setCurrentParentIdState(rootDirectoryId || 0);
+      
+      setPagination(prev => ({
+        ...prev,
+        currentPage: 1
+      }));
+      
+      await loadFiles(
+        rootDirectoryId || 0,
+        setLoading,
+        setFiles,
+        setFilteredFiles,
+        setSearchText,
+        setPagination,
+        {
+          ...pagination,
+          currentPage: 1
+        }
+      );
+    } catch (error) {
+      console.error('Failed to navigate to home:', error);
+      message.error('返回主页失败: ' + (error.message || '未知错误'));
+    }
+  };
+
+  return {
+    newFolderModalVisible,
+    setNewFolderModalVisible,
+    newFolderName,
+    setNewFolderName,
+    creatingFolder,
+    pathHistory,
+    currentParentIdState,
+    handleCreateFolder,
+    handleFolderClick,
+    handlePathClick,
+    handleHomeClick
+  };
+}; 

@@ -32,6 +32,16 @@ const GlobalStyles = createGlobalStyle`
     min-height: 100vh;
   }
 
+  /* 模态框圆角样式 */
+  .ant-modal .ant-modal-content {
+    border-radius: 20px !important;
+    overflow: hidden;
+  }
+
+  .ant-modal .ant-modal-header {
+    border-radius: 20px 20px 0 0 !important;
+  }
+
   /* Below animations are for modal created using React-Modal */
   .ReactModal__Overlay {
     transition: transform 300ms ease-in-out;

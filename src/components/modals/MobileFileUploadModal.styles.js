@@ -1,91 +1,5 @@
 import styled from 'styled-components';
-import { Modal, List } from 'antd';
-
-export const StyledModal = styled(Modal)`
-  &&& {
-    position: fixed;
-    margin: 0;
-    padding: 0;
-    max-width: 100vw;
-    width: 100vw !important;
-    top: 0;
-    pointer-events: auto;
-    z-index: 1000;
-  }
-
-  .ant-modal-content {
-    min-height: 100vh;
-    margin: 0;
-    border-radius: 0;
-    display: flex;
-    flex-direction: column;
-    background: ${props => props.$token?.colorBgElevated};
-    backdrop-filter: blur(12px);
-  }
-
-  .ant-modal-wrap {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
-    outline: 0;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .ant-modal-mask {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.45);
-    pointer-events: auto;
-  }
-
-  .ant-modal-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    background: transparent;
-  }
-
-  .ant-modal-header {
-    margin: 0;
-    padding: 12px 16px;
-    background: transparent;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    border-bottom: 1px solid ${props => props.$token?.colorBorderSecondary}40;
-
-    .ant-modal-title {
-      font-weight: 600;
-      font-size: 16px;
-    }
-  }
-
-  .ant-modal-footer {
-    margin: 0;
-    padding: 12px 16px;
-    background: transparent;
-    position: sticky;
-    bottom: 0;
-    z-index: 10;
-    border-top: 1px solid ${props => props.$token?.colorBorderSecondary}40;
-    
-    .footer-right {
-      display: flex;
-      gap: 8px;
-      
-      .ant-btn {
-        flex: 1;
-        height: 44px;
-        font-size: 16px;
-        border-radius: 10px;
-        font-weight: 600;
-      }
-    }
-  }
-`;
+import { List } from 'antd';
 
 export const FileList = styled(List)`
   flex: 1;
@@ -94,16 +8,8 @@ export const FileList = styled(List)`
   margin: 0;
   
   .ant-list-item {
-    padding: 8px 16px;
+    padding: 0;
     border: none;
-    
-    &:first-child {
-      padding-top: 16px;
-    }
-    
-    &:last-child {
-      padding-bottom: calc(16px + env(safe-area-inset-bottom));
-    }
   }
 `;
 
