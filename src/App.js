@@ -20,6 +20,8 @@ import jaJP from 'antd/locale/ja_JP';
 import koKR from 'antd/locale/ko_KR';
 import { LocaleProvider } from './contexts/LocaleContext';
 import { Helmet } from 'react-helmet';
+import FileDecryptPage from './pages/FileDecrypt';
+import TestCrypto from './pages/TestCrypto';
 
 // 语言配置映射
 const localeMap = {
@@ -113,6 +115,8 @@ export default function App() {
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/decrypt" element={<FileDecryptPage />} />
+              <Route path="/test-crypto" element={<TestCrypto />} />
             </Routes>
           </Router>
         </ConfigProvider>

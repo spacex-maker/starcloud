@@ -1,5 +1,5 @@
 import React, { useState, useEffect} from 'react';
-import { Layout,Button, Space, Input, Upload, Modal, Image, Table, Typography, Grid } from 'antd';
+import { Layout,Button, Space, Input, Upload, Modal, Image, Table, Typography, Grid, Alert } from 'antd';
 import {
   FolderOutlined,
   CloudUploadOutlined,
@@ -23,12 +23,14 @@ import FileList from './FileList';
 import NewFolderModal from './NewFolderModal';
 import PathHistory from './PathHistory';
 import SideMenu from './SideMenu';
-import { fetchRootDirectory, loadFiles, checkDuplicates, deleteFile } from 'services/fileService';
-import debounce from 'lodash/debounce';
+import { fetchRootDirectory, loadFiles, deleteFile } from 'services/fileService';
 import _ from 'lodash';
 import FileUploadModal from 'components/modals/FileUploadModal';
 import DownloadManager from 'components/modals/DownloadManager';
+import FileEncryptModal from 'components/modals/FileEncryptModal';
 import { useNavigate } from 'react-router-dom';
+import DeleteConfirmModal from 'components/modals/DeleteConfirmModal';
+import { isImageFile } from 'utils/format';
 
 const { Content, Sider } = Layout;
 const { confirm } = Modal;
@@ -301,6 +303,8 @@ const CloudDrivePage = () => {
   const [collapsed, setCollapsed] = useState(window.innerWidth < 769);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 769);
   const screens = Grid.useBreakpoint();
+  const [fileEncryptModalVisible, setFileEncryptModalVisible] = useState(false);
+  const [filesToEncrypt, setFilesToEncrypt] = useState([]);
 
   // 添加登录检查
   useEffect(() => {
@@ -405,28 +409,6 @@ const CloudDrivePage = () => {
     }
   };
 
-  // 添加检查文件重复的函数
-  const checkDuplicateFiles = (newFiles) => {
-    // 获取当前目录下的所有文件
-    const currentFiles = files.filter(f => !f.isDirectory);
-    const duplicates = [];
-    const unique = [];
-
-    newFiles.forEach(file => {
-      const existingFile = currentFiles.find(f => f.name === file.name);
-      if (existingFile) {
-        duplicates.push({
-          file,
-          existingFile
-        });
-      } else {
-        unique.push(file);
-      }
-    });
-
-    return { duplicates, unique };
-  };
-
   // 修改 handleUpload 函数
   const handleUpload = async (files) => {
     const fileList = Array.from(files);
@@ -485,27 +467,6 @@ const CloudDrivePage = () => {
         isUploading: false
       }));
     }
-  };
-
-  // 处理批量重复文件决策
-  const handleBatchDuplicateDecision = (action) => {
-    setUploadStates(prev => {
-      const newFiles = new Map(prev.files);
-      Array.from(newFiles.values())
-        .filter(file => file.isDuplicate)
-        .forEach(file => {
-          newFiles.set(file.file.name, {
-            ...file,
-            action: action,
-            status: action === 'skip' ? 'skipped' : 'pending'
-          });
-        });
-      return {
-        ...prev,
-        files: newFiles
-      };
-    });
-    setShowDuplicateModal(false);
   };
 
   // 处理单个文件的重复决策
@@ -731,16 +692,9 @@ const CloudDrivePage = () => {
   };
 
   const handleDelete = (record) => {
-    const fileName = record.name;
-    const isFolder = record.type === 'folder';
-    
-    confirm({
-      title: '确认删除',
-      content: `确定要删除${isFolder ? '文件夹' : '文件'} "${fileName}" 吗？此操作不可恢复。`,
-      okText: '删除',
-      okType: 'danger',
-      cancelText: '取消',
-      onOk() {
+    DeleteConfirmModal({
+      record,
+      onConfirm: () => {
         deleteFile(
           record, 
           setLoading, 
@@ -752,9 +706,8 @@ const CloudDrivePage = () => {
           pagination
         );
       },
-      onCancel() {
-        // User cancelled deletion, no action needed
-      },
+      formatSize,
+      isImageFile
     });
   };
 
@@ -830,13 +783,6 @@ const CloudDrivePage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // 判断是否是图片文件
-  const isImageFile = (filename) => {
-    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
-    const ext = filename.split('.').pop()?.toLowerCase();
-    return imageExtensions.includes(ext);
   };
 
   // 修改预览处理函数
@@ -1145,7 +1091,7 @@ const CloudDrivePage = () => {
       const xhr = new XMLHttpRequest();
       const downloadId = Date.now().toString();
 
-      // 创建新的下载任务，确保文件大小被正确转换为数字
+      // 创建新的下载任务
       const newTask = {
         id: downloadId,
         filename: file.name,
@@ -1173,7 +1119,7 @@ const CloudDrivePage = () => {
       xhr.onprogress = (event) => {
         if (event.lengthComputable) {
           const now = Date.now();
-          const timeElapsed = (now - lastTime) / 1000; // 转换为秒
+          const timeElapsed = (now - lastTime) / 1000;
           const loadedDiff = event.loaded - lastLoaded;
           const speed = timeElapsed > 0 ? loadedDiff / timeElapsed : 0;
           const totalBytes = Number(event.total) || Number(file.size) || 0;
@@ -1208,14 +1154,41 @@ const CloudDrivePage = () => {
           link.href = url;
           link.download = file.name;
           
-          // 显示保存位置提示
-          message.success(
-            <span>
-              文件将保存到下载目录：<br />
-              <strong style={{ wordBreak: 'break-all' }}>~/Downloads/{file.name}</strong>
-            </span>,
-            4
-          );
+          // 显示保存位置提示，如果是加密文件则显示解密提示
+          if (file.name.endsWith('.encrypted')) {
+            Modal.info({
+              title: '文件下载完成',
+              content: (
+                <div>
+                  <p>加密文件将保存到下载目录：</p>
+                  <p><strong style={{ wordBreak: 'break-all' }}>~/Downloads/{file.name}</strong></p>
+                  <br />
+                  <Alert
+                    message="解密提示"
+                    description={
+                      <div>
+                        <p>此文件已加密，您可以：</p>
+                        <p>1. 使用我们的在线解密工具：<a href="/decrypt" target="_blank">打开解密工具</a></p>
+                        <p>2. 使用加密时设置的密码进行解密</p>
+                      </div>
+                    }
+                    type="info"
+                    showIcon
+                  />
+                </div>
+              ),
+              width: 500,
+              okText: '知道了'
+            });
+          } else {
+            message.success(
+              <span>
+                文件将保存到下载目录：<br />
+                <strong style={{ wordBreak: 'break-all' }}>~/Downloads/{file.name}</strong>
+              </span>,
+              4
+            );
+          }
           
           // 触发下载
           document.body.appendChild(link);
@@ -1303,6 +1276,38 @@ const CloudDrivePage = () => {
 
     // 清除选中状态
     setSelectedRowKeys([]);
+  };
+
+  // 处理文件加密
+  const handleEncryptFiles = (files) => {
+    setFilesToEncrypt(files);
+    setFileEncryptModalVisible(true);
+  };
+
+  // 处理加密完成
+  const handleEncryptComplete = (encryptedFiles) => {
+    // 更新上传状态，替换原始文件为加密后的文件
+    setUploadStates(prev => {
+      const newFiles = new Map(prev.files);
+      
+      encryptedFiles.forEach(encryptedFile => {
+        const originalFileName = encryptedFile.name.replace('.encrypted', '');
+        const originalFileState = newFiles.get(originalFileName);
+        
+        if (originalFileState) {
+          newFiles.set(originalFileName, {
+            ...originalFileState,
+            file: encryptedFile,
+            isEncrypted: true
+          });
+        }
+      });
+      
+      return {
+        ...prev,
+        files: newFiles
+      };
+    });
   };
 
   return (
@@ -1422,6 +1427,7 @@ const CloudDrivePage = () => {
                     onDownload={startDownload}
                     pagination={pagination}
                     onPageChange={handlePageChange}
+                    formatSize={formatSize}
                   />
                 </FileListContainer>
               </StyledContent>
@@ -1484,6 +1490,17 @@ const CloudDrivePage = () => {
             onDuplicateDecision={handleDuplicateDecision}
             onRemoveFiles={handleRemoveFiles}
             onAddFiles={handleAddFiles}
+            onEncryptFiles={handleEncryptFiles}
+          />
+
+          <FileEncryptModal
+            visible={fileEncryptModalVisible}
+            files={filesToEncrypt}
+            onCancel={() => {
+              setFileEncryptModalVisible(false);
+              setFilesToEncrypt([]);
+            }}
+            onEncryptComplete={handleEncryptComplete}
           />
 
           <DownloadManager

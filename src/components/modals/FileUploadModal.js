@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Modal, Button, Progress, Table, Space, Badge, Tooltip, Typography, message, Upload } from 'antd';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Modal, Button, Progress, Table, Space, Badge, Tooltip, Typography, message, Upload, Grid } from 'antd';
 import { 
   FileOutlined,
   FileImageOutlined,
@@ -19,30 +19,67 @@ import {
   SwapOutlined,
   StopOutlined,
   PlusOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
 import styled from 'styled-components';
+import { getEllipsisFileName } from '../../utils';
+import DesktopFileUploadModal from './DesktopFileUploadModal';
+import MobileFileUploadModal from './MobileFileUploadModal';
 
 const { Text } = Typography;
+const { useBreakpoint } = Grid;
 
 // 样式组件
 const StyledModal = styled(Modal)`
+  .ant-modal-content {
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ant-modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
   .ant-modal-footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
+    gap: 8px;
+    
+    .footer-left,
+    .footer-right {
+      display: flex;
+      gap: 8px;
+    }
+    
+    @media (max-width: 576px) {
+      flex-direction: row;
+      flex-wrap: nowrap;
+      
+      .footer-left,
+      .footer-right {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+      }
+      
+      .ant-btn {
+        padding: 4px 8px;
+        font-size: 14px;
+      }
+    }
   }
 `;
 
-const StatusBadge = styled(Badge)`
-  .ant-badge-status-dot {
-    width: 8px;
-    height: 8px;
-  }
-`;
 
 const FileName = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
   
   .icon {
     font-size: 16px;
@@ -53,6 +90,14 @@ const FileName = styled.div`
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+  }
+
+  @media (max-width: 576px) {
+    .name {
+      min-width: 100px;
+    }
   }
 `;
 
@@ -108,39 +153,6 @@ const TotalProgressText = styled.div`
   }
 `;
 
-const ConflictResolution = styled.div`
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  
-  .action-icon {
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    transition: all 0.3s;
-    
-    &:hover {
-      background-color: rgba(0, 0, 0, 0.04);
-    }
-    
-    &.overwrite {
-      color: #1677ff;
-      
-      &:hover {
-        color: #4096ff;
-      }
-    }
-    
-    &.skip {
-      color: #999;
-      
-      &:hover {
-        color: #666;
-      }
-    }
-  }
-`;
-
 const DuplicateTag = styled.span`
   color: #faad14;
   font-size: 12px;
@@ -149,6 +161,20 @@ const DuplicateTag = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 4px;
+`;
+
+// 添加移动端文件信息样式组件
+const MobileFileInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  
+  .file-meta {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ant-color-text-secondary);
+  }
 `;
 
 // 工具函数
@@ -218,365 +244,35 @@ const getStatusText = (status, isDuplicate) => {
 
 const FileUploadModal = ({
   visible,
-  uploadingFiles = new Map(),
-  isUploading = false,
+  uploadingFiles,
+  isUploading,
   onStartUpload,
   onCancel,
   onDuplicateDecision,
-  onRemoveFiles = () => {
-    console.warn('onRemoveFiles callback is not provided');
-    message.warning('移除文件功能未实现');
-  },
-  onAddFiles = () => {
-    console.warn('onAddFiles callback is not provided');
-    message.warning('添加文件功能未实现');
-  },
+  onRemoveFiles,
+  onAddFiles,
+  onEncryptFiles,
 }) => {
-  // 新增：选中的文件列表
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const screens = useBreakpoint();
+  const isMobile = !screens.sm;
 
-  // 统计不同类型的文件数量
-  const fileStats = useMemo(() => {
-    const total = uploadingFiles.size;
-    const duplicates = [...uploadingFiles.values()].filter(f => f.isDuplicate).length;
-    const succeeded = [...uploadingFiles.values()].filter(f => f.status === 'success').length;
-    const failed = [...uploadingFiles.values()].filter(f => f.status === 'error').length;
-    const uploading = [...uploadingFiles.values()].filter(f => f.status === 'uploading' || f.status === 'creating').length;
-    const skipped = [...uploadingFiles.values()].filter(f => f.status === 'skipped').length;
-    const progress = total > 0 
-      ? Math.round((succeeded + failed) / total * 100) 
-      : 0;
-      
-    return {
-      total,
-      duplicates,
-      succeeded,
-      failed,
-      uploading,
-      skipped,
-      progress
-    };
-  }, [uploadingFiles]);
-
-  // 计算上传进度和速度信息
-  const uploadStats = useMemo(() => {
-    if (fileStats.total === 0 || !isUploading) {
-      return {
-        progress: 0,
-        speed: 0,
-        remainingTime: 0,
-        totalSize: 0,
-        uploadedSize: 0
-      };
-    }
-    
-    const validFiles = Array.from(uploadingFiles.values()).filter(
-      file => file.status !== 'skipped' && file.status !== 'error'
-    );
-    
-    if (validFiles.length === 0) return { progress: 0, speed: 0, remainingTime: 0, totalSize: 0, uploadedSize: 0 };
-    
-    let totalSize = 0;
-    let uploadedSize = 0;
-    let currentSpeed = 0;
-    
-    validFiles.forEach(file => {
-      totalSize += file.fileSize;
-      
-      if (file.status === 'success') {
-        uploadedSize += file.fileSize;
-      } else if (file.status === 'uploading' || file.status === 'creating') {
-        uploadedSize += (file.fileSize * (file.progress || 0)) / 100;
-        if (file.speed) {
-          currentSpeed += file.speed;
-        }
-      }
-    });
-    
-    const progress = Math.round((uploadedSize / totalSize) * 100);
-    const remainingSize = totalSize - uploadedSize;
-    const remainingTime = currentSpeed > 0 ? remainingSize / currentSpeed : 0;
-    
-    return {
-      progress,
-      speed: currentSpeed,
-      remainingTime,
-      totalSize,
-      uploadedSize
-    };
-  }, [uploadingFiles, isUploading, fileStats.total]);
-
-  // 格式化时间
-  const formatTime = (seconds) => {
-    if (!seconds || seconds === Infinity) return '计算中...';
-    if (seconds < 60) return `${Math.ceil(seconds)}秒`;
-    if (seconds < 3600) return `${Math.ceil(seconds / 60)}分钟`;
-    return `${Math.floor(seconds / 3600)}小时${Math.ceil((seconds % 3600) / 60)}分钟`;
+  const props = {
+    visible,
+    uploadingFiles,
+    isUploading,
+    onStartUpload,
+    onCancel,
+    onDuplicateDecision,
+    onRemoveFiles,
+    onAddFiles,
+    onEncryptFiles,
   };
 
-  // 格式化速度
-  const formatSpeed = (bytesPerSecond) => {
-    if (!bytesPerSecond) return '0 KB/s';
-    const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
-    let value = bytesPerSecond;
-    let unitIndex = 0;
-    
-    while (value >= 1024 && unitIndex < units.length - 1) {
-      value /= 1024;
-      unitIndex++;
-    }
-    
-    return `${value.toFixed(2)} ${units[unitIndex]}`;
-  };
+  if (isMobile) {
+    return <MobileFileUploadModal {...props} />;
+  }
 
-  // 处理批量移除
-  const handleBatchRemove = () => {
-    if (selectedRowKeys.length === 0) {
-      message.warning('请选择要移除的文件');
-      return;
-    }
-    if (typeof onRemoveFiles === 'function') {
-      onRemoveFiles(selectedRowKeys);
-      setSelectedRowKeys([]); // 清空选择
-    } else {
-      console.warn('onRemoveFiles callback is not provided');
-      message.warning('移除文件功能未实现');
-    }
-  };
-
-  // 处理单个文件移除
-  const handleSingleRemove = (fileName) => {
-    if (typeof onRemoveFiles === 'function') {
-      onRemoveFiles([fileName]);
-    } else {
-      console.warn('onRemoveFiles callback is not provided');
-      message.warning('移除文件功能未实现');
-    }
-  };
-
-  // 表格列定义
-  const columns = [
-    {
-      title: '文件名',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text, record) => (
-        <FileName>
-          {getFileIcon(record.file?.name || text)}
-          <Tooltip title={record.file?.name || text}>
-            <Text className="name" ellipsis>{record.file?.name || text}</Text>
-          </Tooltip>
-          {record.isDuplicate && (
-            <DuplicateTag>
-              <WarningFilled />
-              重复文件
-            </DuplicateTag>
-          )}
-        </FileName>
-      ),
-    },
-    {
-      title: '大小',
-      dataIndex: 'size',
-      key: 'size',
-      width: 120,
-      render: (_, record) => (
-        <FileSize>{formatBytes(record.fileSize)}</FileSize>
-      ),
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: 240,
-      render: (_, record) => {
-        if (record.status === 'uploading' || record.status === 'creating') {
-          return (
-            <Space direction="vertical" size={1} style={{ width: '100%' }}>
-              <StatusHeader>
-                <div className="status-left">
-                  {getStatusIcon(record.status)}
-                  <Text type="secondary">{getStatusText(record.status, record.isDuplicate)}</Text>
-                </div>
-                {record.speed > 0 && (
-                  <span className="speed">{formatSpeed(record.speed)}</span>
-                )}
-              </StatusHeader>
-              <Progress 
-                percent={record.progress || 0} 
-                size="small" 
-                status={record.status === 'error' ? 'exception' : 'active'}
-                style={{ margin: 0, lineHeight: 1 }}
-              />
-              <ProgressText>
-                <span className="uploaded">{formatBytes(record.fileSize * (record.progress || 0) / 100)}</span>
-                <span className="total"> / {formatBytes(record.fileSize)}</span>
-              </ProgressText>
-            </Space>
-          );
-        }
-        
-        return (
-          <Space>
-            {getStatusIcon(record.status)}
-            <Text type={
-              record.status === 'success' ? 'success' :
-              record.status === 'error' ? 'danger' :
-              'secondary'
-            }>
-              {getStatusText(record.status, record.isDuplicate)}
-            </Text>
-          </Space>
-        );
-      },
-    },
-    {
-      title: '操作',
-      key: 'action',
-      width: 80,
-      render: (_, record) => {
-        if (record.status === 'pending') {
-          return (
-            <Tooltip title="移除">
-              <DeleteOutlined
-                style={{ color: '#ff4d4f', cursor: 'pointer' }}
-                onClick={() => handleSingleRemove(record.file.name)}
-              />
-            </Tooltip>
-          );
-        }
-        if (record.status === 'error') {
-          return (
-            <Tooltip title={record.errorMessage || '上传失败'}>
-              <Text type="danger">失败</Text>
-            </Tooltip>
-          );
-        }
-        return null;
-      },
-    },
-  ];
-
-  // 表格数据
-  const tableData = useMemo(() => {
-    return Array.from(uploadingFiles.values()).map(file => ({
-      ...file,
-      key: file.file.name, // 添加key属性用于选择功能
-    }));
-  }, [uploadingFiles]);
-
-  // 表格选择配置
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (newSelectedRowKeys) => {
-      setSelectedRowKeys(newSelectedRowKeys);
-    },
-    getCheckboxProps: (record) => ({
-      disabled: record.status !== 'pending', // 只允许选择待上传的文件
-    }),
-  };
-
-  // 计算是否可以开始上传
-  const canStartUpload = useMemo(() => {
-    return !isUploading && tableData.some(file => 
-      file.status === 'pending'
-    );
-  }, [isUploading, tableData]);
-
-  return (
-    <StyledModal
-      open={visible}
-      title={`文件上传 ${isUploading ? `(${fileStats.succeeded}/${fileStats.total})` : ''}`}
-      width={800}
-      maskClosable={false}
-      closable={!isUploading}
-      onCancel={onCancel}
-      footer={[
-        <Space key="left">
-          <Button
-            danger
-            onClick={handleBatchRemove}
-            disabled={isUploading || selectedRowKeys.length === 0}
-          >
-            移除选中文件
-          </Button>
-        </Space>,
-        <Space key="right">
-          <Button 
-            onClick={onCancel}
-            disabled={isUploading}
-          >
-            {isUploading ? '上传中...' : '关闭'}
-          </Button>
-          <Button 
-            type="primary"
-            onClick={onStartUpload}
-            disabled={!canStartUpload}
-          >
-            开始上传
-          </Button>
-        </Space>
-      ]}
-    >
-      {isUploading && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <Space>
-              <Text>总进度</Text>
-              <Text type="primary">{uploadStats.progress}%</Text>
-            </Space>
-            <Space>
-              <Text type="secondary">速度：{formatSpeed(uploadStats.speed)}</Text>
-              <Text type="secondary">剩余时间：{formatTime(uploadStats.remainingTime)}</Text>
-            </Space>
-          </div>
-          <Progress 
-            percent={uploadStats.progress} 
-            status={uploadStats.progress === 100 ? 'success' : 'active'} 
-            strokeColor={{
-              '0%': '#108ee9',
-              '100%': '#87d068',
-            }}
-          />
-          <TotalProgressText>
-            已上传：<span className="uploaded">{formatBytes(uploadStats.uploadedSize)}</span>
-            <span className="total"> / {formatBytes(uploadStats.totalSize)}</span>
-          </TotalProgressText>
-        </div>
-      )}
-      
-      <div style={{ marginBottom: 16 }}>
-        <Upload
-          showUploadList={false}
-          multiple
-          beforeUpload={(file, fileList) => {
-            onAddFiles(fileList);
-            return false;
-          }}
-          disabled={isUploading}
-        >
-          <Button 
-            icon={<PlusOutlined />}
-            disabled={isUploading}
-          >
-            添加文件
-          </Button>
-        </Upload>
-      </div>
-      
-      <Table
-        rowSelection={rowSelection}
-        columns={columns}
-        dataSource={tableData}
-        pagination={false}
-        size="small"
-        scroll={{ y: 350 }}
-        locale={{
-          emptyText: '没有选择文件'
-        }}
-      />
-    </StyledModal>
-  );
+  return <DesktopFileUploadModal {...props} />;
 };
 
 export default FileUploadModal; 
