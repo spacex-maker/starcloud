@@ -9,9 +9,11 @@ import {
   CommentOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
 import styled from 'styled-components';
 import FeedbackModal from 'components/modals/FeedbackModal';
+import { useNavigate } from 'react-router-dom';
 
 const { Sider } = Layout;
 
@@ -140,6 +142,7 @@ const Overlay = styled.div`
 const SideMenu = ({ selectedKeys, onSelect, onAboutClick, collapsed, onCollapse }) => {
   const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 769);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleResize = () => {
@@ -176,6 +179,11 @@ const SideMenu = ({ selectedKeys, onSelect, onAboutClick, collapsed, onCollapse 
       key: 'trash',
       icon: <DeleteOutlined />,
       label: '回收站'
+    },
+    {
+      key: 'decrypt',
+      icon: <LockOutlined />,
+      label: '解密工具'
     }
   ];
 
@@ -193,6 +201,14 @@ const SideMenu = ({ selectedKeys, onSelect, onAboutClick, collapsed, onCollapse 
   ];
 
   const handleMenuSelect = ({ key }) => {
+    if (key === 'decrypt') {
+      navigate('/decrypt');
+      if (isMobile) {
+        onCollapse(true);
+      }
+      return;
+    }
+    
     if (!['about', 'feedback'].includes(key)) {
       onSelect(key);
       if (isMobile) {

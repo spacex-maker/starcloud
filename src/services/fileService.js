@@ -58,7 +58,7 @@ export const fetchRootDirectory = async (
               id: file.id,
               name: file.name,
               type: file.isDirectory ? 'folder' : 'file',
-              size: formatSize(file.size),
+              size: file.size,
               downloadUrl: file.downloadUrl,
               createTime: file.createTime ? new Date(file.createTime).toLocaleString() : '-',
               updateTime: file.updateTime ? new Date(file.updateTime).toLocaleString() : '-',

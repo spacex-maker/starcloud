@@ -79,7 +79,8 @@ const FileList = ({
   onSelectChange,
   onDownload,
   pagination,
-  onPageChange
+  onPageChange,
+  formatSize
 }) => {
   const screens = useBreakpoint();
 
@@ -172,6 +173,7 @@ const FileList = ({
           key: 'size',
           width: '15%',
           align: 'right',
+          render: (size, record) => record.type === 'folder' ? '-' : formatSize(size)
         },
         {
           title: '创建时间',
