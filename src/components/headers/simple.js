@@ -67,9 +67,12 @@ const Header = styled.header`
   width: 100%;
   height: 64px;
   z-index: 100;
-  background: var(--ant-color-bg-container);
+  background: var(--ant-color-primary);
   border-bottom: 1px solid var(--ant-color-border);
   padding: 0 24px;
+  opacity: ${props => props.scrolled ? 0.8 : 1};
+  backdrop-filter: ${props => props.scrolled ? 'blur(8px)' : 'none'};
+  transition: all 0.3s ease;
 `;
 
 const HeaderContent = styled.div`
@@ -126,13 +129,13 @@ const BrandName = styled.div`
 `;
 
 const XHighlight = styled.span`
-  color: #1890FF;
+  color: var(--ant-color-primary-active);
   font-weight: 900;
   font-size: 1.6rem;
   margin-left: 2px;
   position: relative;
   top: -1px;
-  text-shadow: 0 0 5px rgba(24, 144, 255, 0.5), 0 0 10px rgba(24, 144, 255, 0.3);
+  text-shadow: 0 0 5px rgba(var(--ant-primary-rgb), 0.5), 0 0 10px rgba(var(--ant-primary-rgb), 0.3);
 `;
 
 const NavLinks = styled.div`
@@ -144,27 +147,27 @@ const NavLinks = styled.div`
 const NavLink = styled(Link)`
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--ant-color-text-secondary);
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
   padding: 0.5rem;
   border-radius: 4px;
   transition: all 0.2s;
 
   &:hover {
-    color: var(--ant-color-primary);
-    background: var(--ant-color-primary-bg);
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
   }
 `;
 
 const PrimaryLink = styled(NavLink)`
-  color: var(--ant-color-primary);
-  border: 1px solid var(--ant-color-primary);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.85);
   padding: 0.375rem 1rem;
   border-radius: 4px;
 
   &:hover {
-    color: white;
-    background: var(--ant-color-primary);
+    color: var(--ant-color-primary);
+    background: white;
   }
 `;
 
@@ -409,7 +412,7 @@ const LogoutMenuItem = styled(UserMenuItem)`
 const DarkModeButton = styled.button`
   padding: 0.5rem;
   border-radius: 4px;
-  color: var(--ant-color-text-secondary);
+  color: var(--ant-color-text);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -419,8 +422,8 @@ const DarkModeButton = styled.button`
   justify-content: center;
 
   &:hover {
-    color: var(--ant-color-primary);
-    background: var(--ant-color-primary-bg);
+    color: var(--ant-color-text-secondary);
+    background: var(--ant-color-bg-container);
   }
 
   svg {
@@ -436,6 +439,16 @@ export default function SimpleHeader() {
   const [isDark, setIsDark] = useState(theme.mode === 'dark');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     // 从本地存储获取用户信息
@@ -539,7 +552,7 @@ export default function SimpleHeader() {
   }, [isDark]); // 当主题切换时重新计算
 
   return (
-    <Header>
+    <Header scrolled={scrolled}>
       <HeaderContent>
         <LeftSection>
           <LogoLink to="/">
