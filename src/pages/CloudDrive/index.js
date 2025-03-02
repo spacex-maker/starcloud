@@ -83,7 +83,14 @@ const CloudDrivePage = () => {
     handlePreview,
     handlePreviewClose,
     handleSelectChange
-  } = useFileOperations(currentParentId, pagination, setPagination);
+  } = useFileOperations(
+    currentParentId, 
+    pagination, 
+    setPagination,
+    setFiles,
+    setFilteredFiles,
+    setSearchText
+  );
 
   const {
     newFolderModalVisible,
