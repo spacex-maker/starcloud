@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Button, Typography, Space, Card, Row, Col, Statistic, List } from 'antd';
 import {
   CloudUploadOutlined,
@@ -10,7 +10,7 @@ import {
   ThunderboltOutlined,
   LockOutlined
 } from '@ant-design/icons';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, ThemeContext } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import SimpleHeader from 'components/headers/simple';
 
@@ -24,7 +24,9 @@ const PageContainer = styled.div`
 const HeroSection = styled.div`
   position: relative;
   padding: 120px 0 80px;
-  background: linear-gradient(135deg, var(--ant-color-primary) 0%, #40a9ff 100%);
+  background: ${props => props.theme.mode === 'dark' 
+    ? 'linear-gradient(135deg, #1a365d 0%, #2d3748 50%, #1a365d 100%)'
+    : 'linear-gradient(135deg, #ebf4ff 0%, #e6fffa 50%, #ebf4ff 100%)'};
   text-align: center;
   overflow: hidden;
 
@@ -36,18 +38,36 @@ const HeroSection = styled.div`
     right: 0;
     bottom: 0;
     background: url('/images/pattern.svg') center/cover;
-    opacity: 0.1;
+    opacity: ${props => props.theme.mode === 'dark' ? '0.05' : '0.1'};
     pointer-events: none;
   }
 
-  h1 {
-    color: var(--ant-color-bg-container) !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  .hero-title {
+    color: ${props => props.theme.mode === 'dark' ? '#fff' : '#2d3748'} !important;
+    margin-bottom: 24px;
+    font-size: 48px;
+    text-shadow: ${props => props.theme.mode === 'dark' 
+      ? '0 2px 4px rgba(0, 0, 0, 0.2)' 
+      : '0 2px 4px rgba(0, 0, 0, 0.05)'};
   }
 
   .hero-description {
-    color: var(--ant-color-bg-container);
-    opacity: 0.95;
+    color: ${props => props.theme.mode === 'dark' 
+      ? 'rgba(255, 255, 255, 0.9)' 
+      : 'rgba(45, 55, 72, 0.9)'};
+    font-size: 18px;
+    margin-bottom: 40px;
+  }
+
+  .ant-btn {
+    color: ${props => props.theme.mode === 'dark' ? '#fff' : '#2d3748'};
+    border-color: ${props => props.theme.mode === 'dark' ? '#fff' : '#2d3748'};
+
+    &:hover {
+      color: ${props => props.theme.mode === 'dark' ? '#1a365d' : '#fff'};
+      border-color: ${props => props.theme.mode === 'dark' ? '#fff' : '#2d3748'};
+      background: ${props => props.theme.mode === 'dark' ? '#fff' : '#2d3748'};
+    }
   }
 `;
 
@@ -68,10 +88,15 @@ const FeatureCard = styled(Card)`
   height: 100%;
   text-align: center;
   transition: all 0.3s ease;
+  background: ${props => props.theme.mode === 'dark' ? 'rgba(45, 55, 72, 0.3)' : 'rgba(255, 255, 255, 0.8)'};
+  backdrop-filter: blur(10px);
+  border: 1px solid ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
   
   &:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    box-shadow: ${props => props.theme.mode === 'dark' 
+      ? '0 8px 24px rgba(0, 0, 0, 0.3)' 
+      : '0 8px 24px rgba(0, 0, 0, 0.1)'};
   }
 
   .ant-card-body {
@@ -80,7 +105,7 @@ const FeatureCard = styled(Card)`
 
   .icon-wrapper {
     font-size: 36px;
-    color: var(--ant-color-primary);
+    color: ${props => props.theme.mode === 'dark' ? '#63b3ed' : '#3182ce'};
     margin-bottom: 16px;
   }
 `;
@@ -88,12 +113,18 @@ const FeatureCard = styled(Card)`
 const PriceCard = styled(Card)`
   height: 100%;
   text-align: center;
-  border: ${props => props.popular ? '2px solid var(--ant-color-primary)' : '1px solid var(--ant-color-border)'};
+  background: ${props => props.theme.mode === 'dark' ? 'rgba(45, 55, 72, 0.3)' : 'rgba(255, 255, 255, 0.8)'};
+  backdrop-filter: blur(10px);
+  border: ${props => props.popular 
+    ? `2px solid ${props.theme.mode === 'dark' ? '#63b3ed' : '#3182ce'}`
+    : `1px solid ${props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`};
   transition: all 0.3s ease;
   
   &:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    box-shadow: ${props => props.theme.mode === 'dark' 
+      ? '0 8px 24px rgba(0, 0, 0, 0.3)' 
+      : '0 8px 24px rgba(0, 0, 0, 0.1)'};
   }
 
   .ant-card-body {
@@ -103,7 +134,7 @@ const PriceCard = styled(Card)`
   .price {
     font-size: 48px;
     font-weight: bold;
-    color: var(--ant-color-primary);
+    color: ${props => props.theme.mode === 'dark' ? '#63b3ed' : '#3182ce'};
     margin: 16px 0;
     
     .currency {
@@ -113,16 +144,30 @@ const PriceCard = styled(Card)`
     
     .period {
       font-size: 16px;
-      color: var(--ant-color-text-secondary);
+      color: ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)'};
     }
   }
 `;
 
 const StatsSection = styled(Section)`
-  background: var(--ant-color-bg-container-disabled);
+  background: ${props => props.theme.mode === 'dark' 
+    ? 'linear-gradient(180deg, #1a365d 0%, #2d3748 100%)' 
+    : 'linear-gradient(180deg, #ebf8ff 0%, #e6fffa 100%)'};
 `;
 
-// 添加渐变动画效果
+// 添加自定义按钮样式
+const StyledButton = styled(Button)`
+  border-radius: 20px !important;
+  height: 36px;
+  padding: 0 20px;
+
+  &.ant-btn-lg {
+    height: 40px;
+    padding: 0 24px;
+    font-size: 16px;
+  }
+`;
+
 const gradientShift = keyframes`
   0% {
     background-position: 0% 50%;
@@ -135,35 +180,26 @@ const gradientShift = keyframes`
   }
 `;
 
-// 修改 StyledButton 组件
-const StyledButton = styled(Button)`
-  border-radius: 20px !important;
-  height: 36px;
-  padding: 0 20px;
-
-  &.ant-btn-lg {
-    height: 40px;
-    padding: 0 24px;
-    font-size: 16px;
-  }
-
-  &.enterprise-btn {
+const EnterpriseButton = styled(StyledButton)`
+  &&.ant-btn {
+    position: relative;
+    overflow: hidden;
+    border: none !important;
     background: linear-gradient(
       90deg,
-      var(--ant-color-primary) 0%,
-      #40a9ff 50%,
-      var(--ant-color-primary) 100%
+      #3182ce,
+      #63b3ed,
+      #4299e1,
+      #3182ce
     ) !important;
-    background-size: 200% auto !important;
-    border: none !important;
-    color: #fff !important;
-    transition: all 0.3s ease !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+    background-size: 300% 100% !important;
+    animation: ${gradientShift} 5s linear infinite;
+    transition: all 0.3s ease;
 
     &:hover {
-      background-position: right center !important;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(49, 130, 206, 0.3);
+      opacity: 0.9;
     }
 
     &:active {
@@ -174,6 +210,7 @@ const StyledButton = styled(Button)`
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const theme = useContext(ThemeContext);
 
   const features = [
     {
@@ -242,12 +279,12 @@ const HomePage = () => {
     <PageContainer>
       <SimpleHeader />
       
-      <HeroSection>
+      <HeroSection theme={theme}>
         <ContentWrapper>
-          <Title level={1} style={{ fontSize: '48px', marginBottom: '24px' }}>
+          <Title level={1} className="hero-title">
             安全、高效的云存储解决方案
           </Title>
-          <Paragraph className="hero-description" style={{ fontSize: '18px', marginBottom: '40px' }}>
+          <Paragraph className="hero-description">
             为您的数据提供安全可靠的存储空间，随时随地轻松访问和管理
           </Paragraph>
           <Space size="large">
@@ -322,15 +359,25 @@ const HomePage = () => {
                       </List.Item>
                     )}
                   />
-                  <StyledButton 
-                    type={plan.popular ? 'primary' : 'default'}
-                    size="large"
-                    className={plan.title === '企业版' ? 'enterprise-btn' : ''}
-                    style={{ marginTop: '24px', width: '100%' }}
-                    onClick={() => navigate('/signup')}
-                  >
-                    开始使用
-                  </StyledButton>
+                  {plan.title === '企业版' ? (
+                    <EnterpriseButton
+                      type="primary"
+                      size="large"
+                      style={{ marginTop: '24px', width: '100%' }}
+                      onClick={() => navigate('/signup')}
+                    >
+                      开始使用
+                    </EnterpriseButton>
+                  ) : (
+                    <StyledButton
+                      type={plan.popular ? 'primary' : 'default'}
+                      size="large"
+                      style={{ marginTop: '24px', width: '100%' }}
+                      onClick={() => navigate('/signup')}
+                    >
+                      开始使用
+                    </StyledButton>
+                  )}
                 </PriceCard>
               </Col>
             ))}
