@@ -39,7 +39,7 @@ const Header = styled.header`
   left: 0;
   right: 0;
   width: 100%;
-  height: 64px;
+  height: 72px;
   z-index: 100;
   background: var(--ant-color-primary);
   border-bottom: 1px solid var(--ant-color-border);
@@ -53,7 +53,7 @@ const HeaderContent = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 64px;
+  height: 72px;
   margin: 0 auto;
 `;
 
@@ -136,6 +136,7 @@ const PrimaryLink = styled(NavLink)`
 const UserMenu = styled.div`
   position: relative;
   display: inline-block;
+  margin: 0.5rem 0;
   margin-left: 1.5rem;
 `;
 

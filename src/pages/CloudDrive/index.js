@@ -21,6 +21,7 @@ import FileEncryptModal from 'components/modals/FileEncryptModal';
 import DownloadManager from 'components/modals/DownloadManager';
 import { useNavigate } from 'react-router-dom';
 import { formatFileSize } from 'utils/format';
+import { ActionBar, RoundedButton, RoundedSearch } from './components/styles/StyledComponents';
 
 // Import custom hooks
 import { useUpload } from './hooks/useUpload';
@@ -63,7 +64,17 @@ const CloudDrivePage = () => {
     handleRemoveFiles,
     handleAddFiles,
     handleEncryptFiles
-  } = useUpload(currentParentId, userInfo, currentPath, pagination, setPagination);
+  } = useUpload(
+    currentParentId, 
+    userInfo, 
+    currentPath, 
+    pagination, 
+    setPagination,
+    setLoading,
+    setFiles,
+    setFilteredFiles,
+    setSearchText
+  );
 
   const {
     downloadTasks,
@@ -231,9 +242,9 @@ const CloudDrivePage = () => {
         <title>我的云盘 - MyStorageX</title>
         <meta name="description" content="MyStorageX 云盘 - 安全存储和管理您的文件" />
       </Helmet>
-      <Layout style={{ minHeight: '100vh' }}>
+      <Layout style={{ minHeight: '100vh', height: '100vh', overflow: 'hidden' }}>
         <SimpleHeader />
-        <Layout>
+        <Layout style={{ marginTop: 64, height: 'calc(100vh - 64px)' }}>
           <SideMenu
             selectedKeys={selectedKeys}
             onSelect={handleMenuSelect}
@@ -242,66 +253,66 @@ const CloudDrivePage = () => {
           />
           <Layout style={{ 
             marginLeft: isMobile ? 0 : (collapsed ? 80 : 200),
-            transition: 'margin-left 0.2s'
+            transition: 'margin-left 0.2s',
+            height: '100%',
+            overflow: 'hidden'
           }}>
-            <Content style={{ marginTop: 64 }}>
-              <div className="container-fluid border-b">
-                <div className="row g-0 align-items-center py-3">
-                  <div className="col">
-                    <Space size={screens.md ? 8 : 4}>
-                      <Upload
-                        multiple
-                        showUploadList={false}
-                        beforeUpload={(file, fileList) => {
-                          handleUpload(fileList, files);
-                          setFileUploadModalVisible(true);
-                          return false;
-                        }}
-                        disabled={uploadStates.isUploading}
-                      >
-                        <Button
-                          type="primary"
-                          icon={<CloudUploadOutlined />}
-                          loading={uploadStates.isUploading}
-                        >
-                          {screens.md && "上传文件"}
-                        </Button>
-                      </Upload>
-                      <Button
-                        icon={<FolderOutlined />}
-                        onClick={() => setNewFolderModalVisible(true)}
-                      >
-                        {screens.md && "新建文件夹"}
-                      </Button>
-                      <Button
-                        icon={<ReloadOutlined />}
-                        onClick={() => loadFiles(
-                          currentParentId, 
-                          setLoading, 
-                          setFiles, 
-                          setFilteredFiles, 
-                          setSearchText,
-                          setPagination,
-                          pagination
-                        )}
-                        loading={loading}
-                      >
-                        {screens.md && "刷新"}
-                      </Button>
-                    </Space>
-                  </div>
-                  <div className="col-auto pe-4">
-                    <Input
-                      placeholder="搜索文件"
-                      prefix={<SearchOutlined />}
-                      value={searchText}
-                      onChange={e => handleSearch(e.target.value)}
-                      allowClear
-                      style={{ width: 300 }}
-                    />
-                  </div>
-                </div>
-              </div>
+            <Content style={{ 
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              overflow: 'hidden'
+            }}>
+              <ActionBar>
+                <Space size={screens.md ? 8 : 4} className="flex-nowrap">
+                  <Upload
+                    multiple
+                    showUploadList={false}
+                    beforeUpload={(file, fileList) => {
+                      handleUpload(fileList, files);
+                      setFileUploadModalVisible(true);
+                      return false;
+                    }}
+                    disabled={uploadStates.isUploading}
+                  >
+                    <RoundedButton
+                      type="primary"
+                      icon={<CloudUploadOutlined />}
+                      loading={uploadStates.isUploading}
+                    >
+                      <span className="action-button-text">上传文件</span>
+                    </RoundedButton>
+                  </Upload>
+                  <RoundedButton
+                    icon={<FolderOutlined />}
+                    onClick={() => setNewFolderModalVisible(true)}
+                  >
+                    <span className="action-button-text">新建文件夹</span>
+                  </RoundedButton>
+                  <RoundedButton
+                    icon={<ReloadOutlined />}
+                    onClick={() => loadFiles(
+                      currentParentId, 
+                      setLoading, 
+                      setFiles, 
+                      setFilteredFiles, 
+                      setSearchText,
+                      setPagination,
+                      pagination
+                    )}
+                    loading={loading}
+                  >
+                    <span className="action-button-text">刷新</span>
+                  </RoundedButton>
+                </Space>
+                <RoundedSearch
+                  placeholder="搜索文件"
+                  prefix={<SearchOutlined />}
+                  value={searchText}
+                  onChange={e => handleSearch(e.target.value)}
+                  allowClear
+                />
+              </ActionBar>
 
               <div className="px-4 py-2 border-b">
                 <PathHistory
@@ -311,7 +322,7 @@ const CloudDrivePage = () => {
                 />
               </div>
 
-              <div>
+              <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
                 <FileList
                   loading={loading}
                   filteredFiles={filteredFiles}
@@ -381,6 +392,18 @@ const CloudDrivePage = () => {
               onCancel: handleCloseEncryptModal,
               onEncryptComplete: handleEncryptComplete
             });
+          }}
+          onUploadComplete={() => {
+            // 刷新文件列表
+            loadFiles(
+              currentParentId,
+              setLoading,
+              setFiles,
+              setFilteredFiles,
+              setSearchText,
+              setPagination,
+              pagination
+            );
           }}
         />
 

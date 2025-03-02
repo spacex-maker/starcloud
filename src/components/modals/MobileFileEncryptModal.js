@@ -238,12 +238,22 @@ const MobileFileEncryptModal = ({
   // 加密单个文件
   const encryptFile = (file) => {
     return new Promise((resolve, reject) => {
+      // 获取实际的文件对象
+      const actualFile = file instanceof File ? file : file.originFileObj;
+      
+      // 确保文件是有效的 Blob 对象
+      if (!(actualFile instanceof Blob)) {
+        console.error('Invalid file object:', file);
+        reject(new Error('无效的文件对象'));
+        return;
+      }
+
       const reader = new FileReader();
       
       reader.onload = async (e) => {
         try {
           // 更新加密进度
-          setProgress(prev => new Map(prev).set(file.name, {
+          setProgress(prev => new Map(prev).set(actualFile.name, {
             status: 'encrypting',
             percent: 30
           }));
@@ -267,13 +277,13 @@ const MobileFileEncryptModal = ({
 
           // 创建新的加密文件
           const encryptedBlob = new Blob([finalContent], { type: 'application/encrypted' });
-          const encryptedFile = new File([encryptedBlob], `${file.name}.encrypted`, {
+          const encryptedFile = new File([encryptedBlob], actualFile.name + '.encrypted', {
             type: 'application/encrypted',
-            lastModified: new Date()
+            lastModified: new Date().getTime()
           });
 
           // 更新进度为完成
-          setProgress(prev => new Map(prev).set(file.name, {
+          setProgress(prev => new Map(prev).set(actualFile.name, {
             status: 'completed',
             percent: 100
           }));
@@ -281,7 +291,7 @@ const MobileFileEncryptModal = ({
           resolve(encryptedFile);
         } catch (error) {
           console.error('加密过程出错:', error);
-          setProgress(prev => new Map(prev).set(file.name, {
+          setProgress(prev => new Map(prev).set(actualFile.name, {
             status: 'error',
             percent: 0
           }));
@@ -290,7 +300,7 @@ const MobileFileEncryptModal = ({
       };
 
       reader.onerror = () => {
-        setProgress(prev => new Map(prev).set(file.name, {
+        setProgress(prev => new Map(prev).set(actualFile.name, {
           status: 'error',
           percent: 0
         }));
@@ -298,11 +308,11 @@ const MobileFileEncryptModal = ({
       };
 
       // 开始读取文件
-      setProgress(prev => new Map(prev).set(file.name, {
+      setProgress(prev => new Map(prev).set(actualFile.name, {
         status: 'reading',
         percent: 10
       }));
-      reader.readAsArrayBuffer(file);
+      reader.readAsArrayBuffer(actualFile);
     });
   };
 
@@ -326,9 +336,12 @@ const MobileFileEncryptModal = ({
     try {
       setEncrypting(true);
       
+      // 保存原始文件列表的副本
+      const originalFilesList = Array.from(files);
+      
       // 初始化进度
       const initialProgress = new Map();
-      files.forEach(file => {
+      originalFilesList.forEach(file => {
         initialProgress.set(file.name, {
           status: 'pending',
           percent: 0
@@ -337,17 +350,21 @@ const MobileFileEncryptModal = ({
       setProgress(initialProgress);
 
       // 并行加密所有文件
-      const encryptPromises = Array.from(files).map(file => encryptFile(file));
+      const encryptPromises = originalFilesList.map(file => encryptFile(file));
       const encryptedFiles = await Promise.all(encryptPromises);
 
-      // 调用完成回调
-      onEncryptComplete(encryptedFiles);
-      message.success('文件加密完成');
-      
-      // 清理状态
-      setPassword('');
-      setConfirmPassword('');
-      onCancel();
+      // 调用完成回调，同时传递加密后的文件和原始文件
+      if (typeof onEncryptComplete === 'function') {
+        onEncryptComplete(encryptedFiles, originalFilesList);
+        message.success('文件加密完成');
+        
+        // 清理状态
+        setPassword('');
+        setConfirmPassword('');
+        onCancel();
+      } else {
+        throw new Error('加密完成回调未定义');
+      }
     } catch (error) {
       console.error('加密失败:', error);
       message.error('加密失败: ' + (error.message || '未知错误'));
@@ -391,6 +408,16 @@ const MobileFileEncryptModal = ({
         </div>
       ]}
       width="100vw"
+      styles={{
+        body: {
+          minHeight: '100vh',
+          margin: 0,
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'transparent'
+        }
+      }}
       style={{ 
         top: 0,
         padding: 0,

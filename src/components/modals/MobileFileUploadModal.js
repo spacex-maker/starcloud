@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Modal, Button, Progress, List, Space, Typography, message, Upload, theme } from 'antd';
 import { 
   FileOutlined,
@@ -119,6 +119,15 @@ const MobileFileUploadModal = ({
     console.warn('onEncryptFiles callback is not provided');
     message.warning('加密文件功能未实现');
   },
+  onEncryptComplete = () => {
+    console.warn('onEncryptComplete callback is not provided');
+    message.warning('加密完成回调未实现');
+  },
+  onUploadComplete = () => {
+    console.warn('onUploadComplete callback is not provided');
+    message.warning('上传完成回调未实现');
+  },
+  existingFiles = [],
 }) => {
   // 选中的文件列表
   const [selectedKeys, setSelectedKeys] = useState([]);
@@ -216,6 +225,7 @@ const MobileFileUploadModal = ({
 
     if (typeof onEncryptFiles === 'function') {
       onEncryptFiles(selectedFiles);
+      setSelectedKeys([]); // 清空选择
     }
   };
 
@@ -225,6 +235,36 @@ const MobileFileUploadModal = ({
       file.status === 'pending'
     );
   }, [isUploading, uploadingFiles]);
+
+  // 检查是否所有文件都已上传完成
+  useEffect(() => {
+    const checkUploadCompletion = () => {
+      if (!isUploading || uploadingFiles.size === 0) return;
+
+      const allCompleted = Array.from(uploadingFiles.values()).every(
+        file => ['success', 'error', 'skipped'].includes(file.status)
+      );
+      
+      if (!allCompleted) return;
+
+      const hasSuccessful = Array.from(uploadingFiles.values()).some(
+        file => file.status === 'success'
+      );
+      
+      if (hasSuccessful) {
+        // 调用上传完成回调以刷新数据
+        onUploadComplete();
+        // 显示成功消息
+        message.success('文件上传完成');
+        // 延迟关闭模态框
+        setTimeout(() => {
+          onCancel();
+        }, 1000);
+      }
+    };
+
+    checkUploadCompletion();
+  }, [isUploading, uploadingFiles, onUploadComplete, onCancel]);
 
   // 渲染文件列表项
   const renderItem = (file) => {
@@ -381,6 +421,16 @@ const MobileFileUploadModal = ({
           >
             加密
           </Button>
+          {canStartUpload && (
+            <Button
+              type="primary"
+              onClick={onStartUpload}
+              block
+              style={{ gridColumn: '1 / -1' }}
+            >
+              开始上传
+            </Button>
+          )}
         </ActionBar>
       )}
       

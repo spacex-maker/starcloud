@@ -1,6 +1,7 @@
 import React, { memo, useMemo } from 'react';
 import type { FC } from 'react';
-import { Table, Space, Button, Typography, TablePaginationConfig, theme, Pagination } from 'antd';
+import { Table, Space, Button, Typography, TablePaginationConfig, theme, Pagination, Grid } from 'antd';
+import { ThemeContext } from 'styled-components';
 import {
   FolderOutlined,
   FileOutlined,
@@ -12,6 +13,7 @@ import {
 import { formatFileSize, isImageFile } from 'utils/format';
 import { FileModel } from 'models/file/FileModel';
 import type { ColumnsType } from 'antd/es/table';
+import { RoundedButton } from './components/styles/StyledComponents';
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -63,6 +65,9 @@ const FileList: FC<FileListProps> = ({
   onPageChange,
 }) => {
   const { token } = useToken();
+  const screens = Grid.useBreakpoint();
+  const themeContext = React.useContext(ThemeContext);
+  const isDark = themeContext?.mode === 'dark';
 
   const columns: ColumnsType<FileModel> = useMemo(() => [
     {
@@ -136,55 +141,91 @@ const FileList: FC<FileListProps> = ({
   ], [token, handleFolderClick, handlePreview, handleDelete, onDownload]);
 
   return (
-    <Table<FileModel>
-      rowSelection={{
-        selectedRowKeys,
-        onChange: onSelectChange,
-      }}
-      columns={columns}
-      dataSource={filteredFiles}
-      rowKey="id"
-      loading={loading}
-      pagination={false}
-      scroll={{ x: 800 }}
-      tableLayout="fixed"
-      footer={() => (
+    <div style={{ 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      position: 'relative',
+      overflow: 'hidden',
+      isolation: 'isolate'  // 创建新的堆叠上下文
+    }}>
+      <div style={{ 
+        flex: 1, 
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div style={{ 
+          position: 'absolute', 
+          inset: 0, 
+          overflow: 'auto',
+          WebkitMask: 'linear-gradient(to bottom, black calc(100% - 60px), transparent 100%)',
+          mask: 'linear-gradient(to bottom, black calc(100% - 60px), transparent 100%)'
+        }}>
+          <Table<FileModel>
+            rowSelection={{
+              selectedRowKeys,
+              onChange: onSelectChange,
+            }}
+            columns={columns}
+            dataSource={filteredFiles}
+            rowKey="id"
+            loading={loading}
+            pagination={false}
+            scroll={{ x: 800, y: 'calc(100% - 8px)' }}
+            tableLayout="fixed"
+          />
+        </div>
+      </div>
+      <div style={{ 
+        position: 'sticky',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: isDark ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
+        backdropFilter: 'blur(1px)',
+        WebkitBackdropFilter: 'blur(1px)',
+        borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)'}`,
+        padding: '12px 0',
+        zIndex: 10,
+        marginTop: '-60px'
+      }}>
         <div className="container-fluid px-0">
           <div className="row align-items-center">
-            <div className="col">
+            <div className="col ps-3">
               {selectedRowKeys.length > 0 && (
                 <Space size={8}>
-                  <Button
+                  <RoundedButton
                     icon={<DownloadOutlined />}
                     onClick={() => handleBatchDownload(
                       filteredFiles.filter(file => selectedRowKeys.includes(file.id))
                     )}
                   >
-                    批量下载
-                  </Button>
-                  <Button
+                    {screens.md && "批量下载"}
+                  </RoundedButton>
+                  <RoundedButton
                     danger
                     icon={<DeleteOutlined />}
                     onClick={() => handleBatchDelete(filteredFiles)}
                   >
-                    批量删除
-                  </Button>
-                  <span>已选择 {selectedRowKeys.length} 项</span>
+                    {screens.md && "批量删除"}
+                  </RoundedButton>
+                  <span className="d-none d-md-inline">已选择 {selectedRowKeys.length} 项</span>
                 </Space>
               )}
             </div>
-            <div className="col-auto">
+            <div className="col-auto pe-3">
               <Pagination 
                 {...pagination}
                 onChange={onPageChange}
                 showTotal={(total) => `共 ${total} 项`}
+                size={screens.md ? 'default' : 'small'}
               />
             </div>
           </div>
         </div>
-      )}
-    />
+      </div>
+    </div>
   );
 };
 
-export default memo(FileList); 
+export default memo(FileList);
