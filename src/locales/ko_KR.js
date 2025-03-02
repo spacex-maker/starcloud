@@ -62,6 +62,7 @@ export default {
   'signup.verificationCode.success': '인증 코드가 전송되었습니다',
   'signup.verificationCode.error': '코드 전송 실패',
   'signup.verificationCode.required': '인증 코드를 입력해 주세요',
-  'signup.verificationCode.invalid': '잘못된 인증 코드 형식',
+  'signup.verificationCode.invalid': '인증 코드 형식이 올바르지 않습니다',
+  'signup.error.emailRequired': '이메일 주소를 입력해주세요',
   'signup.announcement': '오늘은 등록 기능이 점검 중입니다!'
 }; 
