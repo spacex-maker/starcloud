@@ -6,6 +6,7 @@ import {
   SafetyCertificateOutlined, 
   SafetyOutlined,
   CheckCircleOutlined,
+  FolderOpenOutlined,
 } from '@ant-design/icons';
 import styled from 'styled-components';
 import { Helmet } from 'react-helmet';
@@ -479,6 +480,9 @@ const FileDecryptPage = ({
     try {
       const selectedFileObjects = files.filter(file => selectedFiles.includes(file.uid));
       
+      // 检查File System Access API的可用性
+      const hasFileSystemAccess = 'showSaveFilePicker' in window;
+      
       for (const file of selectedFileObjects) {
         try {
           updateFileProgress(file.uid, 10);
@@ -495,8 +499,48 @@ const FileDecryptPage = ({
           updateFileProgress(file.uid, 80);
           
           const fileName = file.name.replace('.encrypted', '');
-          downloadFile(decrypted, fileName);
-          updateFileProgress(file.uid, 100, 'success');
+          const decryptedFile = new File([decrypted], fileName, {
+            type: 'application/octet-stream',
+            lastModified: Date.now()
+          });
+
+          if (hasFileSystemAccess) {
+            // 使用现代的File System Access API
+            try {
+              const handle = await window.showSaveFilePicker({
+                suggestedName: fileName,
+                types: [{
+                  description: '解密后的文件',
+                  accept: {'application/octet-stream': ['']}
+                }],
+              });
+              const writable = await handle.createWritable();
+              await writable.write(decryptedFile);
+              await writable.close();
+              updateFileProgress(file.uid, 100, 'success');
+              message.success(`文件 ${fileName} 解密成功`);
+            } catch (error) {
+              if (error.name === 'AbortError') {
+                // 用户取消了保存操作
+                updateFileProgress(file.uid, 0, 'error');
+                message.info(`已取消保存文件 ${fileName}`);
+              } else {
+                throw error;
+              }
+            }
+          } else {
+            // 降级方案：使用传统的Blob URL下载方式
+            const url = URL.createObjectURL(decryptedFile);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            updateFileProgress(file.uid, 100, 'success');
+            message.success(`文件 ${fileName} 解密成功`);
+          }
         } catch (error) {
           console.error('文件解密失败:', file.name, error);
           updateFileProgress(file.uid, 0, 'error');
@@ -662,7 +706,56 @@ const FileDecryptPage = ({
         );
       },
     },
+    {
+      title: '操作',
+      key: 'action',
+      width: 120,
+      render: (_, record) => (
+        <Space size={4}>
+          <Button
+            type="text"
+            size="small"
+            icon={<FolderOpenOutlined />}
+            onClick={() => handleOpenDirectory(record)}
+            title="打开所在目录"
+          >
+            打开目录
+          </Button>
+        </Space>
+      ),
+    }
   ];
+
+  // 添加打开目录的处理函数
+  const handleOpenDirectory = async (file) => {
+    try {
+      if ('showDirectoryPicker' in window) {
+        const dirHandle = await window.showDirectoryPicker();
+        message.success('已打开文件所在目录');
+      } else {
+        // 对于不支持 File System Access API 的浏览器，提供提示
+        Modal.info({
+          title: '打开目录提示',
+          content: (
+            <div>
+              <p>您的浏览器不支持直接打开目录功能。您可以：</p>
+              <ol>
+                <li>手动打开文件所在目录</li>
+                <li>使用支持此功能的现代浏览器（如 Chrome、Edge 等）</li>
+              </ol>
+            </div>
+          ),
+        });
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        message.info('已取消打开目录');
+      } else {
+        console.error('打开目录失败:', error);
+        message.error('打开目录失败');
+      }
+    }
+  };
 
   return (
     <App>
