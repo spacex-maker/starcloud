@@ -4,7 +4,17 @@ import { cosService } from 'services/cos';
 import instance from 'api/axios';
 import { loadFiles } from 'services/fileService';
 
-export const useUpload = (currentParentId, userInfo, currentPath, pagination, setPagination) => {
+export const useUpload = (
+  currentParentId, 
+  userInfo, 
+  currentPath, 
+  pagination, 
+  setPagination,
+  setLoading,
+  setFiles,
+  setFilteredFiles,
+  setSearchText
+) => {
   const [uploadStates, setUploadStates] = useState({
     files: new Map(),
     isUploading: false
@@ -187,10 +197,10 @@ export const useUpload = (currentParentId, userInfo, currentPath, pagination, se
       
       await loadFiles(
         currentParentId, 
-        () => {}, // setLoading
-        () => {}, // setFiles 
-        () => {}, // setFilteredFiles 
-        () => {}, // setSearchText
+        setLoading,
+        setFiles, 
+        setFilteredFiles, 
+        setSearchText,
         setPagination,
         pagination
       );

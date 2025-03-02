@@ -215,6 +215,12 @@ export const ActionBar = styled.div`
       min-width: 0;
     }
 
+    &.ant-btn-primary {
+      margin-top: 8px;
+      height: 44px;
+      font-size: 15px;
+    }
+
     &:active {
       transform: scale(0.98);
     }

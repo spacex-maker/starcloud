@@ -17,6 +17,7 @@ const FileUploadModal = ({
   onAddFiles,
   onEncryptFiles,
   onEncryptComplete,
+  onUploadComplete,
   existingFiles = [],
 }) => {
   const screens = useBreakpoint();
@@ -33,6 +34,7 @@ const FileUploadModal = ({
     onAddFiles,
     onEncryptFiles,
     onEncryptComplete,
+    onUploadComplete,
     existingFiles,
   };
 

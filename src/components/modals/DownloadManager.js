@@ -15,8 +15,10 @@ const MOBILE_BREAKPOINT = 768;
 
 const DownloadContainer = styled.div`
   position: fixed;
-  bottom: ${props => props.collapsed ? '20px' : '40px'};
-  right: 20px;
+  top: ${props => props.position ? props.position.y : 'auto'};
+  left: ${props => props.position ? props.position.x : 'auto'};
+  bottom: ${props => props.position ? 'auto' : (props.collapsed ? '20px' : '40px')};
+  right: ${props => props.position ? 'auto' : '20px'};
   width: ${props => props.isMobile ? 'auto' : '360px'};
   background: ${props => props.theme.mode === 'dark' 
     ? 'rgba(0, 0, 0, 0.8)' 
@@ -31,8 +33,9 @@ const DownloadContainer = styled.div`
     ? '0 8px 32px rgba(0, 0, 0, 0.3)'
     : '0 8px 32px rgba(0, 0, 0, 0.08)'};
   z-index: 1000;
-  transition: all 0.3s ease;
+  transition: none;
   color: var(--ant-color-text);
+  user-select: none;
   
   ${props => props.isMobile && !props.expanded && `
     width: 56px;
@@ -67,6 +70,7 @@ const DownloadHeader = styled.div`
   border-bottom: 1px solid ${props => props.theme.mode === 'dark'
     ? 'rgba(255, 255, 255, 0.1)'
     : 'rgba(0, 0, 0, 0.06)'};
+  cursor: move;
   
   .title {
     font-weight: 500;
@@ -230,10 +234,14 @@ const DownloadBubbleIndicator = styled.div`
 `;
 
 const DownloadManager = ({ downloads, onCancel, onClear, onCollapse }) => {
+  const containerRef = React.useRef(null);
   const [collapsed, setCollapsed] = useState(false);
   const [downloadUrls, setDownloadUrls] = useState(new Map());
   const [isMobile, setIsMobile] = useState(window.innerWidth <= MOBILE_BREAKPOINT);
   const [expanded, setExpanded] = useState(false);
+  const [position, setPosition] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
   const activeDownloads = downloads.filter(d => d.status === 'downloading');
   const completedDownloads = downloads.filter(d => ['completed', 'error'].includes(d.status));
@@ -261,6 +269,61 @@ const DownloadManager = ({ downloads, onCancel, onClear, onCollapse }) => {
       }
     }
   };
+
+  const handleMouseDown = (e) => {
+    if (e.target.closest('.actions')) return;
+    
+    setIsDragging(true);
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    setDragOffset({
+      x: clientX - e.currentTarget.getBoundingClientRect().left,
+      y: clientY - e.currentTarget.getBoundingClientRect().top
+    });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging || !containerRef.current) return;
+    
+    const containerHeight = containerRef.current.offsetHeight;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    let x = clientX - dragOffset.x;
+    let y = clientY - dragOffset.y;
+    
+    // 边界检查
+    const maxX = window.innerWidth - (isMobile ? containerRef.current.offsetWidth : 360);
+    const maxY = window.innerHeight - containerHeight;
+    
+    x = Math.max(0, Math.min(x, maxX));
+    y = Math.max(0, Math.min(y, maxY));
+    
+    setPosition({
+      x: `${x}px`,
+      y: `${y}px`
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleMouseMove);
+      document.addEventListener('touchend', handleMouseUp);
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleMouseMove);
+      document.removeEventListener('touchend', handleMouseUp);
+    };
+  }, [isDragging, dragOffset]);
 
   // 清理下载的URL
   const cleanupDownloadUrl = (downloadId) => {
@@ -328,8 +391,17 @@ const DownloadManager = ({ downloads, onCancel, onClear, onCollapse }) => {
   }
 
   return (
-    <DownloadContainer isMobile={isMobile} expanded={expanded} collapsed={collapsed}>
-      <DownloadHeader>
+    <DownloadContainer 
+      ref={containerRef}
+      isMobile={isMobile} 
+      expanded={expanded} 
+      collapsed={collapsed}
+      position={position}
+    >
+      <DownloadHeader 
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleMouseDown}
+      >
         <div className="title">
           <DownloadOutlined />
           Downloads {activeDownloads.length > 0 && `(${activeDownloads.length})`}
