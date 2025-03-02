@@ -13,6 +13,7 @@ import {
 import styled, { keyframes, ThemeContext } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import SimpleHeader from 'components/headers/simple';
+import GradientButton from 'components/buttons/GradientButton';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -377,14 +378,13 @@ const HomePage = () => {
                     )}
                   />
                   {plan.title === '企业版' ? (
-                    <EnterpriseButton
-                      type="primary"
+                    <GradientButton
                       size="large"
                       style={{ marginTop: '24px', width: '100%' }}
                       onClick={() => navigate('/signup')}
                     >
                       开始使用
-                    </EnterpriseButton>
+                    </GradientButton>
                   ) : (
                     <StyledButton
                       type={plan.popular ? 'primary' : 'default'}
