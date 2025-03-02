@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu } from 'antd';
+import { Layout, Menu, Modal, Typography, Space, Divider } from 'antd';
 import {
   CloudOutlined,
   StarOutlined,
@@ -13,9 +13,11 @@ import {
 } from '@ant-design/icons';
 import styled from 'styled-components';
 import FeedbackModal from 'components/modals/FeedbackModal';
+import AboutModal from 'components/modals/AboutModal';
 import { useNavigate } from 'react-router-dom';
 
 const { Sider } = Layout;
+const { Title, Text, Paragraph } = Typography;
 
 const StyledSider = styled(Sider)`
   background: ${props => props.theme.mode === 'dark' 
@@ -143,8 +145,9 @@ const Overlay = styled.div`
   }
 `;
 
-const SideMenu = ({ selectedKeys, onSelect, onAboutClick, collapsed, onCollapse }) => {
+const SideMenu = ({ selectedKeys, onSelect, collapsed, onCollapse }) => {
   const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
+  const [isAboutVisible, setIsAboutVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 769);
   const navigate = useNavigate();
 
@@ -213,21 +216,25 @@ const SideMenu = ({ selectedKeys, onSelect, onAboutClick, collapsed, onCollapse 
       return;
     }
     
-    if (!['about', 'feedback'].includes(key)) {
-      onSelect(key);
+    if (key === 'about') {
+      setIsAboutVisible(true);
       if (isMobile) {
         onCollapse(true);
       }
-    } else if (key === 'about') {
-      onAboutClick();
-      if (isMobile) {
-        onCollapse(true);
-      }
-    } else if (key === 'feedback') {
+      return;
+    }
+    
+    if (key === 'feedback') {
       setIsFeedbackVisible(true);
       if (isMobile) {
         onCollapse(true);
       }
+      return;
+    }
+    
+    onSelect(key);
+    if (isMobile) {
+      onCollapse(true);
     }
   };
 
@@ -263,6 +270,11 @@ const SideMenu = ({ selectedKeys, onSelect, onAboutClick, collapsed, onCollapse 
       <FeedbackModal
         open={isFeedbackVisible}
         onClose={() => setIsFeedbackVisible(false)}
+      />
+
+      <AboutModal
+        open={isAboutVisible}
+        onClose={() => setIsAboutVisible(false)}
       />
     </>
   );
