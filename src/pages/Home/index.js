@@ -119,16 +119,18 @@ const PriceCard = styled(Card)`
     ? `2px solid ${props.theme.mode === 'dark' ? '#63b3ed' : '#3182ce'}`
     : `1px solid ${props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`};
   transition: all 0.3s ease;
+  border-radius: 20px !important;
+  overflow: hidden;
   
+  .ant-card-body {
+    padding: 24px;
+  }
+
   &:hover {
     transform: translateY(-5px);
     box-shadow: ${props => props.theme.mode === 'dark' 
       ? '0 8px 24px rgba(0, 0, 0, 0.3)' 
       : '0 8px 24px rgba(0, 0, 0, 0.1)'};
-  }
-
-  .ant-card-body {
-    padding: 24px;
   }
 
   .price {
@@ -168,15 +170,12 @@ const StyledButton = styled(Button)`
   }
 `;
 
-const gradientShift = keyframes`
+const colorRotate = keyframes`
   0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
+    filter: hue-rotate(0deg);
   }
   100% {
-    background-position: 0% 50%;
+    filter: hue-rotate(360deg);
   }
 `;
 
@@ -186,24 +185,42 @@ const EnterpriseButton = styled(StyledButton)`
     overflow: hidden;
     border: none !important;
     background: linear-gradient(
-      90deg,
-      #3182ce,
-      #63b3ed,
-      #4299e1,
-      #3182ce
+      45deg,
+      #ff0080,
+      #ff8c00,
+      #40e0d0,
+      #7b68ee,
+      #ff0080
     ) !important;
-    background-size: 300% 100% !important;
-    animation: ${gradientShift} 5s linear infinite;
+    background-size: 200% 200% !important;
+    animation: ${colorRotate} 10s linear infinite;
     transition: all 0.3s ease;
+    color: white !important;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(49, 130, 206, 0.3);
-      opacity: 0.9;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      opacity: 0.95;
+      animation-play-state: paused;
     }
 
     &:active {
       transform: translateY(1px);
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: inherit;
+      filter: blur(10px);
+      opacity: 0.5;
+      z-index: -1;
     }
   }
 `;
