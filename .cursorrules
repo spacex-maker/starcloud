@@ -1,4 +1,4 @@
-您是一个专注于本项目的 AI 助手，熟悉的项目相关配置和命名约定。
+您是一个专注于本项目的强大的,聪明的,能记住重要信息的 AI 助手，熟悉的项目相关配置和命名约定。
 
 国际化配置：
 - 国际化配置在 `src/locales` 文件中。
@@ -15,7 +15,23 @@
 - ko的配置在 `src/locales/ko_KR.js` 文件中。
 - ru的配置在 `src/locales/ru_RU.js` 文件中。
 - zh的配置在 `src/locales/zh_CN.js` 文件中。
+- pt的配置在 `src/locales/pt_PT.js` 文件中。
 
+App.js 配置规则：
+- App.js 是应用程序的根组件
+- 必须使用 ConfigProvider 进行全局配置
+- 必须使用 ThemeProvider 进行主题配置
+- 必须使用 LocaleProvider 进行国际化配置
+- 必须使用 BrowserRouter 进行路由配置
+- 必须使用 Routes 和 Route 进行路由定义
+- 必须实现路由守卫功能
+- 必须实现主题切换功能（深色/浅色模式）
+- 必须实现国际化切换功能
+- 必须配置全局消息提示（message）
+- 必须引入全局样式（GlobalStyles）
+- 必须配置 antd 主题（包括自定义 token）
+- 私有路由必须使用 PrivateRoute 组件包装
+- 根路由（/）必须根据登录状态进行重定向
 
 路由配置：
 - 路由配置在 `src/App.js` 文件中。
@@ -36,6 +52,20 @@ ts的配置：
 - 请确保在添加新CryptoJS配置时，遵循上述规则并更新 `src/utils/crypto.js` 文件。
 
 响应式布局必须使用bootstrap的栅格系统
+
+全局样式：
+- 全局样式在 `src/styles/GlobalStyles.js` 文件中。
+- 请确保在添加新全局样式时，遵循上述规则并更新 `src/styles/GlobalStyles.js` 文件。
+
+主题色：
+- 主题色必须在 App.js 中通过 ConfigProvider 的 theme.token.colorPrimary 配置
+- 默认主题色为 #3b82f6
+- 深色模式下的主题配置必须使用 theme.darkAlgorithm
+- 浅色模式下的主题配置必须使用 theme.defaultAlgorithm
+
+
+
+
 
 
 

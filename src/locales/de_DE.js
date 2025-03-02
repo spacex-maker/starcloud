@@ -62,6 +62,7 @@ export default {
   'signup.verificationCode.success': 'Bestätigungscode gesendet',
   'signup.verificationCode.error': 'Fehler beim Senden des Codes',
   'signup.verificationCode.required': 'Bitte Bestätigungscode eingeben',
-  'signup.verificationCode.invalid': 'Ungültiges Bestätigungscode-Format',
-  'signup.announcement': 'Die Registrierungsfunktion ist heute in Wartung!'
+  'signup.verificationCode.invalid': 'Ungültiges Verifizierungscode-Format',
+  'signup.error.emailRequired': 'Bitte geben Sie Ihre E-Mail-Adresse ein',
+  'signup.announcement': 'Die Registrierungsfunktion wird heute gewartet!'
 }; 
