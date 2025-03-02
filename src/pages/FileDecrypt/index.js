@@ -397,14 +397,31 @@ const FileDecryptPage = ({
   const handleFileSelect = (info) => {
     const selectedFiles = info.fileList;
     
+    // 检查是否为加密文件
     const invalidFiles = selectedFiles.filter(file => !file.name.endsWith('.encrypted'));
     if (invalidFiles.length > 0) {
       message.error('请只选择带有 .encrypted 后缀的加密文件');
       return;
     }
     
+    // 文件去重处理
+    const uniqueFiles = selectedFiles.reduce((acc, current) => {
+      const isDuplicate = acc.some(file => 
+        file.name === current.name && 
+        file.size === current.size &&
+        file.lastModified === current.originFileObj?.lastModified
+      );
+      if (!isDuplicate) {
+        acc.push(current);
+      } else {
+        message.warning(`文件 "${current.name}" 已存在，已自动去重`);
+      }
+      return acc;
+    }, []);
+    
+    // 非会员大小限制检查
     if (!isVipUser) {
-      const largeFiles = selectedFiles.filter(file => file.size > 4 * 1024 * 1024 * 1024);
+      const largeFiles = uniqueFiles.filter(file => file.size > 4 * 1024 * 1024 * 1024);
       if (largeFiles.length > 0) {
         Modal.warning({
           title: '文件大小超出限制',
@@ -427,7 +444,7 @@ const FileDecryptPage = ({
       }
     }
     
-    const newFiles = selectedFiles.map(file => ({
+    const newFiles = uniqueFiles.map(file => ({
       ...file,
       status: 'pending',
       progress: 0
