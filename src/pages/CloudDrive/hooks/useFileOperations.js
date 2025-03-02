@@ -7,7 +7,14 @@ import { isImageFile } from 'utils/format';
 
 const { Text } = Typography;
 
-export const useFileOperations = (currentParentId, pagination, setPagination) => {
+export const useFileOperations = (
+  currentParentId, 
+  pagination, 
+  setPagination,
+  setFiles,
+  setFilteredFiles,
+  setSearchText
+) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [previewImage, setPreviewImage] = useState({
     visible: false,
@@ -59,9 +66,9 @@ export const useFileOperations = (currentParentId, pagination, setPagination) =>
           record, 
           () => {}, // setLoading
           currentParentId, 
-          () => {}, // setFiles
-          () => {}, // setFilteredFiles
-          () => {}, // setSearchText
+          setFiles,
+          setFilteredFiles,
+          setSearchText,
           setPagination,
           pagination
         );
@@ -75,14 +82,15 @@ export const useFileOperations = (currentParentId, pagination, setPagination) =>
       return;
     }
 
-    const selectedItems = filteredFiles.filter(file => selectedRowKeys.includes(file.key));
+    const selectedItems = filteredFiles.filter(file => selectedRowKeys.includes(file.id));
     const maxDisplayItems = 5;
+    const hasFolder = selectedItems.some(item => item.isDirectory);
 
     Modal.confirm({
       title: (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <DeleteOutlined style={{ color: '#ff4d4f', fontSize: '20px' }} />
-          <span>确认删除 {selectedRowKeys.length} 个文件？</span>
+          <span>确认删除 {selectedRowKeys.length} 个{hasFolder ? '文件/文件夹' : '文件'}？</span>
         </div>
       ),
       icon: null,
@@ -108,7 +116,7 @@ export const useFileOperations = (currentParentId, pagination, setPagination) =>
             borderRadius: '8px'
           }}>
             {selectedItems.slice(0, maxDisplayItems).map(item => (
-              <div key={item.key} style={{ padding: '8px', borderBottom: '1px solid var(--ant-color-border)' }}>
+              <div key={item.id} style={{ padding: '8px', borderBottom: '1px solid var(--ant-color-border)' }}>
                 <Text>{item.name}</Text>
               </div>
             ))}
@@ -131,15 +139,17 @@ export const useFileOperations = (currentParentId, pagination, setPagination) =>
       },
       cancelText: '取消',
       onOk: async () => {
+        let loading = false;
         try {
+          loading = true;
           await Promise.all(selectedItems.map(item => 
             deleteFile(
               item,
-              () => {}, // setLoading
+              (value) => loading = value,
               currentParentId,
-              () => {}, // setFiles
-              () => {}, // setFilteredFiles
-              () => {}, // setSearchText
+              setFiles,
+              setFilteredFiles,
+              setSearchText,
               setPagination,
               pagination
             )
@@ -151,16 +161,18 @@ export const useFileOperations = (currentParentId, pagination, setPagination) =>
           // 刷新文件列表
           await loadFiles(
             currentParentId,
-            () => {}, // setLoading
-            () => {}, // setFiles
-            () => {}, // setFilteredFiles
-            () => {}, // setSearchText
+            (value) => loading = value,
+            setFiles,
+            setFilteredFiles,
+            setSearchText,
             setPagination,
             pagination
           );
         } catch (error) {
           console.error('批量删除失败:', error);
           message.error('批量删除失败: ' + (error.message || '未知错误'));
+        } finally {
+          loading = false;
         }
       },
     });
