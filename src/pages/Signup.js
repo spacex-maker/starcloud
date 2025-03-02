@@ -27,10 +27,21 @@ import { Helmet } from 'react-helmet';
 
 const PageContainer = styled.div`
   min-height: 100vh;
+  min-height: -webkit-fill-available;
   display: flex;
   background: ${props => props.theme.mode === 'dark' 
     ? 'var(--ant-color-bg-container)' 
     : '#f5f7fa'};
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
 `;
 
 const LeftSection = styled.div`
@@ -44,25 +55,11 @@ const LeftSection = styled.div`
     : 'linear-gradient(135deg, #1677ff 0%, #4096ff 100%)'};
   padding: 2rem;
   color: white;
-  display: none;
   position: relative;
   overflow: hidden;
 
-  &:before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: ${props => props.theme.mode === 'dark'
-      ? 'linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.3))'
-      : 'linear-gradient(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.1))'};
-    pointer-events: none;
-  }
-
-  @media (min-width: 1024px) {
-    display: flex;
+  @media (max-width: 768px) {
+    display: none;
   }
 `;
 
@@ -98,6 +95,15 @@ const RightSection = styled.div`
   background: ${props => props.theme.mode === 'dark' 
     ? 'var(--ant-color-bg-container)' 
     : '#ffffff'};
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+    justify-content: flex-start;
+    padding-top: 4rem;
+  }
 `;
 
 const LoginBox = styled.div`
@@ -111,6 +117,11 @@ const LoginBox = styled.div`
   box-shadow: ${props => props.theme.mode === 'dark' 
     ? 'none' 
     : '0 4px 24px rgba(0, 0, 0, 0.08)'};
+
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+    box-shadow: none;
+  }
 `;
 
 const Logo = styled.h1`
@@ -209,10 +220,18 @@ const Input = styled.input`
     ? 'rgba(255, 255, 255, 0.04)' 
     : '#f9fafb'};
   color: var(--ant-color-text);
-  font-size: 0.875rem;
+  font-size: 1rem;
   transition: all 0.3s;
   position: relative;
   z-index: 1;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  @media (max-width: 768px) {
+    padding: 0.875rem 1rem;
+    font-size: 16px;
+  }
 
   &:focus {
     outline: none;
@@ -366,10 +385,17 @@ const RuleHint = styled.div`
   transform: translateY(-10px);
   transition: all 0.3s ease;
   
-  &.show {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+  @media (max-width: 768px) {
+    position: fixed;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    transform: translateY(100%);
+    margin-top: 0;
+    
+    &.show {
+      transform: translateY(0);
+    }
   }
   
   ul {
@@ -416,12 +442,18 @@ const Footer = styled.div`
 `;
 
 const TopRightControls = styled.div`
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
   display: flex;
   gap: 1rem;
-  z-index: 10;
+  z-index: 1000;
+  
+  @media (max-width: 768px) {
+    top: 0.5rem;
+    right: 0.5rem;
+    gap: 0.5rem;
+  }
 `;
 
 const IconButton = styled.button`
@@ -440,11 +472,11 @@ const IconButton = styled.button`
   color: var(--ant-color-text-secondary);
   cursor: pointer;
   transition: all 0.3s;
+  -webkit-tap-highlight-color: transparent;
 
-  &:hover {
-    color: var(--ant-color-primary);
-    border-color: var(--ant-color-primary);
-    background: var(--ant-color-primary-bg);
+  @media (max-width: 768px) {
+    width: 32px;
+    height: 32px;
   }
 
   svg {
@@ -476,18 +508,31 @@ const emailSuffixes = [
 ];
 
 const PoweredBy = styled.div`
-  position: absolute;
+  position: fixed;
   bottom: 1rem;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
   text-align: center;
   color: var(--ant-color-text-quaternary);
   font-size: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  background: ${props => props.theme.mode === 'dark' 
+    ? 'rgba(255, 255, 255, 0.08)' 
+    : 'rgba(255, 255, 255, 0.8)'};
+  backdrop-filter: blur(10px);
+  z-index: 10;
+  
+  @media (max-width: 768px) {
+    bottom: 0.5rem;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.75rem;
+  }
 `;
 
 const PhilosophyQuote = styled.div`
-  position: absolute;
-  bottom: 3.5rem; // 放在版权信息上方
+  position: fixed;
+  bottom: 3.5rem;
   left: 0;
   right: 0;
   text-align: center;
@@ -501,7 +546,14 @@ const PhilosophyQuote = styled.div`
   padding: 0.75rem 1.5rem;
   max-width: 600px;
   margin: 0 auto;
+  z-index: 10;
   
+  @media (max-width: 768px) {
+    bottom: 2.5rem;
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+  }
+
   &::before, &::after {
     content: '"';
     font-family: serif;
@@ -949,11 +1001,32 @@ export default function SignupPage() {
     };
   }, [showSuffixDropdown]);
 
+  // 添加处理移动端虚拟键盘的逻辑
+  useEffect(() => {
+    const handleResize = () => {
+      // 设置视口高度
+      document.documentElement.style.setProperty(
+        '--vh',
+        `${window.innerHeight * 0.01}px`
+      );
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
+
   return (
     <>
       <Helmet>
         <title>注册 - MyStorageX</title>
         <meta name="description" content="注册 MyStorageX，获取专属云存储空间" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Helmet>
       <PageContainer>
         <TopRightControls>
