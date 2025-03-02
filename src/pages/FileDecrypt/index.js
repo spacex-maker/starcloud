@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Typography, Upload, Input, Button, Card, Progress, message, Space, Divider, Tag, Table, Modal, Tooltip, Collapse, App } from 'antd';
+import { Layout, Typography, Upload, Input, Button, Card, Progress, message, Space, Divider, Tag, Table, Modal, Tooltip, Collapse, App, Alert } from 'antd';
 import { 
   InboxOutlined, 
   LockOutlined, 
@@ -7,6 +7,7 @@ import {
   SafetyOutlined,
   CheckCircleOutlined,
   FolderOpenOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import styled from 'styled-components';
 import { Helmet } from 'react-helmet';
@@ -22,6 +23,23 @@ import {
   getRecommendedFileSize,
   decryptContent
 } from '../../utils';
+
+// 导入组件
+import FileUploadSection from './components/UploadSection';
+import FileListSectionComponent from './components/FileListSection';
+import DecryptStepsComponent from './components/DecryptSteps';
+import SecurityTipModalComponent from './components/SecurityTipModal';
+import PasswordModalComponent from './components/PasswordModal';
+
+// 导入样式
+import {
+  PageContainer as StyledPageContainer,
+  ContentWrapper as StyledContentWrapper,
+  TopSection as StyledTopSection,
+  DecryptCard as StyledDecryptCard,
+  DecryptLayout as StyledDecryptLayout,
+  PageTitle as StyledPageTitle
+} from './styles/StyledComponents';
 
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
@@ -362,32 +380,6 @@ const StepItem = styled.div`
   }
 `;
 
-const PageTitle = styled.div`
-  text-align: center;
-  margin-bottom: 32px;
-  
-  h2 {
-    margin: 0;
-  }
-  
-  .subtitle {
-    margin-top: 8px;
-    color: var(--ant-color-text-secondary);
-  }
-
-  @media (max-width: 768px) {
-    margin-bottom: 24px;
-    
-    h2 {
-      font-size: 24px !important;
-    }
-    
-    .subtitle {
-      font-size: 14px;
-    }
-  }
-`;
-
 const FileDecryptPage = ({
   isVipUser = false  // 添加会员状态参数
 }) => {
@@ -403,22 +395,16 @@ const FileDecryptPage = ({
 
   // 处理文件选择
   const handleFileSelect = (info) => {
-    const newFiles = info.fileList.map(file => ({
-      ...file,
-      status: 'pending',
-      progress: 0
-    }));
+    const selectedFiles = info.fileList;
     
-    // 验证文件格式
-    const invalidFiles = newFiles.filter(file => !file.name.endsWith('.encrypted'));
+    const invalidFiles = selectedFiles.filter(file => !file.name.endsWith('.encrypted'));
     if (invalidFiles.length > 0) {
       message.error('请只选择带有 .encrypted 后缀的加密文件');
       return;
     }
     
-    // 针对非会员用户的大文件限制
     if (!isVipUser) {
-      const largeFiles = newFiles.filter(file => file.size > 4 * 1024 * 1024 * 1024); // 4GB
+      const largeFiles = selectedFiles.filter(file => file.size > 4 * 1024 * 1024 * 1024);
       if (largeFiles.length > 0) {
         Modal.warning({
           title: '文件大小超出限制',
@@ -441,16 +427,13 @@ const FileDecryptPage = ({
       }
     }
     
-    // 检查是否有重复文件
-    const existingFileNames = new Set(files.map(f => f.name));
-    const duplicateFiles = newFiles.filter(file => existingFileNames.has(file.name));
-    if (duplicateFiles.length > 0) {
-      message.warning('已跳过重复的文件');
-      return;
-    }
+    const newFiles = selectedFiles.map(file => ({
+      ...file,
+      status: 'pending',
+      progress: 0
+    }));
     
-    setFiles(prev => [...prev, ...newFiles]);
-    message.success('文件已添加到列表');
+    setFiles(newFiles);
   };
 
   // 处理文件选择状态变化
@@ -480,7 +463,6 @@ const FileDecryptPage = ({
     try {
       const selectedFileObjects = files.filter(file => selectedFiles.includes(file.uid));
       
-      // 检查File System Access API的可用性
       const hasFileSystemAccess = 'showSaveFilePicker' in window;
       
       for (const file of selectedFileObjects) {
@@ -504,24 +486,16 @@ const FileDecryptPage = ({
             lastModified: Date.now()
           });
 
-          if (hasFileSystemAccess) {
-            // 使用现代的File System Access API
+          if (hasFileSystemAccess && file.saveLocation) {
             try {
-              const handle = await window.showSaveFilePicker({
-                suggestedName: fileName,
-                types: [{
-                  description: '解密后的文件',
-                  accept: {'application/octet-stream': ['']}
-                }],
-              });
-              const writable = await handle.createWritable();
+              const fileHandle = await file.saveLocation.getFileHandle(fileName, { create: true });
+              const writable = await fileHandle.createWritable();
               await writable.write(decryptedFile);
               await writable.close();
               updateFileProgress(file.uid, 100, 'success');
-              message.success(`文件 ${fileName} 解密成功`);
+              message.success(`文件 ${fileName} 已保存到选定位置`);
             } catch (error) {
               if (error.name === 'AbortError') {
-                // 用户取消了保存操作
                 updateFileProgress(file.uid, 0, 'error');
                 message.info(`已取消保存文件 ${fileName}`);
               } else {
@@ -529,7 +503,6 @@ const FileDecryptPage = ({
               }
             }
           } else {
-            // 降级方案：使用传统的Blob URL下载方式
             const url = URL.createObjectURL(decryptedFile);
             const link = document.createElement('a');
             link.href = url;
@@ -539,33 +512,23 @@ const FileDecryptPage = ({
             document.body.removeChild(link);
             setTimeout(() => URL.revokeObjectURL(url), 1000);
             updateFileProgress(file.uid, 100, 'success');
-            message.success(`文件 ${fileName} 解密成功`);
+            message.success(`文件 ${fileName} 已保存到下载目录`);
           }
         } catch (error) {
           console.error('文件解密失败:', file.name, error);
-          updateFileProgress(file.uid, 0, 'error');
+          updateFileProgress(file.uid, 0, 'error', error.message);
           message.error(`文件 ${file.name} 解密失败: ${error.message}`);
         }
       }
 
-      setSelectedFiles([]); // 清空选择
-      setPassword(''); // 清空密码
+      setSelectedFiles([]);
+      setPassword('');
     } catch (error) {
       console.error('批量解密失败:', error);
       message.error('批量解密失败，请重试');
     } finally {
       setDecrypting(false);
     }
-  };
-
-  // 移除单个文件
-  const handleRemoveFile = (file) => {
-    setFiles(prev => prev.filter(f => f.uid !== file.uid));
-    setFileProgress(prev => {
-      const next = new Map(prev);
-      next.delete(file.uid);
-      return next;
-    });
   };
 
   // 清空文件列表
@@ -577,12 +540,12 @@ const FileDecryptPage = ({
   };
 
   // 更新文件进度
-  const updateFileProgress = (fileUid, progress, status = 'decrypting') => {
+  const updateFileProgress = (fileUid, progress, status = 'decrypting', errorMessage = '') => {
     const now = Date.now();
     
     setFileProgress(prev => {
       const next = new Map(prev);
-      next.set(fileUid, { progress, status });
+      next.set(fileUid, { progress, status, errorMessage });
       return next;
     });
     
@@ -595,7 +558,7 @@ const FileDecryptPage = ({
         totalSize: files.find(f => f.uid === fileUid)?.size || 0
       };
       
-      const timeElapsed = (now - stats.lastUpdateTime) / 1000; // 转换为秒
+      const timeElapsed = (now - stats.lastUpdateTime) / 1000;
       const progressDiff = progress - (stats.lastProgress || 0);
       const processedSize = (stats.totalSize * progress) / 100;
       const speed = timeElapsed > 0 ? (processedSize - stats.processedSize) / timeElapsed : 0;
@@ -625,141 +588,58 @@ const FileDecryptPage = ({
     );
   };
 
-  // 获取文件状态文本
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'pending': return '等待解密';
-      case 'decrypting': return '解密中';
-      case 'success': return '解密成功';
-      case 'error': return '解密失败';
-      default: return '未知状态';
-    }
+  // 获取文件信息
+  const getFileLocationInfo = (file) => {
+    const lastModified = file.originFileObj?.lastModified ? new Date(file.originFileObj.lastModified) : null;
+    
+    return {
+      name: file.name,
+      size: formatFileSize(file.size),
+      lastModified: lastModified ? lastModified.toLocaleString() : '未知',
+      type: file.type || 'application/octet-stream'
+    };
   };
 
-  // 表格列定义
-  const columns = [
-    {
-      title: '文件名',
-      dataIndex: 'name',
-      key: 'name',
-      ellipsis: true,
-      render: (text, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <LockOutlined className="file-icon" />
-          <div className="file-info">
-            <Tooltip title={text}>
-              <Text className="file-name">
-                {getEllipsisFileName(text)}
-              </Text>
-            </Tooltip>
-            <div className="file-size">
-              {formatFileSize(record.size)}
+  // 显示文件信息
+  const handleShowFileInfo = (file) => {
+    const fileInfo = getFileLocationInfo(file);
+    
+    Modal.info({
+      title: '文件信息',
+      width: 480,
+      content: (
+        <div style={{ 
+          background: 'var(--ant-color-bg-container-disabled)', 
+          padding: 16, 
+          borderRadius: 8,
+          marginTop: 16
+        }}>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <div>
+              <Text type="secondary">文件名称：</Text>
+              <Text copyable>{fileInfo.name}</Text>
             </div>
-          </div>
+            <div>
+              <Text type="secondary">文件大小：</Text>
+              <Text>{fileInfo.size}</Text>
+            </div>
+            <div>
+              <Text type="secondary">最后修改：</Text>
+              <Text>{fileInfo.lastModified}</Text>
+            </div>
+            <div>
+              <Text type="secondary">文件类型：</Text>
+              <Text>{fileInfo.type}</Text>
+            </div>
+          </Space>
         </div>
       ),
-    },
-    {
-      title: '状态',
-      key: 'status',
-      width: 280,
-      render: (_, record) => {
-        const fileStatus = fileProgress.get(record.uid) || { progress: 0, status: 'pending' };
-        const stats = fileStats.get(record.uid);
-        
-        if (fileStatus.status === 'pending') {
-          return <Tag>等待解密</Tag>;
-        }
-        
-        return (
-          <Space direction="vertical" size={4} style={{ width: '100%' }}>
-            <Space align="center" size={8} style={{ width: '100%' }}>
-              <Progress
-                percent={fileStatus.progress}
-                size="small"
-                status={
-                  fileStatus.status === 'error' ? 'exception' :
-                  fileStatus.status === 'success' ? 'success' :
-                  'active'
-                }
-                style={{ flex: 1, minWidth: 100, maxWidth: 160 }}
-              />
-              <Tag color={
-                fileStatus.status === 'success' ? 'success' :
-                fileStatus.status === 'error' ? 'error' :
-                fileStatus.status === 'decrypting' ? 'processing' :
-                'default'
-              }>
-                {getStatusText(fileStatus.status)}
-              </Tag>
-            </Space>
-            {(fileStatus.status === 'decrypting' || fileStatus.status === 'success') && stats && (
-              <div style={{ fontSize: '12px', color: 'var(--ant-color-text-secondary)' }}>
-                <Space split={<Divider type="vertical" style={{ margin: '0 4px' }} />}>
-                  {fileStatus.status === 'decrypting' && <span>速度：{formatSpeed(stats.speed)}</span>}
-                  <span>用时：{formatTime(stats.timeSpent)}</span>
-                  {fileStatus.status === 'decrypting' && <span>剩余：{formatTime(stats.remainingTime)}</span>}
-                </Space>
-              </div>
-            )}
-          </Space>
-        );
-      },
-    },
-    {
-      title: '操作',
-      key: 'action',
-      width: 120,
-      render: (_, record) => (
-        <Space size={4}>
-          <Button
-            type="text"
-            size="small"
-            icon={<FolderOpenOutlined />}
-            onClick={() => handleOpenDirectory(record)}
-            title="打开所在目录"
-          >
-            打开目录
-          </Button>
-        </Space>
-      ),
-    }
-  ];
-
-  // 添加打开目录的处理函数
-  const handleOpenDirectory = async (file) => {
-    try {
-      if ('showDirectoryPicker' in window) {
-        const dirHandle = await window.showDirectoryPicker();
-        message.success('已打开文件所在目录');
-      } else {
-        // 对于不支持 File System Access API 的浏览器，提供提示
-        Modal.info({
-          title: '打开目录提示',
-          content: (
-            <div>
-              <p>您的浏览器不支持直接打开目录功能。您可以：</p>
-              <ol>
-                <li>手动打开文件所在目录</li>
-                <li>使用支持此功能的现代浏览器（如 Chrome、Edge 等）</li>
-              </ol>
-            </div>
-          ),
-        });
-      }
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        message.info('已取消打开目录');
-      } else {
-        console.error('打开目录失败:', error);
-        message.error('打开目录失败');
-      }
-    }
+    });
   };
 
   return (
     <App>
-      <PageContainer>
+      <StyledPageContainer>
         <Helmet>
           <title>文件解密工具 - MyStorage</title>
           <meta name="description" content="安全的文件解密工具 - 在浏览器中本地解密您的文件，保护您的隐私" />
@@ -767,18 +647,18 @@ const FileDecryptPage = ({
         
         <SimpleHeader />
         
-        <PageTitle>
+        <StyledPageTitle>
           <Title level={2}>
             <LockOutlined /> MyStorage 文件解密工具
           </Title>
           <Text type="secondary" className="subtitle">
             安全、快速、无损地解密您的文件
           </Text>
-        </PageTitle>
+        </StyledPageTitle>
 
-        <ContentWrapper>
-          <TopSection>
-            <DecryptCard
+        <StyledContentWrapper>
+          <StyledTopSection>
+            <StyledDecryptCard
               title={
                 <Space>
                   <LockOutlined style={{ color: '#1677ff' }} />
@@ -797,177 +677,52 @@ const FileDecryptPage = ({
               >
                 安全提示
               </Button>
-              <DecryptLayout>
-                <UploadSection>
-                  <div className="upload-area">
-                    <Dragger
-                      accept=".encrypted"
-                      beforeUpload={() => false}
-                      onChange={handleFileSelect}
-                      showUploadList={false}
-                      multiple={true}
-                      fileList={files}
-                    >
-                      <p className="ant-upload-drag-icon">
-                        <InboxOutlined />
-                      </p>
-                      <p className="ant-upload-text">
-                        点击或拖拽文件
-                      </p>
-                      <p className="ant-upload-hint">
-                        支持批量添加 .encrypted 文件，单个文件最大 {formatFileSize(maxFileSize)}
-                      </p>
-                    </Dragger>
-                  </div>
+              <StyledDecryptLayout>
+                <FileUploadSection
+                  files={files}
+                  maxFileSize={maxFileSize}
+                  decrypting={decrypting}
+                  selectedFiles={selectedFiles}
+                  handleFileSelect={handleFileSelect}
+                  handleStartDecrypt={handleStartDecrypt}
+                  handleClearFiles={handleClearFiles}
+                />
 
-                  <div className="action-buttons">
-                    <Button
-                      type="primary"
-                      icon={<LockOutlined />}
-                      onClick={handleStartDecrypt}
-                      loading={decrypting}
-                      disabled={selectedFiles.length === 0}
-                    >
-                      解密选中文件
-                    </Button>
-                    {files.length > 0 && (
-                      <Button
-                        danger
-                        onClick={handleClearFiles}
-                        disabled={decrypting}
-                      >
-                        清空列表
-                      </Button>
-                    )}
-                  </div>
-                </UploadSection>
-
-                <FileListSection>
-                  <Table
-                    rowSelection={{
-                      selectedRowKeys: selectedFiles,
-                      onChange: handleSelectionChange,
-                      getCheckboxProps: (record) => ({
-                        disabled: record.status !== 'pending' || decrypting,
-                      }),
-                    }}
-                    columns={columns}
-                    dataSource={files}
-                    rowKey="uid"
-                    pagination={false}
-                    size="middle"
-                    locale={{
-                      emptyText: '暂无文件，请添加需要解密的文件'
-                    }}
-                  />
-                </FileListSection>
-              </DecryptLayout>
-            </DecryptCard>
+                <FileListSectionComponent
+                  files={files}
+                  selectedFiles={selectedFiles}
+                  fileProgress={fileProgress}
+                  fileStats={fileStats}
+                  decrypting={decrypting}
+                  handleSelectionChange={handleSelectionChange}
+                  handleShowFileInfo={handleShowFileInfo}
+                />
+              </StyledDecryptLayout>
+            </StyledDecryptCard>
 
             <SecurityFeatures />
+            <DecryptStepsComponent />
+          </StyledTopSection>
+        </StyledContentWrapper>
 
-            <StepsCard
-              title={
-                <Space>
-                  <SafetyOutlined style={{ color: '#1677ff' }} />
-                  <span>解密步骤</span>
-                </Space>
-              }
-            >
-              <StepsGrid>
-                <StepItem>
-                  <div className="step-number">1</div>
-                  <InboxOutlined className="step-icon" />
-                  <h4>选择加密文件</h4>
-                  <p>选择使用 MyStorage 加密工具加密的 .encrypted 文件，支持拖拽或点击选择</p>
-                </StepItem>
-                
-                <StepItem>
-                  <div className="step-number">2</div>
-                  <LockOutlined className="step-icon" />
-                  <h4>输入解密密码</h4>
-                  <p>输入加密时设置的密码，密码将仅用于本地解密，不会被传输或存储</p>
-                </StepItem>
-                
-                <StepItem>
-                  <div className="step-number">3</div>
-                  <SafetyCertificateOutlined className="step-icon" />
-                  <h4>开始解密</h4>
-                  <p>点击按钮后，系统将使用 AES-256-CBC 算法在本地解密您的文件</p>
-                </StepItem>
-                
-                <StepItem>
-                  <div className="step-number">4</div>
-                  <CheckCircleOutlined className="step-icon" />
-                  <h4>获取原始文件</h4>
-                  <p>解密完成后，原始文件将自动下载，解密过程完全无损，保证文件完整性</p>
-                </StepItem>
-              </StepsGrid>
-            </StepsCard>
-          </TopSection>
-        </ContentWrapper>
-
-        <Modal
-          title="输入解密密码"
-          open={passwordModalVisible}
+        <PasswordModalComponent
+          visible={passwordModalVisible}
+          password={password}
+          onPasswordChange={setPassword}
           onOk={handlePasswordConfirm}
           onCancel={() => {
             setPasswordModalVisible(false);
             setPassword('');
           }}
-          confirmLoading={decrypting}
-        >
-          <Input.Password
-            placeholder="请输入解密密码"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ marginTop: 16 }}
-          />
-          <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-            请输入加密时设置的密码，密码将仅用于本地解密
-          </Text>
-        </Modal>
+          decrypting={decrypting}
+        />
 
-        <Modal
-          title={
-            <Space>
-              <SafetyCertificateOutlined />
-              <span>安全提示</span>
-            </Space>
-          }
-          open={securityTipVisible}
-          onOk={() => setSecurityTipVisible(false)}
-          onCancel={() => setSecurityTipVisible(false)}
-          width={600}
-        >
-          <div style={{ padding: '8px 0' }}>
-            <p>所有解密操作均在本地完成，您的密码和文件内容不会上传到服务器</p>
-            {isVipUser ? (
-              <div style={{ marginTop: 16 }}>
-                <p style={{ color: '#52c41a', fontWeight: 500 }}>
-                  尊敬的会员用户，您可以：
-                </p>
-                <ul style={{ color: '#52c41a', marginTop: 8, paddingLeft: 16 }}>
-                  <li>解密任意大小的文件</li>
-                  <li>使用智能分块解密功能，更高效且节省内存</li>
-                  <li>支持批量解密多个大文件</li>
-                </ul>
-              </div>
-            ) : (
-              <div style={{ marginTop: 16 }}>
-                <p style={{ color: '#ff4d4f', fontWeight: 500 }}>
-                  重要提示：解密过程需要在浏览器内存中进行，实际内存占用约为文件大小的3倍。
-                </p>
-                <ul style={{ color: '#ff4d4f', marginTop: 8, paddingLeft: 16 }}>
-                  <li>非会员用户单个文件大小限制为4GB</li>
-                  <li>开通会员后可解密任意大小文件，并支持分块解密</li>
-                  <li>如果出现浏览器崩溃，建议开通会员使用分块解密功能</li>
-                </ul>
-              </div>
-            )}
-          </div>
-        </Modal>
-      </PageContainer>
+        <SecurityTipModalComponent
+          visible={securityTipVisible}
+          onClose={() => setSecurityTipVisible(false)}
+          isVipUser={isVipUser}
+        />
+      </StyledPageContainer>
     </App>
   );
 };
