@@ -16,7 +16,8 @@ import {
   MoonOutlined,
   EyeOutlined,
   EyeInvisibleOutlined,
-  DownOutlined
+  DownOutlined,
+  HomeOutlined
 } from '@ant-design/icons';
 import { Dropdown } from 'antd';
 import { useLocale } from 'contexts/LocaleContext';
@@ -462,9 +463,9 @@ const TopRightControls = styled.div`
 `;
 
 const IconButton = styled.button`
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -703,6 +704,9 @@ export default function LoginPage() {
       <PageContainer>
         <VersionTag>v1.0.2</VersionTag>
         <TopRightControls>
+          <IconButton as={Link} to="/" title="返回官网">
+            <HomeOutlined />
+          </IconButton>
           <IconButton onClick={toggleTheme}>
             {isDark ? <SunOutlined /> : <MoonOutlined />}
           </IconButton>
