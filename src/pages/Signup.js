@@ -429,11 +429,20 @@ const Footer = styled.div`
   margin-top: 2rem;
   color: var(--ant-color-text-secondary);
   font-size: 0.875rem;
+  margin-bottom: 6rem;
+  position: relative;
+  z-index: 20;
+
+  @media (max-width: 768px) {
+    margin-bottom: 7rem;
+  }
 
   a {
     color: var(--ant-color-primary);
     text-decoration: none;
     font-weight: 500;
+    position: relative;
+    z-index: 20;
 
     &:hover {
       color: var(--ant-color-primary-hover);
@@ -547,6 +556,7 @@ const PhilosophyQuote = styled.div`
   max-width: 600px;
   margin: 0 auto;
   z-index: 10;
+  pointer-events: none;
   
   @media (max-width: 768px) {
     bottom: 2.5rem;
