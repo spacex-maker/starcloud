@@ -1,37 +1,11 @@
 import React, { useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
-import logo from "../../images/logo.svg";
 import { ReactComponent as SunIcon } from "feather-icons/dist/icons/sun.svg";
 import { ReactComponent as MoonIcon } from "feather-icons/dist/icons/moon.svg";
 import { auth } from "../../api/auth.js";
 import { ThemeContext } from "styled-components";
 
-// 定义旋转发光效果
-const rotateGlow = keyframes`
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-`;
-
-// 定义脉冲发光效果
-const pulseGlow = keyframes`
-  0% {
-    opacity: 0.6;
-    transform: scale(0.98);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0.6;
-    transform: scale(0.98);
-  }
-`;
 
 // 定义跑马灯效果
 const marqueeGlow = keyframes`
@@ -95,22 +69,6 @@ const RightSection = styled.div`
   gap: 1rem;
 `;
 
-const LogoContainer = styled.div`
-  display: flex;
-  align-items: center;
-`;
-
-const glowingEffect = keyframes`
-  0% {
-    text-shadow: 0 0 5px rgba(24, 144, 255, 0.3), 0 0 10px rgba(24, 144, 255, 0.2);
-  }
-  50% {
-    text-shadow: 0 0 10px rgba(24, 144, 255, 0.5), 0 0 20px rgba(24, 144, 255, 0.3), 0 0 30px rgba(24, 144, 255, 0.2);
-  }
-  100% {
-    text-shadow: 0 0 5px rgba(24, 144, 255, 0.3), 0 0 10px rgba(24, 144, 255, 0.2);
-  }
-`;
 
 const LogoLink = styled(Link)`
   display: flex;
@@ -147,21 +105,21 @@ const NavLinks = styled.div`
 const NavLink = styled(Link)`
   font-size: 0.875rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--ant-color-text);
   text-decoration: none;
   padding: 0.5rem 1rem;
   border-radius: 20px;
   transition: all 0.2s;
 
   &:hover {
-    color: white;
-    background: rgba(255, 255, 255, 0.1);
+    color: var(--ant-color-primary);
+    background: var(--ant-color-bg-container);
   }
 `;
 
 const PrimaryLink = styled(NavLink)`
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  color: var(--ant-color-text);
+  border: 1px solid var(--ant-color-text);
   padding: 0.5rem 1.25rem;
   border-radius: 20px;
   height: 36px;
@@ -170,8 +128,8 @@ const PrimaryLink = styled(NavLink)`
 
   &:hover {
     color: var(--ant-color-primary);
-    background: white;
-    border-color: white;
+    background: var(--ant-color-bg-container);
+    border-color: var(--ant-color-primary);
   }
 `;
 
@@ -322,11 +280,6 @@ const UserEmail = styled.span`
   white-space: nowrap;
 `;
 
-const UserRole = styled.span`
-  font-size: 0.75rem;
-  color: #1890ff;
-  font-weight: 500;
-`;
 
 const UserDropdown = styled.div`
   position: absolute;
