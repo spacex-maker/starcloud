@@ -63,23 +63,85 @@ export default function App() {
   const themeConfig = React.useMemo(() => ({
     algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
     token: {
+      // 主色调
       colorPrimary: '#3b82f6',
+      colorPrimaryBg: isDark ? '#1d2b53' : '#eff6ff',
+      colorPrimaryBgHover: isDark ? '#1e3a8a' : '#dbeafe',
+      colorPrimaryBorder: isDark ? '#2563eb' : '#93c5fd',
+      colorPrimaryHover: isDark ? '#60a5fa' : '#2563eb',
+      colorPrimaryActive: isDark ? '#3b82f6' : '#1d4ed8',
+      colorPrimaryTextHover: isDark ? '#60a5fa' : '#2563eb',
+      colorPrimaryText: isDark ? '#3b82f6' : '#1d4ed8',
+      colorPrimaryTextActive: isDark ? '#2563eb' : '#1e40af',
+
+      // 成功色
+      colorSuccess: '#10b981',
+      colorSuccessBg: isDark ? '#064e3b' : '#ecfdf5',
+      colorSuccessBorder: isDark ? '#059669' : '#6ee7b7',
+      colorSuccessHover: isDark ? '#34d399' : '#059669',
+      colorSuccessActive: isDark ? '#10b981' : '#047857',
+      colorSuccessText: isDark ? '#10b981' : '#047857',
+      colorSuccessTextHover: isDark ? '#34d399' : '#059669',
+      colorSuccessTextActive: isDark ? '#059669' : '#065f46',
+
+      // 警告色
+      colorWarning: '#f59e0b',
+      colorWarningBg: isDark ? '#783c00' : '#fffbeb',
+      colorWarningBorder: isDark ? '#d97706' : '#fcd34d',
+      colorWarningHover: isDark ? '#fbbf24' : '#d97706',
+      colorWarningActive: isDark ? '#f59e0b' : '#b45309',
+      colorWarningText: isDark ? '#f59e0b' : '#b45309',
+      colorWarningTextHover: isDark ? '#fbbf24' : '#d97706',
+      colorWarningTextActive: isDark ? '#d97706' : '#92400e',
+
+      // 错误色
+      colorError: '#ef4444',
+      colorErrorBg: isDark ? '#7f1d1d' : '#fef2f2',
+      colorErrorBorder: isDark ? '#dc2626' : '#fca5a5',
+      colorErrorHover: isDark ? '#f87171' : '#dc2626',
+      colorErrorActive: isDark ? '#ef4444' : '#b91c1c',
+      colorErrorText: isDark ? '#ef4444' : '#b91c1c',
+      colorErrorTextHover: isDark ? '#f87171' : '#dc2626',
+      colorErrorTextActive: isDark ? '#dc2626' : '#991b1b',
+
+      // 信息色
+      colorInfo: '#3b82f6',
+      colorInfoBg: isDark ? '#1e3a8a' : '#eff6ff',
+      colorInfoBorder: isDark ? '#2563eb' : '#93c5fd',
+      colorInfoHover: isDark ? '#60a5fa' : '#2563eb',
+      colorInfoActive: isDark ? '#3b82f6' : '#1d4ed8',
+      colorInfoText: isDark ? '#3b82f6' : '#1d4ed8',
+      colorInfoTextHover: isDark ? '#60a5fa' : '#2563eb',
+      colorInfoTextActive: isDark ? '#2563eb' : '#1e40af',
+
+      // 中性色
+      colorTextBase: isDark ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)',
+      colorBgBase: isDark ? '#141414' : '#ffffff',
+      
+      // 其他基础配置保持不变
       borderRadius: 4,
       fontSize: 14,
       fontSizeSM: 12,
       fontSizeLG: 16,
       fontSizeXL: 20,
       lineHeight: 1.5715,
-      // 暗色模式颜色系统
-      colorBgBase: isDark ? '#141414' : '#ffffff',
+      
+      // 背景色系统
       colorBgContainer: isDark ? '#1f1f1f' : '#ffffff',
       colorBgElevated: isDark ? '#1f1f1f' : '#ffffff',
       colorBgLayout: isDark ? '#141414' : '#f0f2f5',
       colorBgSpotlight: isDark ? '#1f1f1f' : '#ffffff',
       colorBgMask: 'rgba(0, 0, 0, 0.45)',
+      
+      // 文字颜色系统
       colorText: isDark ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)',
       colorTextSecondary: isDark ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 0, 0, 0.65)',
+      colorTextTertiary: isDark ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)',
+      colorTextQuaternary: isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.25)',
+      
+      // 边框颜色系统
       colorBorder: isDark ? '#303030' : '#d9d9d9',
+      colorBorderSecondary: isDark ? '#303030' : '#f0f0f0',
       colorSplit: isDark ? '#303030' : '#f0f0f0',
     },
     components: {
