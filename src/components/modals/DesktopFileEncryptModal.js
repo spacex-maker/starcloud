@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Modal, Input, Table, Space, Typography, Button, message, Progress, Alert } from 'antd';
+import { Modal, Input, Table, Space, Typography, Button, message, Progress, Alert, Tooltip, Tag } from 'antd';
 import { 
   LockOutlined, 
   EyeInvisibleOutlined, 
   EyeTwoTone, 
-  SafetyCertificateOutlined 
+  SafetyCertificateOutlined,
+  WarningOutlined
 } from '@ant-design/icons';
 import styled from 'styled-components';
 import CryptoJS from 'crypto-js';
+import { getEllipsisFileName } from '../../utils/format';
 
 const { Text, Paragraph } = Typography;
 
@@ -73,8 +75,124 @@ const NoFormSpace = styled(Space)`
   }
 `;
 
+const FileItemWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const FileNameRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const FileMetaRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+`;
+
 const ProgressWrapper = styled.div`
-  margin: 8px 0;
+  margin-top: 4px;
+  width: 100%;
+`;
+
+const PasswordTip = styled(Text)`
+  color: #ff4d4f !important;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  
+  .anticon {
+    font-size: 14px;
+  }
+`;
+
+const EncryptedTag = styled(Tag)`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  
+  .anticon {
+    font-size: 12px;
+  }
+`;
+
+const SecurityCard = styled.div`
+  background: var(--ant-color-primary-bg);
+  border-radius: 12px;
+  overflow: hidden;
+  
+  .header {
+    padding: 16px;
+    background: var(--ant-color-primary-1);
+    border-bottom: 1px solid var(--ant-color-primary-3);
+    
+    .title {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--ant-color-text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      
+      .anticon {
+        color: var(--ant-color-primary);
+      }
+    }
+  }
+  
+  .content {
+    padding: 16px;
+    
+    .feature-group {
+      &:not(:last-child) {
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px dashed var(--ant-color-split);
+      }
+      
+      .group-title {
+        font-weight: 500;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--ant-color-text);
+        
+        .anticon {
+          color: var(--ant-color-primary);
+        }
+      }
+      
+      .feature-list {
+        margin: 0;
+        padding-left: 24px;
+        
+        li {
+          color: var(--ant-color-text-secondary);
+          margin-bottom: 8px;
+          line-height: 1.5;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+          
+          &.warning {
+            color: #ff4d4f;
+            
+            .anticon {
+              color: #ff4d4f;
+            }
+          }
+        }
+      }
+    }
+  }
 `;
 
 const DesktopFileEncryptModal = ({
@@ -159,6 +277,11 @@ const DesktopFileEncryptModal = ({
     });
   };
 
+  // 检查文件是否已加密
+  const checkEncrypted = (fileName) => {
+    return fileName.toLowerCase().endsWith('.encrypted');
+  };
+
   // 处理加密所有文件
   const handleEncrypt = async () => {
     if (!password) {
@@ -176,6 +299,37 @@ const DesktopFileEncryptModal = ({
       return;
     }
 
+    // 检查是否有已加密的文件
+    const encryptedFiles = Array.from(files).filter(file => checkEncrypted(file.name));
+    if (encryptedFiles.length > 0) {
+      Modal.confirm({
+        title: '文件可能已加密',
+        icon: <WarningOutlined style={{ color: '#faad14' }} />,
+        content: (
+          <div>
+            <p>以下文件可能已经过加密：</p>
+            <ul>
+              {encryptedFiles.map(file => (
+                <li key={file.name}>{file.name}</li>
+              ))}
+            </ul>
+            <p style={{ color: '#ff4d4f', marginTop: 16 }}>
+              <WarningOutlined /> 重复加密的文件在解密时需要按照加密顺序反向解密多次
+            </p>
+            <p>是否继续加密这些文件？</p>
+          </div>
+        ),
+        okText: '继续加密',
+        cancelText: '取消',
+        onOk: () => encryptFiles(),
+      });
+    } else {
+      encryptFiles();
+    }
+  };
+
+  // 执行加密操作
+  const encryptFiles = async () => {
     try {
       setEncrypting(true);
       
@@ -214,49 +368,59 @@ const DesktopFileEncryptModal = ({
 
   const columns = [
     {
-      title: '文件名',
+      title: '文件列表',
       dataIndex: 'name',
       key: 'name',
-      render: (text) => <Text ellipsis>{text}</Text>
-    },
-    {
-      title: '大小',
-      dataIndex: 'size',
-      key: 'size',
-      width: 120,
-      render: (size) => {
+      render: (text, record) => {
+        const fileProgress = progress.get(record.name);
         const units = ['B', 'KB', 'MB', 'GB'];
-        let value = size;
+        let value = record.size;
         let unitIndex = 0;
         while (value >= 1024 && unitIndex < units.length - 1) {
           value /= 1024;
           unitIndex++;
         }
-        return `${value.toFixed(2)} ${units[unitIndex]}`;
-      }
-    },
-    {
-      title: '状态',
-      key: 'status',
-      width: 200,
-      render: (_, record) => {
-        const fileProgress = progress.get(record.name);
-        if (!fileProgress) {
-          return '等待加密';
-        }
-
+        const fileSize = `${value.toFixed(2)} ${units[unitIndex]}`;
+        
         return (
-          <ProgressWrapper>
-            <Progress
-              percent={fileProgress.percent}
-              size="small"
-              status={
-                fileProgress.status === 'error' ? 'exception' :
-                fileProgress.status === 'completed' ? 'success' :
-                'active'
-              }
-            />
-          </ProgressWrapper>
+          <FileItemWrapper>
+            <FileNameRow>
+              <Tooltip title={text}>
+                <Text ellipsis style={{ flex: 1 }}>{getEllipsisFileName(text)}</Text>
+              </Tooltip>
+              {checkEncrypted(text) && (
+                <Tooltip title="此文件可能已经过加密，重复加密需要多次解密">
+                  <EncryptedTag color="warning">
+                    <WarningOutlined />
+                    已加密
+                  </EncryptedTag>
+                </Tooltip>
+              )}
+            </FileNameRow>
+            <FileMetaRow>
+              <span>{fileSize}</span>
+              <span>•</span>
+              <span>{!fileProgress ? '等待加密' : 
+                fileProgress.status === 'reading' ? '准备中...' :
+                fileProgress.status === 'encrypting' ? '加密中...' :
+                fileProgress.status === 'completed' ? '加密完成' :
+                fileProgress.status === 'error' ? '加密失败' : '等待加密'
+              }</span>
+            </FileMetaRow>
+            {fileProgress && (
+              <ProgressWrapper>
+                <Progress
+                  percent={fileProgress.percent}
+                  size="small"
+                  status={
+                    fileProgress.status === 'error' ? 'exception' :
+                    fileProgress.status === 'completed' ? 'success' :
+                    'active'
+                  }
+                />
+              </ProgressWrapper>
+            )}
+          </FileItemWrapper>
         );
       }
     }
@@ -293,21 +457,43 @@ const DesktopFileEncryptModal = ({
       getContainer={() => document.body}
     >
       <SecurityTips>
-        <Alert
-          message="MyStorage 安全加密"
-          description={
-            <div>
-              <Paragraph>
-                <SafetyCertificateOutlined /> 使用业界标准的 AES 加密算法，为您的文件提供强大的加密保护
-              </Paragraph>
-              <Paragraph>
-                <SafetyCertificateOutlined /> 加密过程完全在浏览器端进行，原始文件不会上传，确保数据安全
-              </Paragraph>
+        <SecurityCard>
+          <div className="header">
+            <div className="title">
+              <SafetyCertificateOutlined />
+              MyStorage 安全加密
             </div>
-          }
-          type="info"
-          showIcon
-        />
+          </div>
+          <div className="content">
+            <div className="feature-group">
+              <div className="group-title">
+                <SafetyCertificateOutlined />
+                基础安全特性
+              </div>
+              <ul className="feature-list">
+                <li>使用业界标准的 AES 加密算法，为您的文件提供强大的加密保护</li>
+                <li>加密过程完全在浏览器端进行，原始文件不会上传，确保数据安全</li>
+              </ul>
+            </div>
+            
+            <div className="feature-group">
+              <div className="group-title">
+                <LockOutlined />
+                双重加密功能
+              </div>
+              <ul className="feature-list">
+                <li>支持多重加密：您可以对同一文件进行多次加密，每次使用不同的密码</li>
+                <li>双人加密示例：您和好友可以分别使用自己的密码对文件进行加密，这样需要两个人同时使用各自的密码才能解密</li>
+                <li className="warning">
+                  <Space align="start">
+                    <WarningOutlined />
+                    <span>解密时需要按照加密的相反顺序进行，比如好友先加密、您后加密，那么解密时您需要先解密，然后再由好友解密</span>
+                  </Space>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </SecurityCard>
       </SecurityTips>
 
       <PasswordInput>
@@ -343,9 +529,10 @@ const DesktopFileEncryptModal = ({
             type="text"
             role="presentation"
           />
-          <Text type="secondary">
+          <PasswordTip type="danger">
+            <SafetyCertificateOutlined />
             请记住您的加密密码，文件解密时需要使用相同的密码
-          </Text>
+          </PasswordTip>
         </NoFormSpace>
       </PasswordInput>
 

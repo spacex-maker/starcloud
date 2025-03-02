@@ -41,6 +41,25 @@ const GlobalStyles = createGlobalStyle`
     border-radius: 20px 20px 0 0 !important;
   }
 
+  /* Tooltip 样式 */
+  :where(.css-dev-only-do-not-override-zxpde4).ant-tooltip .ant-tooltip-inner {
+    min-width: 56px;
+    min-height: 32px;
+    padding: 6px 8px;
+    color: #fff;
+    text-align: start;
+    text-decoration: none;
+    word-wrap: break-word;
+    background-color: #3b82f6;
+    border-radius: 20px;
+    box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+  }
+
+  :where(.css-dev-only-do-not-override-zxpde4).ant-tooltip .ant-tooltip-arrow-content {
+    background-color: #3b82f6;
+  }
+
   /* Below animations are for modal created using React-Modal */
   .ReactModal__Overlay {
     transition: transform 300ms ease-in-out;
