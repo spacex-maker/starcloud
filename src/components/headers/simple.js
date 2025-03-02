@@ -149,8 +149,8 @@ const NavLink = styled(Link)`
   font-weight: 500;
   color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
-  padding: 0.5rem;
-  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
   transition: all 0.2s;
 
   &:hover {
@@ -162,12 +162,16 @@ const NavLink = styled(Link)`
 const PrimaryLink = styled(NavLink)`
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.85);
-  padding: 0.375rem 1rem;
-  border-radius: 4px;
+  padding: 0.5rem 1.25rem;
+  border-radius: 20px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
 
   &:hover {
     color: var(--ant-color-primary);
     background: white;
+    border-color: white;
   }
 `;
 

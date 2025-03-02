@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import GlobalStyles from './styles/GlobalStyles';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, theme, message } from 'antd';
 import { ThemeProvider } from 'styled-components';
 import 'antd/dist/reset.css'; // 只需要这一个样式文件即可
@@ -22,6 +22,7 @@ import { LocaleProvider } from './contexts/LocaleContext';
 import { Helmet } from 'react-helmet';
 import FileDecryptPage from './pages/FileDecrypt';
 import TestCrypto from './pages/TestCrypto';
+import HomePage from './pages/Home';
 
 // 语言配置映射
 const localeMap = {
@@ -29,6 +30,18 @@ const localeMap = {
   en_US: enUS,
   ja_JP: jaJP,
   ko_KR: koKR,
+};
+
+// 路由守卫组件
+const PrivateRoute = ({ children }) => {
+  const isAuthenticated = localStorage.getItem('token'); // 检查用户是否已登录
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
+
+// 根路径路由组件
+const RootRoute = () => {
+  const isAuthenticated = localStorage.getItem('token'); // 检查用户是否已登录
+  return isAuthenticated ? <Navigate to="/drive" /> : <HomePage />;
 };
 
 export default function App() {
@@ -157,11 +170,20 @@ export default function App() {
           <GlobalStyles />
           <Router>
             <Routes>
-              <Route path="/" element={<CloudDrivePage />} />
+              <Route path="/" element={<RootRoute />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/drive" element={
+                <PrivateRoute>
+                  <CloudDrivePage />
+                </PrivateRoute>
+              } />
+              <Route path="/profile" element={
+                <PrivateRoute>
+                  <ProfilePage />
+                </PrivateRoute>
+              } />
               <Route path="/decrypt" element={<FileDecryptPage />} />
               <Route path="/test-crypto" element={<TestCrypto />} />
             </Routes>
