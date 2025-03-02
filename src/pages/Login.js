@@ -525,6 +525,12 @@ const PoweredBy = styled.div`
   border: 1px solid ${props => props.theme.mode === 'dark'
     ? 'rgba(255, 255, 255, 0.1)'
     : 'rgba(255, 255, 255, 0.5)'};
+  
+  .version {
+    margin-top: 0.25rem;
+    opacity: 0.7;
+    font-size: 0.7rem;
+  }
 `;
 
 // 添加一个新的样式组件
@@ -566,6 +572,17 @@ const ForgotPasswordLink = styled(Link)`
   &:hover {
     color: var(--ant-color-primary);
   }
+`;
+
+// 添加版本号样式组件
+const VersionTag = styled.div`
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  font-size: 0.75rem;
+  color: var(--ant-color-text-quaternary);
+  opacity: 0.7;
+  z-index: 10;
 `;
 
 export default function LoginPage() {
@@ -684,6 +701,7 @@ export default function LoginPage() {
         <meta name="description" content="登录 MyStorageX，开启您的云存储之旅" />
       </Helmet>
       <PageContainer>
+        <VersionTag>v1.0.2</VersionTag>
         <TopRightControls>
           <IconButton onClick={toggleTheme}>
             {isDark ? <SunOutlined /> : <MoonOutlined />}
