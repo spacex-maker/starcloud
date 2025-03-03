@@ -63,6 +63,9 @@ ts的配置：
 - 深色模式下的主题配置必须使用 theme.darkAlgorithm
 - 浅色模式下的主题配置必须使用 theme.defaultAlgorithm
 
+Api请求：
+- import instance from 'api/axios';
+- 请确保在添加新Api请求时，遵循上述规则并更新 `src/api/axios.js` 文件。
 
 
 

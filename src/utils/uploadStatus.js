@@ -3,6 +3,7 @@ import {
   CloseCircleFilled,
   LoadingOutlined,
   ClockCircleOutlined,
+  PauseCircleFilled,
 } from '@ant-design/icons';
 
 /**
@@ -24,6 +25,8 @@ export const getStatusIcon = (status) => {
       return <CloseCircleFilled style={{ color: '#8c8c8c' }} />;
     case 'pending':
       return <ClockCircleOutlined style={{ color: '#8c8c8c' }} />;
+    case 'paused':
+      return <PauseCircleFilled style={{ color: '#faad14' }} />;
     default:
       return <ClockCircleOutlined style={{ color: '#8c8c8c' }} />;
   }
@@ -43,6 +46,7 @@ export const getStatusText = (status, isDuplicate) => {
     case 'success': return '上传成功';
     case 'error': return '上传失败';
     case 'skipped': return '已跳过';
+    case 'paused': return '已暂停';
     default: return '未知状态';
   }
 }; 

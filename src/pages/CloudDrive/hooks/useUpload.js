@@ -21,7 +21,17 @@ export const useUpload = (
   });
 
   const handleUpload = async (files, existingFiles = []) => {
-    const fileList = Array.from(files);
+    if (!Array.isArray(files)) {
+      console.warn('Files must be an array');
+      return false;
+    }
+
+    const fileList = files.filter(file => file && file.name && file.size);
+    if (fileList.length === 0) {
+      console.warn('No valid files to upload');
+      return false;
+    }
+
     const uploadStates = new Map();
     
     fileList.forEach(file => {
@@ -46,23 +56,44 @@ export const useUpload = (
   };
 
   const uploadFiles = async (filesToUpload) => {
-    const initialUploadStates = new Map(filesToUpload.map(file => [
-      file.name,
-      {
+    if (!Array.isArray(filesToUpload) || filesToUpload.length === 0) {
+      console.warn('No files to upload');
+      return;
+    }
+
+    const initialUploadStates = new Map();
+    
+    filesToUpload.forEach(file => {
+      // 处理直接传入的 File 对象
+      const fileObj = file instanceof File ? file : file.file;
+      
+      if (!fileObj || !fileObj.name) {
+        console.warn('Invalid file object:', file);
+        return;
+      }
+
+      initialUploadStates.set(fileObj.name, {
         progress: 0,
         speed: 0,
         startTime: Date.now(),
-        fileSize: file.size,
+        fileSize: fileObj.size,
         isCompleted: false,
         lastProgress: 0,
         lastTime: Date.now(),
         uploadCompleted: false,
         fileCreated: false,
         status: 'pending',
-        isDuplicate: uploadStates.files.get(file.name)?.isDuplicate || false,
-        file
-      }
-    ]));
+        isDuplicate: file.isDuplicate || false,
+        file: fileObj,
+        taskId: null,
+        useChunkUpload: file.useChunkUpload || false
+      });
+    });
+
+    if (initialUploadStates.size === 0) {
+      console.warn('No valid files to upload');
+      return;
+    }
 
     setUploadStates(prev => ({
       isUploading: true,
@@ -71,14 +102,13 @@ export const useUpload = (
 
     try {
       const fullPath = `${userInfo.username}/${currentPath}`;
-      const controller = new AbortController();
       
-      const uploadPromises = filesToUpload.map(async file => {
+      const uploadPromises = Array.from(initialUploadStates.values()).map(async fileState => {
         try {
           setUploadStates(prev => {
             const newFiles = new Map(prev.files);
-            const state = newFiles.get(file.name);
-            newFiles.set(file.name, {
+            const state = newFiles.get(fileState.file.name);
+            newFiles.set(fileState.file.name, {
               ...state,
               status: 'uploading',
               startTime: Date.now(),
@@ -90,11 +120,11 @@ export const useUpload = (
           });
 
           const uploadResult = await cosService.uploadFile(
-            file,
+            fileState.file,
             fullPath,
-            (progress) => {
+            (progress, speed, taskId) => {
               setUploadStates(prev => {
-                const state = prev.files.get(file.name);
+                const state = prev.files.get(fileState.file.name);
                 if (!state || state.uploadCompleted) return prev;
 
                 const now = Date.now();
@@ -102,16 +132,17 @@ export const useUpload = (
                 
                 if (timeDiff >= 0.5) {
                   const progressDiff = progress - state.lastProgress;
-                  const uploadedBytes = (progressDiff / 100) * file.size;
-                  const speed = uploadedBytes / timeDiff;
+                  const uploadedBytes = (progressDiff / 100) * fileState.fileSize;
+                  const currentSpeed = uploadedBytes / timeDiff;
                   
                   const newFiles = new Map(prev.files);
-                  newFiles.set(file.name, {
+                  newFiles.set(fileState.file.name, {
                     ...state,
                     progress: Math.round(progress),
-                    speed: speed,
+                    speed: currentSpeed,
                     lastProgress: progress,
-                    lastTime: now
+                    lastTime: now,
+                    taskId: taskId || state.taskId
                   });
                   
                   return {
@@ -123,17 +154,18 @@ export const useUpload = (
                 return prev;
               });
             },
-            controller.signal
+            fileState.useChunkUpload
           );
 
           setUploadStates(prev => {
             const newFiles = new Map(prev.files);
-            const state = newFiles.get(file.name);
-            newFiles.set(file.name, {
+            const state = newFiles.get(fileState.file.name);
+            newFiles.set(fileState.file.name, {
               ...state,
               status: 'creating',
               progress: 100,
-              speed: 0
+              speed: 0,
+              taskId: state.taskId
             });
             return { ...prev, files: newFiles };
           });
@@ -141,12 +173,12 @@ export const useUpload = (
           await instance.post('/productx/file-storage/create-directory', {
             parentId: currentParentId,
             isDirectory: false,
-            name: file.name,
-            extension: file.name.split('.').pop(),
-            size: file.size,
+            name: fileState.file.name,
+            extension: fileState.file.name.split('.').pop(),
+            size: fileState.file.size,
             storagePath: uploadResult.key,
             hash: uploadResult.etag?.replace(/"/g, ''),
-            mimeType: file.type,
+            mimeType: fileState.file.type,
             storageType: 'COS',
             downloadUrl: uploadResult.url,
             visibility: 'PRIVATE'
@@ -154,33 +186,35 @@ export const useUpload = (
 
           setUploadStates(prev => {
             const newFiles = new Map(prev.files);
-            const state = newFiles.get(file.name);
-            newFiles.set(file.name, {
+            const state = newFiles.get(fileState.file.name);
+            newFiles.set(fileState.file.name, {
               ...state,
               status: 'success',
               uploadCompleted: true,
               fileCreated: true,
-              speed: 0
+              speed: 0,
+              taskId: null
             });
             return { ...prev, files: newFiles };
           });
 
-          return { success: true, file };
+          return { success: true, file: fileState.file };
         } catch (error) {
           setUploadStates(prev => {
             const newFiles = new Map(prev.files);
-            const state = newFiles.get(file.name);
-            newFiles.set(file.name, {
+            const state = newFiles.get(fileState.file.name);
+            newFiles.set(fileState.file.name, {
               ...state,
               status: 'error',
               progress: 0,
               speed: 0,
-              errorMessage: error.message
+              errorMessage: error.message,
+              taskId: null
             });
             return { ...prev, files: newFiles };
           });
 
-          return { success: false, file, error };
+          return { success: false, file: fileState.file, error };
         }
       });
 
@@ -297,6 +331,63 @@ export const useUpload = (
     };
   };
 
+  const handlePauseUpload = async (taskId) => {
+    console.log('handlePauseUpload 被调用，taskId:', taskId);
+    if (!taskId) {
+      console.log('taskId 为空，退出');
+      return;
+    }
+    
+    const success = await cosService.pauseUpload(taskId);
+    console.log('暂停上传结果:', success);
+    
+    if (success) {
+      setUploadStates(prev => {
+        const newFiles = new Map(prev.files);
+        console.log('当前文件状态:', Array.from(newFiles.entries()));
+        
+        for (const [fileName, fileState] of newFiles.entries()) {
+          console.log('检查文件:', fileName, '当前taskId:', fileState.taskId);
+          if (fileState.taskId === taskId) {
+            console.log('找到匹配的文件，更新状态');
+            newFiles.set(fileName, {
+              ...fileState,
+              status: 'paused',
+              speed: 0
+            });
+            break;
+          }
+        }
+        return { ...prev, files: newFiles };
+      });
+      message.success('已暂停上传');
+    }
+  };
+
+  const handleResumeUpload = async (taskId) => {
+    if (!taskId) return;
+    
+    const success = await cosService.resumeUpload(taskId);
+    if (success) {
+      setUploadStates(prev => {
+        const newFiles = new Map(prev.files);
+        for (const [fileName, fileState] of newFiles.entries()) {
+          if (fileState.taskId === taskId) {
+            newFiles.set(fileName, {
+              ...fileState,
+              status: 'uploading',
+              lastTime: Date.now(),
+              lastProgress: fileState.progress
+            });
+            break;
+          }
+        }
+        return { ...prev, files: newFiles };
+      });
+      message.success('已恢复上传');
+    }
+  };
+
   return {
     uploadStates,
     setUploadStates,
@@ -305,6 +396,8 @@ export const useUpload = (
     handleDuplicateDecision,
     handleRemoveFiles,
     handleAddFiles,
-    handleEncryptFiles
+    handleEncryptFiles,
+    handlePauseUpload,
+    handleResumeUpload
   };
 }; 

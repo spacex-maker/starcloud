@@ -4,7 +4,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { ReactComponent as SunIcon } from "feather-icons/dist/icons/sun.svg";
 import { ReactComponent as MoonIcon } from "feather-icons/dist/icons/moon.svg";
 import { auth } from "../../api/auth.js";
+import { base } from "../../api/base.js";
 import { ThemeContext } from "styled-components";
+import { Dropdown } from 'antd';
+import { GlobalOutlined } from '@ant-design/icons';
+import { useLocale } from 'contexts/LocaleContext';
 
 
 // 定义跑马灯效果
@@ -391,6 +395,28 @@ const DarkModeButton = styled.button`
   }
 `;
 
+const LanguageButton = styled.button`
+  padding: 0.5rem;
+  border-radius: 4px;
+  color: var(--ant-color-text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: var(--ant-color-text-secondary);
+    background: var(--ant-color-bg-container);
+  }
+
+  .anticon {
+    font-size: 1.25rem;
+  }
+`;
+
 export default function SimpleHeader() {
   const navigate = useNavigate();
   const theme = React.useContext(ThemeContext);
@@ -398,6 +424,8 @@ export default function SimpleHeader() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
   const [scrolled, setScrolled] = useState(false);
+  const { locale, changeLocale } = useLocale();
+  const [languages, setLanguages] = useState([]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -509,6 +537,24 @@ export default function SimpleHeader() {
     );
   }, [isDark]); // 当主题切换时重新计算
 
+  // 获取支持的语言列表
+  useEffect(() => {
+    const fetchLanguages = async () => {
+      const result = await base.getEnabledLanguages();
+      if (result.success) {
+        const sortedLanguages = result.data.sort((a, b) => b.usageCount - a.usageCount);
+        setLanguages(sortedLanguages);
+      }
+    };
+    fetchLanguages();
+  }, []);
+
+  // 构建语言菜单项
+  const languageItems = languages.map(language => ({
+    key: language.languageCode,
+    label: language.languageNameNative
+  }));
+
   return (
     <Header scrolled={scrolled}>
       <HeaderContent>
@@ -521,6 +567,21 @@ export default function SimpleHeader() {
         </LeftSection>
 
         <RightSection>
+          <Dropdown
+            menu={{
+              items: languageItems,
+              selectedKeys: [locale],
+              onClick: ({ key }) => {
+                changeLocale(key);
+              },
+            }}
+            placement="bottomRight"
+          >
+            <LanguageButton>
+              <GlobalOutlined />
+            </LanguageButton>
+          </Dropdown>
+
           <DarkModeButton 
             onClick={toggleDarkMode}
             aria-label={isDark ? "切换到亮色模式" : "切换到暗色模式"}
