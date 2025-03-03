@@ -1,8 +1,9 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import type { FC } from 'react';
 import { Table, Space, Button, Typography, TablePaginationConfig, theme, Pagination, Grid, Modal, Input, Image, Dropdown, Tooltip } from 'antd';
 import type { MenuProps } from 'antd';
 import { ThemeContext } from 'styled-components';
+import styled from 'styled-components';
 import {
   DeleteOutlined,
   DownloadOutlined,
@@ -49,6 +50,58 @@ type FileListProps = {
   handlePreviewClose: () => void;
 };
 
+interface ThemedTableProps {
+  theme?: {
+    mode?: 'dark' | 'light';
+  };
+}
+
+const TableWrapper = styled.div`
+  .ant-table-row {
+    transition: all 0.3s ease;
+  }
+  
+  .folder-row {
+    background-color: ${props => props.theme.mode === 'dark' 
+      ? 'rgba(255, 255, 255, 0.02)' 
+      : 'rgba(24, 144, 255, 0.02)'};
+    
+    &:hover {
+      background-color: ${props => props.theme.mode === 'dark'
+        ? 'rgba(255, 255, 255, 0.04)'
+        : 'rgba(24, 144, 255, 0.04)'} !important;
+    }
+    
+    td {
+      padding: 12px 8px !important;
+      
+      &:first-child {
+        border-top-left-radius: 6px;
+        border-bottom-left-radius: 6px;
+      }
+      
+      &:last-child {
+        border-top-right-radius: 6px;
+        border-bottom-right-radius: 6px;
+      }
+    }
+  }
+
+  .ant-table-row:not(.folder-row) {
+    &:hover {
+      background-color: ${props => props.theme.mode === 'dark'
+        ? 'rgba(255, 255, 255, 0.02)'
+        : 'rgba(0, 0, 0, 0.02)'} !important;
+    }
+  }
+
+  .ant-table-cell {
+    border-bottom: 1px solid ${props => props.theme.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.04)'
+      : 'rgba(0, 0, 0, 0.04)'} !important;
+  }
+`;
+
 const FileList: FC<FileListProps> = memo(({
   loading,
   filteredFiles,
@@ -75,6 +128,40 @@ const FileList: FC<FileListProps> = memo(({
   const themeContext = React.useContext(ThemeContext);
   const isDark = themeContext?.mode === 'dark';
   const intl = useIntl();
+  
+  const [isCreating, setIsCreating] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<React.Key[]>([]);
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+
+  const handleCreateFolderSafely = async () => {
+    if (isCreating) return;
+    try {
+      setIsCreating(true);
+      await handleCreateFolder();
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleDeleteSafely = async (record: FileModel) => {
+    if (deletingIds.includes(record.id)) return;
+    try {
+      setDeletingIds(prev => [...prev, record.id]);
+      await handleDelete(record);
+    } finally {
+      setDeletingIds(prev => prev.filter(id => id !== record.id));
+    }
+  };
+
+  const handleBatchDeleteSafely = async (files: FileModel[]) => {
+    if (isBatchDeleting) return;
+    try {
+      setIsBatchDeleting(true);
+      await handleBatchDelete(files);
+    } finally {
+      setIsBatchDeleting(false);
+    }
+  };
 
   const sortedFiles = useMemo(() => {
     return [...filteredFiles].sort((a, b) => {
@@ -123,6 +210,7 @@ const FileList: FC<FileListProps> = memo(({
       fixed: 'right',
       width: 80,
       render: (_, record: FileModel) => {
+        const isDeleting = deletingIds.includes(record.id);
         const menuItems: MenuProps['items'] = [
           !record.isDirectory ? {
             key: 'download',
@@ -136,13 +224,6 @@ const FileList: FC<FileListProps> = memo(({
             label: <FormattedMessage id="filelist.action.preview" defaultMessage="预览" />,
             onClick: () => handlePreview(record),
           } : null,
-          {
-            key: 'delete',
-            icon: <DeleteOutlined />,
-            label: <FormattedMessage id="filelist.action.delete" defaultMessage="删除" />,
-            danger: true,
-            onClick: () => handleDelete(record),
-          },
         ].filter((item): item is NonNullable<typeof item> => item !== null);
 
         return (
@@ -154,26 +235,40 @@ const FileList: FC<FileListProps> = memo(({
                   size="small"
                   icon={<DownloadOutlined />}
                   onClick={() => onDownload(record)}
+                  disabled={isDeleting}
                 />
               </Tooltip>
             )}
-            <Dropdown
-              menu={{ items: menuItems }}
-              placement="bottomRight"
-              trigger={['click']}
-              arrow={{ pointAtCenter: true }}
-            >
-              <Button
-                type="text"
-                size="small"
-                icon={<MoreOutlined />}
-              />
-            </Dropdown>
+            <Button
+              type="text"
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              onClick={() => handleDeleteSafely(record)}
+              loading={isDeleting}
+              disabled={isDeleting}
+            />
+            {menuItems.length > 0 && (
+              <Dropdown
+                menu={{ items: menuItems }}
+                placement="bottomRight"
+                trigger={['click']}
+                arrow={{ pointAtCenter: true }}
+                disabled={isDeleting}
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<MoreOutlined />}
+                  disabled={isDeleting}
+                />
+              </Dropdown>
+            )}
           </Space>
         );
       },
     },
-  ], [handleFolderClick, handlePreview, handleDelete, onDownload]);
+  ], [handleFolderClick, handlePreview, handleDelete, onDownload, deletingIds]);
 
   return (
     <div style={{ 
@@ -196,19 +291,22 @@ const FileList: FC<FileListProps> = memo(({
           WebkitMask: 'linear-gradient(to bottom, black calc(100% - 60px), transparent 100%)',
           mask: 'linear-gradient(to bottom, black calc(100% - 60px), transparent 100%)'
         }}>
-          <Table<FileModel>
-            rowSelection={{
-              selectedRowKeys,
-              onChange: onSelectChange,
-            }}
-            columns={columns}
-            dataSource={sortedFiles}
-            rowKey="id"
-            loading={loading}
-            pagination={false}
-            scroll={{ x: 800, y: 'calc(100% - 8px)' }}
-            tableLayout="fixed"
-          />
+          <TableWrapper>
+            <Table<FileModel>
+              rowSelection={{
+                selectedRowKeys,
+                onChange: onSelectChange,
+              }}
+              columns={columns}
+              dataSource={sortedFiles}
+              rowKey="id"
+              loading={loading}
+              pagination={false}
+              scroll={{ x: 800, y: 'calc(100% - 8px)' }}
+              tableLayout="fixed"
+              rowClassName={(record) => record.isDirectory ? 'folder-row' : ''}
+            />
+          </TableWrapper>
         </div>
       </div>
       <div style={{ 
@@ -240,7 +338,9 @@ const FileList: FC<FileListProps> = memo(({
                   <RoundedButton
                     danger
                     icon={<DeleteOutlined />}
-                    onClick={() => handleBatchDelete(filteredFiles)}
+                    onClick={() => handleBatchDeleteSafely(filteredFiles)}
+                    loading={isBatchDeleting}
+                    disabled={isBatchDeleting}
                   >
                     {screens.md && <FormattedMessage id="filelist.action.batchDelete" />}
                   </RoundedButton>
@@ -271,10 +371,20 @@ const FileList: FC<FileListProps> = memo(({
       <Modal
         title={<FormattedMessage id="filelist.modal.newFolder.title" defaultMessage="新建文件夹" />}
         open={newFolderModalVisible}
-        onOk={handleCreateFolder}
-        onCancel={() => setNewFolderModalVisible(false)}
+        onOk={handleCreateFolderSafely}
+        onCancel={() => {
+          setNewFolderModalVisible(false);
+          setNewFolderName('');
+        }}
+        okButtonProps={{ 
+          loading: isCreating,
+          disabled: !newFolderName.trim()
+        }}
         okText={<FormattedMessage id="filelist.modal.newFolder.ok" defaultMessage="创建" />}
         cancelText={<FormattedMessage id="filelist.modal.newFolder.cancel" defaultMessage="取消" />}
+        maskClosable={false}
+        keyboard={false}
+        destroyOnClose
       >
         <Input
           placeholder={intl.formatMessage({ 
@@ -283,8 +393,14 @@ const FileList: FC<FileListProps> = memo(({
           })}
           value={newFolderName}
           onChange={e => setNewFolderName(e.target.value)}
-          onPressEnter={handleCreateFolder}
+          onPressEnter={(e) => {
+            if (newFolderName.trim() && !isCreating) {
+              handleCreateFolderSafely();
+            }
+          }}
+          disabled={isCreating}
           autoFocus
+          maxLength={255}
         />
       </Modal>
 
