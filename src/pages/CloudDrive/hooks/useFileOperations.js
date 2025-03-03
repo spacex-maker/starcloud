@@ -193,17 +193,15 @@ export const useFileOperations = (
       visible: true,
       url: file.downloadUrl,
       title: file.name,
-      key: Date.now()
+      key: file.id
     });
   };
 
   const handlePreviewClose = () => {
-    setPreviewImage({
-      visible: false,
-      url: '',
-      title: '',
-      key: 0
-    });
+    setPreviewImage(prev => ({
+      ...prev,
+      visible: false
+    }));
   };
 
   const handleSelectChange = (newSelectedRowKeys) => {

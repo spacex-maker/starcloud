@@ -1,9 +1,12 @@
 import React, { memo } from 'react';
-import { Typography, Tooltip, theme } from 'antd';
+import { Space, Button, Typography, Tooltip, theme } from 'antd';
 import {
   FolderOutlined,
   FileOutlined,
   FileImageOutlined,
+  DownloadOutlined,
+  DeleteOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { FileModel } from 'models/file/FileModel';
 import { formatFileSize, isImageFile, getEllipsisFileName } from 'utils/format';

@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { List } from 'antd';
 import { theme } from 'antd';
+import { createGlobalStyle } from 'styled-components';
 
 type ThemeToken = ReturnType<typeof theme.useToken>['token'];
 
@@ -11,6 +12,80 @@ interface StyledProps {
 interface FileItemProps extends StyledProps {
   selected?: boolean;
 }
+
+export const MobileModalGlobalStyle = createGlobalStyle`
+  .mobile-upload-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100vw !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    
+    .ant-modal {
+      position: fixed !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      max-width: 100vw !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      top: 0 !important;
+      pointer-events: auto;
+    }
+
+    .ant-modal-content {
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+    }
+
+    .ant-modal-wrap {
+      position: fixed !important;
+      inset: 0 !important;
+      overflow: hidden !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    .ant-modal-header {
+      margin: 0;
+      padding: 8px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      
+      .ant-modal-title {
+        font-size: 16px;
+        line-height: 1.4;
+      }
+    }
+
+    .ant-modal-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 0;
+      margin: 0;
+      width: 100vw;
+    }
+
+    .ant-modal-footer {
+      margin: 0;
+      padding: 6px;
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
+  }
+`;
 
 export const FileList = styled(List)`
   flex: 1;
@@ -29,10 +104,10 @@ export const DuplicateTag = styled.div<StyledProps>`
   align-items: center;
   gap: 4px;
   height: 20px;
-  padding: 0 8px;
+  padding: 0 6px;
   background: ${props => props.$token?.colorWarningBg};
   border: 1px solid ${props => props.$token?.colorWarningBorder};
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 12px;
   line-height: 1;
   white-space: nowrap;
@@ -41,82 +116,79 @@ export const DuplicateTag = styled.div<StyledProps>`
     font-size: 12px;
     color: ${props => props.$token?.colorWarning};
   }
-  
-  span {
-    color: ${props => props.$token?.colorWarning};
-  }
 `;
 
 export const FileItem = styled.div<FileItemProps>`
   display: flex;
   flex-direction: column;
-  padding: 16px;
-  margin: 4px 0;
+  padding: 10px;
+  margin: 4px 4px;
   background: ${props => props.selected ? props.$token?.colorPrimaryBg : props.$token?.colorBgContainer};
-  border-radius: 12px;
-  border: 1px solid ${props => props.selected ? props.$token?.colorPrimary : 'transparent'};
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 10px;
+  border: 1px solid ${props => props.selected ? props.$token?.colorPrimary : props.$token?.colorBorder};
   position: relative;
-  cursor: pointer;
   box-shadow: ${props => props.selected ? 
-    `0 2px 8px ${props.$token?.colorPrimary}20` : 
-    `0 1px 2px ${props.$token?.colorBorder}20`
+    `0 4px 16px ${props.$token?.colorPrimary}20` : 
+    `0 2px 8px ${props.$token?.colorBorder}20`
   };
-  
-  ${props => props.selected && `
-    .select-indicator {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  `}
-  
-  &:active {
-    transform: scale(0.99);
-  }
-  
-  &:hover {
-    border-color: ${props => props.selected ? props.$token?.colorPrimary : props.$token?.colorBorder};
-    box-shadow: ${props => props.selected ? 
-      `0 4px 16px ${props.$token?.colorPrimary}30` : 
-      `0 4px 8px ${props.$token?.colorBorder}30`
-    };
-  }
 `;
 
 export const SelectIndicator = styled.div<StyledProps>`
   position: absolute;
   right: 12px;
   top: 12px;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background: ${props => props.$token?.colorPrimary};
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: ${props => props.$token?.colorBgContainer};
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transform: scale(0.8) translateY(-4px);
+  opacity: 1;
+  transform: none;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 4px ${props => props.$token?.colorPrimary}40;
+  box-shadow: 0 2px 8px ${props => props.$token?.colorBgElevated}40;
+  border: 1px solid ${props => props.$token?.colorBorder};
   
   .anticon {
-    color: #fff;
-    font-size: 14px;
+    color: ${props => props.$token?.colorPrimary};
+    font-size: 16px;
+  }
+
+  .ant-btn {
+    padding: 0;
+    border: none;
+    background: transparent;
+    
+    &:hover, &:focus {
+      background: transparent;
+    }
+    
+    &:active {
+      transform: scale(0.95);
+    }
   }
 `;
 
 export const FileHeader = styled.div<StyledProps>`
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding-right: 32px;
+  gap: 8px;
+  margin-bottom: 8px;
+  position: relative;
+  min-height: 48px;
   
   .icon {
-    font-size: 32px;
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
     flex-shrink: 0;
-    margin-top: 2px;
-    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: ${props => props.$token?.colorFillQuaternary};
+    border-radius: 12px;
+    color: ${props => props.$token?.colorTextSecondary};
+    margin-top: 0;
   }
   
   .info {
@@ -124,49 +196,90 @@ export const FileHeader = styled.div<StyledProps>`
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    justify-content: center;
+    padding-top: 0;
   }
   
   .name {
-    font-size: 15px;
+    font-size: 14px;
     line-height: 1.4;
     color: ${props => props.$token?.colorText};
     font-weight: 500;
+    margin-bottom: 4px;
+    padding-right: 48px;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   
   .meta {
-    color: ${props => props.$token?.colorTextSecondary};
-    font-size: 13px;
     display: flex;
     align-items: center;
-    gap: 8px;
     flex-wrap: wrap;
+    gap: 6px;
+    color: ${props => props.$token?.colorTextSecondary};
+    font-size: 12px;
+    line-height: 1.4;
     
     .size {
-      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 6px;
       background: ${props => props.$token?.colorFillQuaternary};
-      padding: 2px 8px;
-      border-radius: 6px;
+      border-radius: 4px;
+    }
+
+    .tags {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+  }
+  
+  .action-button {
+    position: absolute;
+    right: 0;
+    top: 0;
+    
+    &:hover {
+      background: transparent !important;
+      opacity: 0.85;
+    }
+    
+    &:active {
+      transform: scale(0.9);
     }
   }
 `;
 
 export const FileProgress = styled.div<StyledProps>`
-  margin-top: 4px;
+  margin-top: 8px;
   
   .status {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     margin-bottom: 8px;
+    justify-content: space-between;
     
     .anticon {
-      font-size: 14px;
+      font-size: 16px;
     }
     
     .ant-typography {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 500;
+    }
+
+    .speed {
+      font-size: 13px;
+      color: ${props => props.$token?.colorTextSecondary};
+      background: ${props => props.$token?.colorFillQuaternary};
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-left: auto;
     }
   }
   
@@ -175,13 +288,13 @@ export const FileProgress = styled.div<StyledProps>`
     
     .ant-progress-inner {
       background-color: ${props => props.$token?.colorFillQuaternary};
-      border-radius: 4px;
-      height: 6px;
+      border-radius: 6px;
+      height: 8px;
     }
 
     .ant-progress-bg {
-      border-radius: 4px;
-      height: 6px !important;
+      border-radius: 6px;
+      height: 8px !important;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
@@ -189,14 +302,14 @@ export const FileProgress = styled.div<StyledProps>`
   .progress-text {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
+    align-items: center;
+    font-size: 13px;
     color: ${props => props.$token?.colorTextSecondary};
-    margin-top: 4px;
   }
 `;
 
 export const ActionBar = styled.div<StyledProps>`
-  padding: 12px 16px;
+  padding: 6px;
   background: transparent;
   position: sticky;
   top: 0;
@@ -206,7 +319,7 @@ export const ActionBar = styled.div<StyledProps>`
   .ant-space {
     width: 100%;
     display: flex !important;
-    gap: 8px !important;
+    gap: 4px !important;
   }
   
   .ant-space-item {
@@ -216,9 +329,9 @@ export const ActionBar = styled.div<StyledProps>`
   
   .ant-btn {
     width: 100%;
-    height: 40px;
-    border-radius: 8px;
-    padding: 4px 8px;
+    height: 38px;
+    border-radius: 6px;
+    padding: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -226,7 +339,7 @@ export const ActionBar = styled.div<StyledProps>`
     font-weight: 500;
 
     .anticon {
-      font-size: 18px;
+      font-size: 16px;
       margin-right: 4px;
     }
   }
@@ -242,7 +355,7 @@ export const ActionBar = styled.div<StyledProps>`
 `;
 
 export const UploadProgress = styled.div<StyledProps>`
-  padding: 12px 16px;
+  padding: 6px;
   background: transparent;
   position: sticky;
   top: 0;
@@ -253,20 +366,20 @@ export const UploadProgress = styled.div<StyledProps>`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     
     .title {
-      font-size: 15px;
+      font-size: 14px;
       color: ${props => props.$token?.colorText};
       font-weight: 600;
     }
     
     .speed {
-      font-size: 13px;
+      font-size: 12px;
       color: ${props => props.$token?.colorTextSecondary};
       background: ${props => props.$token?.colorFillQuaternary};
-      padding: 2px 8px;
-      border-radius: 6px;
+      padding: 2px 6px;
+      border-radius: 4px;
     }
   }
   

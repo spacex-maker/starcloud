@@ -1,11 +1,13 @@
 import React, { memo, useMemo } from 'react';
 import type { FC } from 'react';
-import { Table, Space, Button, Typography, TablePaginationConfig, theme, Pagination, Grid, Modal, Input, Image } from 'antd';
+import { Table, Space, Button, Typography, TablePaginationConfig, theme, Pagination, Grid, Modal, Input, Image, Dropdown, Tooltip } from 'antd';
+import type { MenuProps } from 'antd';
 import { ThemeContext } from 'styled-components';
 import {
   DeleteOutlined,
   DownloadOutlined,
   EyeOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import { FileModel } from 'models/file/FileModel';
 import type { ColumnsType } from 'antd/es/table';
@@ -47,7 +49,7 @@ type FileListProps = {
   handlePreviewClose: () => void;
 };
 
-const FileList: FC<FileListProps> = ({
+const FileList: FC<FileListProps> = memo(({
   loading,
   filteredFiles,
   handleFolderClick,
@@ -73,6 +75,15 @@ const FileList: FC<FileListProps> = ({
   const themeContext = React.useContext(ThemeContext);
   const isDark = themeContext?.mode === 'dark';
   const intl = useIntl();
+
+  const sortedFiles = useMemo(() => {
+    return [...filteredFiles].sort((a, b) => {
+      if (a.isDirectory !== b.isDirectory) {
+        return a.isDirectory ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+    });
+  }, [filteredFiles]);
 
   const columns: ColumnsType<FileModel> = useMemo(() => [
     {
@@ -110,31 +121,57 @@ const FileList: FC<FileListProps> = ({
       title: <FormattedMessage id="filelist.column.actions" />,
       key: 'actions',
       fixed: 'right',
-      width: 150,
-      render: (_, record: FileModel) => (
-        <Space size={4}>
-          {!record.isDirectory && (
-            <Button
-              type="text"
-              icon={<DownloadOutlined />}
-              onClick={() => onDownload(record)}
-            />
-          )}
-          {!record.isDirectory && isImageFile(record.name) && (
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => handlePreview(record)}
-            />
-          )}
-          <Button
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record)}
-          />
-        </Space>
-      ),
+      width: 80,
+      render: (_, record: FileModel) => {
+        const menuItems: MenuProps['items'] = [
+          !record.isDirectory ? {
+            key: 'download',
+            icon: <DownloadOutlined />,
+            label: <FormattedMessage id="filelist.action.download" defaultMessage="下载" />,
+            onClick: () => onDownload(record),
+          } : null,
+          (!record.isDirectory && isImageFile(record.name)) ? {
+            key: 'preview',
+            icon: <EyeOutlined />,
+            label: <FormattedMessage id="filelist.action.preview" defaultMessage="预览" />,
+            onClick: () => handlePreview(record),
+          } : null,
+          {
+            key: 'delete',
+            icon: <DeleteOutlined />,
+            label: <FormattedMessage id="filelist.action.delete" defaultMessage="删除" />,
+            danger: true,
+            onClick: () => handleDelete(record),
+          },
+        ].filter((item): item is NonNullable<typeof item> => item !== null);
+
+        return (
+          <Space size={4}>
+            {!record.isDirectory && (
+              <Tooltip title={<FormattedMessage id="filelist.action.download" defaultMessage="下载" />}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<DownloadOutlined />}
+                  onClick={() => onDownload(record)}
+                />
+              </Tooltip>
+            )}
+            <Dropdown
+              menu={{ items: menuItems }}
+              placement="bottomRight"
+              trigger={['click']}
+              arrow={{ pointAtCenter: true }}
+            >
+              <Button
+                type="text"
+                size="small"
+                icon={<MoreOutlined />}
+              />
+            </Dropdown>
+          </Space>
+        );
+      },
     },
   ], [handleFolderClick, handlePreview, handleDelete, onDownload]);
 
@@ -165,7 +202,7 @@ const FileList: FC<FileListProps> = ({
               onChange: onSelectChange,
             }}
             columns={columns}
-            dataSource={filteredFiles}
+            dataSource={sortedFiles}
             rowKey="id"
             loading={loading}
             pagination={false}
@@ -251,29 +288,19 @@ const FileList: FC<FileListProps> = ({
         />
       </Modal>
 
-      <div style={{ display: 'none' }}>
-        <Image.PreviewGroup
-          preview={{
-            visible: previewImage.visible,
-            current: previewImage.key,
-            onVisibleChange: (visible) => {
-              if (!visible) handlePreviewClose();
-            }
-          }}
-        >
-          {filteredFiles
-            .filter(file => !file.isDirectory && isImageFile(file.name))
-            .map(file => (
-              <Image
-                key={file.id}
-                src={file.downloadUrl || ''}
-                alt={file.name}
-              />
-            ))}
-        </Image.PreviewGroup>
-      </div>
+      <Image
+        style={{ display: 'none' }}
+        preview={{
+          visible: previewImage.visible,
+          src: previewImage.url,
+          title: previewImage.title,
+          onVisibleChange: (visible) => {
+            if (!visible) handlePreviewClose();
+          }
+        }}
+      />
     </div>
   );
-};
+});
 
-export default memo(FileList);
+export default FileList;
