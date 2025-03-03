@@ -21,7 +21,15 @@ const DownloadContainer = styled.div`
   left: ${props => props.position ? props.position.x : 'auto'};
   bottom: ${props => props.position ? 'auto' : (props.collapsed ? '20px' : '40px')};
   right: ${props => props.position ? 'auto' : '20px'};
-  width: ${props => props.isMobile ? 'auto' : (props.minimized ? '56px' : '360px')};
+  width: ${props => {
+    if (props.minimized) return '56px';
+    if (props.isMobile) {
+      if (props.expanded) return 'calc(100% - 40px)';
+      return '360px';
+    }
+    return '360px';
+  }};
+  max-width: calc(100% - 40px);
   height: ${props => props.minimized ? '56px' : 'auto'};
   background: ${props => props.theme.mode === 'dark' 
     ? 'rgba(0, 0, 0, 0.1)' 
@@ -31,7 +39,7 @@ const DownloadContainer = styled.div`
   border: 1px solid ${props => props.theme.mode === 'dark'
     ? 'rgba(255, 255, 255, 0.1)'
     : 'rgba(0, 0, 0, 0.06)'};
-  border-radius: ${props => props.isMobile ? '50%' : (props.minimized ? '50%' : '8px')};
+  border-radius: ${props => props.minimized ? '50%' : '8px'};
   box-shadow: ${props => props.theme.mode === 'dark'
     ? '0 8px 32px rgba(0, 0, 0, 0.3)'
     : '0 8px 32px rgba(0, 0, 0, 0.08)'};
@@ -48,22 +56,6 @@ const DownloadContainer = styled.div`
     justify-content: center;
     padding: 0;
     cursor: pointer;
-  `}
-  
-  ${props => props.isMobile && !props.expanded && `
-    width: 56px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    cursor: pointer;
-  `}
-  
-  ${props => props.isMobile && props.expanded && `
-    width: calc(100% - 40px);
-    max-width: 360px;
-    border-radius: 12px;
   `}
 `;
 
@@ -435,6 +427,7 @@ const DownloadManager = ({ downloads, onCancel, onClear, onCollapse }) => {
     setMinimized(!minimized);
     if (!minimized) {
       setCollapsed(true);
+      setExpanded(false);
       if (onCollapse) {
         onCollapse(true);
       }
@@ -496,7 +489,7 @@ const DownloadManager = ({ downloads, onCancel, onClear, onCollapse }) => {
           />
           <IconButton
             type="text"
-            icon={isMobile ? <CloseOutlined /> : (collapsed ? <UpOutlined /> : <DownOutlined />)}
+            icon={isMobile ? (expanded ? <DownOutlined /> : <UpOutlined />) : (collapsed ? <UpOutlined /> : <DownOutlined />)}
             onClick={handleCollapse}
             title={collapsed ? 'Expand' : 'Collapse'}
           />
