@@ -4,6 +4,7 @@ import { DeleteOutlined, WarningFilled } from '@ant-design/icons';
 import { Typography } from 'antd';
 import { deleteFile, loadFiles } from 'services/fileService';
 import { isImageFile } from 'utils/format';
+import DeleteConfirmModal from 'components/modals/DeleteConfirmModal';
 
 const { Text } = Typography;
 
@@ -22,57 +23,30 @@ export const useFileOperations = (
     title: '',
     key: 0
   });
+  const [modalDeletingId, setModalDeletingId] = useState(null);
 
   const handleDelete = (record) => {
-    Modal.confirm({
-      title: (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <DeleteOutlined style={{ color: '#ff4d4f', fontSize: '20px' }} />
-          <span>确认删除此{record.isDirectory ? '文件夹' : '文件'}？</span>
-        </div>
-      ),
-      icon: null,
-      content: (
-        <div>
-          <div style={{ 
-            padding: '12px',
-            background: 'var(--ant-color-error-bg)',
-            border: '1px solid var(--ant-color-error-border)',
-            borderRadius: '8px',
-            marginBottom: '16px'
-          }}>
-            <Text type="danger">
-              <WarningFilled style={{ marginRight: '8px' }} />
-              此操作将永久删除该{record.isDirectory ? '文件夹' : '文件'}，且无法恢复
-            </Text>
-          </div>
-          <div>
-            <Text>文件名：{record.name}</Text>
-            {!record.isDirectory && (
-              <div>
-                <Text>大小：{record.size}</Text>
-              </div>
-            )}
-          </div>
-        </div>
-      ),
-      okText: '删除',
-      okButtonProps: {
-        danger: true
+    DeleteConfirmModal({
+      record,
+      onConfirm: async () => {
+        try {
+          setModalDeletingId(record.id);
+          await deleteFile(
+            record, 
+            () => {}, // setLoading
+            currentParentId, 
+            setFiles,
+            setFilteredFiles,
+            setSearchText,
+            setPagination,
+            pagination
+          );
+        } finally {
+          setModalDeletingId(null);
+        }
       },
-      cancelText: '取消',
-      onOk: () => {
-        deleteFile(
-          record, 
-          () => {}, // setLoading
-          currentParentId, 
-          setFiles,
-          setFilteredFiles,
-          setSearchText,
-          setPagination,
-          pagination
-        );
-      }
+      isDeleting: modalDeletingId === record.id,
+      isImageFile
     });
   };
 
@@ -210,8 +184,11 @@ export const useFileOperations = (
 
   return {
     selectedRowKeys,
+    setSelectedRowKeys,
     previewImage,
+    setPreviewImage,
     handleDelete,
+    modalDeletingId,
     handleBatchDelete,
     handlePreview,
     handlePreviewClose,

@@ -14,7 +14,7 @@ const { Text } = Typography;
 const DeleteConfirmModal = ({ 
   record,
   onConfirm,
-  formatSize,
+  isDeleting = false,
   isImageFile,
 }) => {
   const fileName = record.name;
@@ -106,8 +106,13 @@ const DeleteConfirmModal = ({
     okText: '删除',
     okButtonProps: {
       danger: true,
+      loading: isDeleting,
+      disabled: isDeleting
     },
     cancelText: '取消',
+    cancelButtonProps: {
+      disabled: isDeleting
+    },
     onOk: onConfirm,
   };
 
