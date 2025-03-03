@@ -5,6 +5,7 @@ class COSService {
   constructor() {
     this.cos = null;
     this.host = '';
+    this.uploadTasks = new Map(); // 存储上传任务
   }
 
   async init() {
@@ -43,46 +44,204 @@ class COSService {
     }
   }
 
-  async uploadFile(file, path = '', onProgress) {
+  async uploadFile(file, path = '', onProgress, useChunkUpload = false, resumeData = null) {
     if (!this.cos) {
       await this.init();
     }
 
     return new Promise((resolve, reject) => {
       const key = path ? `${path}${file.name}` : file.name;
-      let lastProgress = 0; // 记录上一次的进度
+      let lastProgress = resumeData ? resumeData.progress : 0;
+      let isTaskCancelled = false;
 
-      this.cos.uploadFile({
+      // 创建上传任务
+      const taskId = resumeData ? resumeData.taskId : `${key}_${Date.now()}`;
+      console.log('创建上传任务，taskId:', taskId, '续传数据:', resumeData, '是否分片上传:', useChunkUpload);
+
+      // 存储任务信息的占位符
+      this.uploadTasks.set(taskId, {
+        taskId,
+        tid: null,
+        file,
+        path,
+        status: 'uploading',
+        progress: lastProgress,
+        onProgress,
+        uploadId: resumeData?.uploadId,
+        partNumber: resumeData?.partNumber,
+        useChunkUpload
+      });
+
+      // 根据是否使用分片上传选择不同的上传方法
+      const uploadMethod = useChunkUpload ? this.cos.sliceUploadFile : this.cos.putObject;
+      const uploadOptions = {
         Bucket: 'px-1258150206',
         Region: 'ap-nanjing',
         Key: key,
         Body: file,
         onProgress: (progressData) => {
+          if (isTaskCancelled) {
+            return;
+          }
+
           const percent = progressData.percent * 100;
           const speed = progressData.speed;
           
-          // 确保进度只能增加，不能减少
           if (percent >= lastProgress) {
             lastProgress = percent;
-            onProgress(percent, speed);
+            const taskInfo = this.uploadTasks.get(taskId);
+            if (taskInfo) {
+              taskInfo.progress = percent;
+              taskInfo.speed = speed;
+            }
+            onProgress(percent, speed, taskId);
           }
         }
-      }, (err, data) => {
+      };
+
+      // 如果使用分片上传，添加分片相关配置
+      if (useChunkUpload) {
+        Object.assign(uploadOptions, {
+          ChunkSize: 1024 * 1024 * 50, // 50MB 分片大小
+          AsyncLimit: 3, // 并发数
+          ChunkParallel: true,
+          SliceSize: 1024 * 1024 * 50,
+          RetryTimes: 3,
+          onTaskReady: (tid) => {
+            console.log('分片上传任务创建成功，任务ID:', tid);
+            const taskInfo = this.uploadTasks.get(taskId);
+            if (taskInfo) {
+              taskInfo.tid = tid;
+            }
+          }
+        });
+
+        // 如果有续传数据，添加到上传选项中
+        if (resumeData?.uploadId) {
+          console.log('使用续传数据:', resumeData);
+          uploadOptions.UploadId = resumeData.uploadId;
+          uploadOptions.PartNumber = resumeData.partNumber;
+        }
+      }
+
+      const task = uploadMethod.call(this.cos, uploadOptions, (err, data) => {
+        if (isTaskCancelled && useChunkUpload) {
+          // 只有分片上传才需要保存进度信息
+          const taskInfo = this.uploadTasks.get(taskId);
+          if (taskInfo && data) {
+            taskInfo.uploadId = data.UploadId;
+            taskInfo.partNumber = data.CurrPartNumber;
+            console.log('保存上传进度:', {
+              uploadId: data.UploadId,
+              partNumber: data.CurrPartNumber,
+              progress: taskInfo.progress
+            });
+          }
+          return;
+        }
+
+        // 完成后删除任务记录
+        console.log('上传任务完成或出错，删除任务记录:', taskId);
+        this.uploadTasks.delete(taskId);
+        
         if (err) {
           reject(err);
         } else {
-          // 确保最后进度为 100%
-          onProgress(100, 0);
+          onProgress(100, 0, taskId);
           resolve({
             url: `${this.host}${key}`,
             key: key,
             etag: data.ETag,
             location: data.Location,
+            taskId,
             ...data
           });
         }
       });
+
+      console.log('获取到的上传任务对象:', task);
+
+      // 更新任务信息
+      const taskInfo = this.uploadTasks.get(taskId);
+      if (taskInfo) {
+        taskInfo.cancel = () => {
+          isTaskCancelled = true;
+          if (taskInfo.tid && useChunkUpload) {
+            this.cos.cancelTask(taskInfo.tid);
+          }
+        };
+        console.log('已更新任务对象');
+      }
     });
+  }
+
+  // 暂停上传
+  pauseUpload(taskId) {
+    console.log('尝试暂停上传，taskId:', taskId);
+    const taskInfo = this.uploadTasks.get(taskId);
+    console.log('找到的任务信息:', taskInfo);
+    
+    if (taskInfo && taskInfo.cancel) {
+      try {
+        taskInfo.cancel();
+        taskInfo.status = 'paused';
+        console.log('暂停成功，保存上传进度:', {
+          taskId: taskInfo.taskId,
+          progress: taskInfo.progress,
+          uploadId: taskInfo.uploadId,
+          partNumber: taskInfo.partNumber
+        });
+        return true;
+      } catch (error) {
+        console.error('暂停失败:', error);
+        return false;
+      }
+    }
+    console.log('未找到有效的任务信息');
+    return false;
+  }
+
+  // 恢复上传
+  resumeUpload(taskId) {
+    console.log('尝试恢复上传，taskId:', taskId);
+    const taskInfo = this.uploadTasks.get(taskId);
+    console.log('找到的任务信息:', taskInfo);
+    
+    if (taskInfo) {
+      try {
+        const resumeData = {
+          taskId: taskInfo.taskId,
+          progress: taskInfo.progress,
+          uploadId: taskInfo.uploadId,
+          partNumber: taskInfo.partNumber
+        };
+
+        // 删除旧任务
+        this.uploadTasks.delete(taskId);
+        
+        // 开始新的上传，传入续传数据
+        this.uploadFile(taskInfo.file, taskInfo.path, taskInfo.onProgress, taskInfo.useChunkUpload, resumeData)
+          .then(() => {
+            console.log('恢复上传成功');
+          })
+          .catch((error) => {
+            console.error('恢复上传失败:', error);
+          });
+        
+        return true;
+      } catch (error) {
+        console.error('恢复失败:', error);
+        return false;
+      }
+    }
+    console.log('未找到有效的任务信息');
+    return false;
+  }
+
+  // 获取任务状态
+  getTaskStatus(taskId) {
+    const taskInfo = this.uploadTasks.get(taskId);
+    return taskInfo ? taskInfo.status : null;
   }
 
   async createFolder(path) {

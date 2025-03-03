@@ -1,22 +1,28 @@
 import React, { memo, useMemo } from 'react';
 import type { FC } from 'react';
-import { Table, Space, Button, Typography, TablePaginationConfig, theme, Pagination, Grid } from 'antd';
+import { Table, Space, Button, Typography, TablePaginationConfig, theme, Pagination, Grid, Modal, Input, Image } from 'antd';
 import { ThemeContext } from 'styled-components';
 import {
-  FolderOutlined,
-  FileOutlined,
-  FileImageOutlined,
-  DownloadOutlined,
   DeleteOutlined,
+  DownloadOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
-import { formatFileSize, isImageFile } from 'utils/format';
 import { FileModel } from 'models/file/FileModel';
 import type { ColumnsType } from 'antd/es/table';
-import { RoundedButton } from './components/styles/StyledComponents';
+import { RoundedButton } from '../../components/styles/StyledComponents';
+import { FormattedMessage, useIntl } from 'react-intl';
+import FileItem from './FileItem';
+import { formatFileSize, isImageFile } from 'utils/format';
 
 const { Text } = Typography;
 const { useToken } = theme;
+
+interface PreviewImageType {
+  visible: boolean;
+  url: string;
+  title: string;
+  key: number;
+}
 
 type FileListProps = {
   loading: boolean;
@@ -32,23 +38,14 @@ type FileListProps = {
   onDownload: (record: FileModel) => void;
   pagination: TablePaginationConfig;
   onPageChange: (page: number, pageSize: number) => void;
+  newFolderModalVisible: boolean;
+  setNewFolderModalVisible: (visible: boolean) => void;
+  newFolderName: string;
+  setNewFolderName: (name: string) => void;
+  handleCreateFolder: () => void;
+  previewImage: PreviewImageType;
+  handlePreviewClose: () => void;
 };
-
-const FileIcon: FC<{ 
-  isDirectory: boolean; 
-  fileName: string; 
-  token: any;
-}> = memo(({ isDirectory, fileName, token }) => {
-  if (isDirectory) {
-    return <FolderOutlined style={{ fontSize: '16px', color: token.colorPrimary }} />;
-  }
-  
-  if (isImageFile(fileName)) {
-    return <FileImageOutlined style={{ fontSize: '16px', color: token.colorInfo }} />;
-  }
-  
-  return <FileOutlined style={{ fontSize: '16px' }} />;
-});
 
 const FileList: FC<FileListProps> = ({
   loading,
@@ -63,36 +60,37 @@ const FileList: FC<FileListProps> = ({
   onDownload,
   pagination,
   onPageChange,
+  newFolderModalVisible,
+  setNewFolderModalVisible,
+  newFolderName,
+  setNewFolderName,
+  handleCreateFolder,
+  previewImage,
+  handlePreviewClose,
 }) => {
   const { token } = useToken();
   const screens = Grid.useBreakpoint();
   const themeContext = React.useContext(ThemeContext);
   const isDark = themeContext?.mode === 'dark';
+  const intl = useIntl();
 
   const columns: ColumnsType<FileModel> = useMemo(() => [
     {
-      title: '名称',
+      title: <FormattedMessage id="filelist.column.name" />,
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
-      render: (name: string, record: FileModel) => (
-        <Space>
-          <FileIcon 
-            isDirectory={record.isDirectory} 
-            fileName={name} 
-            token={token}
-          />
-          <Text
-            style={{ cursor: record.isDirectory ? 'pointer' : 'default' }}
-            onClick={() => record.isDirectory && handleFolderClick(record)}
-          >
-            {name}
-          </Text>
-        </Space>
+      width: '50%',
+      render: (_, record: FileModel) => (
+        <FileItem
+          file={record}
+          onFolderClick={handleFolderClick}
+          showSize={false}
+        />
       ),
     },
     {
-      title: '大小',
+      title: <FormattedMessage id="filelist.column.size" />,
       dataIndex: 'size',
       key: 'size',
       width: 120,
@@ -103,17 +101,17 @@ const FileList: FC<FileListProps> = ({
       },
     },
     {
-      title: '修改时间',
+      title: <FormattedMessage id="filelist.column.updateTime" />,
       dataIndex: 'updateTime',
       key: 'updateTime',
       width: 180,
     },
     {
-      title: '操作',
+      title: <FormattedMessage id="filelist.column.actions" />,
       key: 'actions',
-      width: 150,
       fixed: 'right',
-      render: (_: unknown, record: FileModel) => (
+      width: 150,
+      render: (_, record: FileModel) => (
         <Space size={4}>
           {!record.isDirectory && (
             <Button
@@ -138,7 +136,7 @@ const FileList: FC<FileListProps> = ({
         </Space>
       ),
     },
-  ], [token, handleFolderClick, handlePreview, handleDelete, onDownload]);
+  ], [handleFolderClick, handlePreview, handleDelete, onDownload]);
 
   return (
     <div style={{ 
@@ -147,7 +145,7 @@ const FileList: FC<FileListProps> = ({
       flexDirection: 'column', 
       position: 'relative',
       overflow: 'hidden',
-      isolation: 'isolate'  // 创建新的堆叠上下文
+      isolation: 'isolate'
     }}>
       <div style={{ 
         flex: 1, 
@@ -200,16 +198,21 @@ const FileList: FC<FileListProps> = ({
                       filteredFiles.filter(file => selectedRowKeys.includes(file.id))
                     )}
                   >
-                    {screens.md && "批量下载"}
+                    {screens.md && <FormattedMessage id="filelist.action.batchDownload" />}
                   </RoundedButton>
                   <RoundedButton
                     danger
                     icon={<DeleteOutlined />}
                     onClick={() => handleBatchDelete(filteredFiles)}
                   >
-                    {screens.md && "批量删除"}
+                    {screens.md && <FormattedMessage id="filelist.action.batchDelete" />}
                   </RoundedButton>
-                  <span className="d-none d-md-inline">已选择 {selectedRowKeys.length} 项</span>
+                  <span className="d-none d-md-inline">
+                    <FormattedMessage 
+                      id="filelist.selected" 
+                      values={{ count: selectedRowKeys.length }} 
+                    />
+                  </span>
                 </Space>
               )}
             </div>
@@ -217,12 +220,57 @@ const FileList: FC<FileListProps> = ({
               <Pagination 
                 {...pagination}
                 onChange={onPageChange}
-                showTotal={(total) => `共 ${total} 项`}
+                showTotal={(total) => intl.formatMessage(
+                  { id: 'filelist.total' },
+                  { total }
+                )}
                 size={screens.md ? 'default' : 'small'}
               />
             </div>
           </div>
         </div>
+      </div>
+      
+      <Modal
+        title={<FormattedMessage id="filelist.modal.newFolder.title" defaultMessage="新建文件夹" />}
+        open={newFolderModalVisible}
+        onOk={handleCreateFolder}
+        onCancel={() => setNewFolderModalVisible(false)}
+        okText={<FormattedMessage id="filelist.modal.newFolder.ok" defaultMessage="创建" />}
+        cancelText={<FormattedMessage id="filelist.modal.newFolder.cancel" defaultMessage="取消" />}
+      >
+        <Input
+          placeholder={intl.formatMessage({ 
+            id: "filelist.modal.newFolder.placeholder",
+            defaultMessage: "请输入文件夹名称"
+          })}
+          value={newFolderName}
+          onChange={e => setNewFolderName(e.target.value)}
+          onPressEnter={handleCreateFolder}
+          autoFocus
+        />
+      </Modal>
+
+      <div style={{ display: 'none' }}>
+        <Image.PreviewGroup
+          preview={{
+            visible: previewImage.visible,
+            current: previewImage.key,
+            onVisibleChange: (visible) => {
+              if (!visible) handlePreviewClose();
+            }
+          }}
+        >
+          {filteredFiles
+            .filter(file => !file.isDirectory && isImageFile(file.name))
+            .map(file => (
+              <Image
+                key={file.id}
+                src={file.downloadUrl || ''}
+                alt={file.name}
+              />
+            ))}
+        </Image.PreviewGroup>
       </div>
     </div>
   );

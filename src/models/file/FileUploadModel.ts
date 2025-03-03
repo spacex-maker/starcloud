@@ -2,7 +2,7 @@ export interface FileUploadState {
   file: File;
   name: string;
   fileSize: number;
-  status: 'pending' | 'uploading' | 'creating' | 'success' | 'error' | 'skipped';
+  status: 'pending' | 'uploading' | 'creating' | 'success' | 'error' | 'skipped' | 'paused';
   progress: number;
   speed?: number;
   isDuplicate?: boolean;
@@ -14,6 +14,7 @@ export interface FileUploadState {
   startTime?: number;
   lastTime?: number;
   lastProgress?: number;
+  taskId?: string;
 }
 
 export interface FileStats {

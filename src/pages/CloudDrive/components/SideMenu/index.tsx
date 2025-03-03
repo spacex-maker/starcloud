@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Modal, Typography, Space, Divider } from 'antd';
+import { Layout, Menu } from 'antd';
 import {
   CloudOutlined,
   StarOutlined,
@@ -10,16 +10,26 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LockOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
-import styled from 'styled-components';
+import { FormattedMessage } from 'react-intl';
 import FeedbackModal from 'components/modals/FeedbackModal';
 import AboutModal from 'components/modals/AboutModal';
+import ProductLogModal from 'components/modals/ProductLogModal';
 import { useNavigate } from 'react-router-dom';
+import { CollapseTrigger, Overlay } from '../styles/StyledComponents';
+import styled from 'styled-components';
 
 const { Sider } = Layout;
-const { Title, Text, Paragraph } = Typography;
 
-const StyledSider = styled(Sider)`
+interface SideMenuProps {
+  selectedKeys: string[];
+  onSelect: (key: string) => void;
+  collapsed: boolean;
+  onCollapse: (collapsed: boolean) => void;
+}
+
+const StyledSider = styled(Sider)<{ collapsed?: boolean }>`
   background: ${props => props.theme.mode === 'dark' 
     ? '#141414'
     : '#fff'} !important;
@@ -43,7 +53,6 @@ const StyledSider = styled(Sider)`
       : '#fff'};
   }
 
-  // 添加响应式样式
   @media (max-width: 768px) {
     position: fixed !important;
     z-index: 999;
@@ -98,56 +107,10 @@ const BottomMenu = styled(Menu)`
   }
 `;
 
-// 添加折叠按钮样式
-const CollapseTrigger = styled.div`
-  position: fixed;
-  left: ${props => props.collapsed ? '0' : '200px'};
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 48px;
-  background: ${props => props.theme.mode === 'dark' ? '#1f1f1f' : '#fff'};
-  border: 1px solid ${props => props.theme.mode === 'dark'
-    ? 'rgba(255, 255, 255, 0.08)'
-    : 'rgba(0, 0, 0, 0.06)'};
-  border-left: none;
-  border-radius: 0 24px 24px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 1000;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
-  
-  &:hover {
-    background: ${props => props.theme.mode === 'dark' ? '#2a2a2a' : '#fafafa'};
-  }
-  
-  @media (min-width: 769px) {
-    display: none;
-  }
-`;
-
-// 添加遮罩层样式
-const Overlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 998;
-  display: ${props => props.visible ? 'block' : 'none'};
-  
-  @media (min-width: 769px) {
-    display: none;
-  }
-`;
-
-const SideMenu = ({ selectedKeys, onSelect, collapsed, onCollapse }) => {
+const SideMenu: React.FC<SideMenuProps> = ({ selectedKeys, onSelect, collapsed, onCollapse }) => {
   const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
   const [isAboutVisible, setIsAboutVisible] = useState(false);
+  const [isProductLogVisible, setIsProductLogVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 769);
   const navigate = useNavigate();
 
@@ -170,44 +133,49 @@ const SideMenu = ({ selectedKeys, onSelect, collapsed, onCollapse }) => {
     {
       key: 'all',
       icon: <CloudOutlined />,
-      label: '全部文件'
+      label: <FormattedMessage id="sidebar.allFiles" />
     },
     {
       key: 'starred',
       icon: <StarOutlined />,
-      label: '收藏夹'
+      label: <FormattedMessage id="sidebar.starred" />
     },
     {
       key: 'folders',
       icon: <FolderOutlined />,
-      label: '文件夹'
+      label: <FormattedMessage id="sidebar.folders" />
     },
     {
       key: 'trash',
       icon: <DeleteOutlined />,
-      label: '回收站'
+      label: <FormattedMessage id="sidebar.trash" />
     },
     {
       key: 'decrypt',
       icon: <LockOutlined />,
-      label: '解密工具'
+      label: <FormattedMessage id="sidebar.decrypt" />
     }
   ];
 
   const bottomMenuItems = [
     {
+      key: 'productLog',
+      icon: <HistoryOutlined />,
+      label: <FormattedMessage id="sidebar.productLog" defaultMessage="产品日志" />
+    },
+    {
       key: 'feedback',
       icon: <CommentOutlined />,
-      label: '提交需求'
+      label: <FormattedMessage id="sidebar.feedback" />
     },
     {
       key: 'about',
       icon: <InfoCircleOutlined />,
-      label: '关于'
+      label: <FormattedMessage id="sidebar.about" />
     }
   ];
 
-  const handleMenuSelect = ({ key }) => {
+  const handleMenuSelect = ({ key }: { key: string }) => {
     if (key === 'decrypt') {
       navigate('/decrypt');
       if (isMobile) {
@@ -226,6 +194,14 @@ const SideMenu = ({ selectedKeys, onSelect, collapsed, onCollapse }) => {
     
     if (key === 'feedback') {
       setIsFeedbackVisible(true);
+      if (isMobile) {
+        onCollapse(true);
+      }
+      return;
+    }
+
+    if (key === 'productLog') {
+      setIsProductLogVisible(true);
       if (isMobile) {
         onCollapse(true);
       }
@@ -275,6 +251,11 @@ const SideMenu = ({ selectedKeys, onSelect, collapsed, onCollapse }) => {
       <AboutModal
         open={isAboutVisible}
         onClose={() => setIsAboutVisible(false)}
+      />
+
+      <ProductLogModal
+        open={isProductLogVisible}
+        onClose={() => setIsProductLogVisible(false)}
       />
     </>
   );

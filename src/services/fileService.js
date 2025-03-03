@@ -121,7 +121,7 @@ export const loadFiles = async (
         key: file.id,
         id: file.id,
         name: file.name,
-        size: formatFileSize(file.size),
+        size: file.size,
         type: file.isDirectory ? 'folder' : 'file',
         createTime: file.createTime ? new Date(file.createTime).toLocaleString() : '-',
         updateTime: file.updateTime ? new Date(file.updateTime).toLocaleString() : '-',

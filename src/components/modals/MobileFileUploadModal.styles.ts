@@ -1,5 +1,16 @@
 import styled from 'styled-components';
 import { List } from 'antd';
+import { theme } from 'antd';
+
+type ThemeToken = ReturnType<typeof theme.useToken>['token'];
+
+interface StyledProps {
+  $token?: ThemeToken;
+}
+
+interface FileItemProps extends StyledProps {
+  selected?: boolean;
+}
 
 export const FileList = styled(List)`
   flex: 1;
@@ -13,7 +24,7 @@ export const FileList = styled(List)`
   }
 `;
 
-export const DuplicateTag = styled.div`
+export const DuplicateTag = styled.div<StyledProps>`
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -36,7 +47,7 @@ export const DuplicateTag = styled.div`
   }
 `;
 
-export const FileItem = styled.div`
+export const FileItem = styled.div<FileItemProps>`
   display: flex;
   flex-direction: column;
   padding: 16px;
@@ -72,7 +83,7 @@ export const FileItem = styled.div`
   }
 `;
 
-export const SelectIndicator = styled.div`
+export const SelectIndicator = styled.div<StyledProps>`
   position: absolute;
   right: 12px;
   top: 12px;
@@ -94,7 +105,7 @@ export const SelectIndicator = styled.div`
   }
 `;
 
-export const FileHeader = styled.div`
+export const FileHeader = styled.div<StyledProps>`
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -140,7 +151,7 @@ export const FileHeader = styled.div`
   }
 `;
 
-export const FileProgress = styled.div`
+export const FileProgress = styled.div<StyledProps>`
   margin-top: 4px;
   
   .status {
@@ -184,18 +195,27 @@ export const FileProgress = styled.div`
   }
 `;
 
-export const ActionBar = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+export const ActionBar = styled.div<StyledProps>`
   padding: 12px 16px;
   background: transparent;
   position: sticky;
   top: 0;
   z-index: 9;
   border-bottom: 1px solid ${props => props.$token?.colorBorderSecondary}40;
+
+  .ant-space {
+    width: 100%;
+    display: flex !important;
+    gap: 8px !important;
+  }
+  
+  .ant-space-item {
+    flex: 1;
+    width: 0;
+  }
   
   .ant-btn {
+    width: 100%;
     height: 40px;
     border-radius: 8px;
     padding: 4px 8px;
@@ -204,40 +224,24 @@ export const ActionBar = styled.div`
     justify-content: center;
     font-size: 14px;
     font-weight: 500;
-    
+
     .anticon {
       font-size: 18px;
       margin-right: 4px;
     }
-    
-    &.ant-btn-block {
-      width: 100%;
-      min-width: 0;
-    }
-
-    &.ant-btn-primary {
-      margin-top: 8px;
-      height: 44px;
-      font-size: 15px;
-    }
-
-    &:active {
-      transform: scale(0.98);
-    }
   }
-  
+
   .ant-upload {
     display: block;
     width: 100%;
     
-    &.ant-upload-select {
-      display: block;
+    .ant-btn {
       width: 100%;
     }
   }
 `;
 
-export const UploadProgress = styled.div`
+export const UploadProgress = styled.div<StyledProps>`
   padding: 12px 16px;
   background: transparent;
   position: sticky;
@@ -288,4 +292,102 @@ export const UploadProgress = styled.div`
     display: flex;
     justify-content: space-between;
   }
+`;
+
+export const MobileFileName = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  
+  .file-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .icon {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  
+  .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+`;
+
+export const MobileFileSize = styled.span`
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+`;
+
+export const MobileProgressText = styled.span`
+  color: var(--ant-color-text);
+  font-size: 12px;
+  white-space: nowrap;
+  
+  .uploaded {
+    color: var(--ant-color-primary);
+  }
+  
+  .total {
+    color: var(--ant-color-text-secondary);
+  }
+`;
+
+export const MobileStatusHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  
+  .status-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .speed {
+    font-size: 12px;
+    color: var(--ant-color-text-secondary);
+  }
+`;
+
+export const MobileTotalProgressText = styled.div`
+  margin-top: 8px;
+  font-size: 12px;
+  
+  .uploaded {
+    color: var(--ant-color-primary);
+  }
+  
+  .total {
+    color: var(--ant-color-text-secondary);
+  }
+`;
+
+export const MobileDuplicateTag = styled.span`
+  color: #faad14;
+  font-size: 12px;
+  margin-left: 8px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+export const MobileChunkUploadTag = styled(MobileDuplicateTag)`
+  color: #1890ff;
 `; 
