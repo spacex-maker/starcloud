@@ -19,6 +19,7 @@ import { getEllipsisFileName, formatFileSize as formatBytes, formatSpeed, format
 import { getFileIcon } from '../../utils/fileIcon';
 import { getStatusIcon, getStatusText } from '../../utils/uploadStatus';
 import { FormattedMessage, useIntl } from 'react-intl';
+import FileEncryptModal from './FileEncryptModal';
 
 const { Text } = Typography;
 
@@ -172,6 +173,10 @@ const DesktopFileUploadModal: React.FC<DesktopFileUploadModalProps> = ({
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const { token } = theme.useToken();
 
+  // 添加加密模态框的状态
+  const [encryptModalVisible, setEncryptModalVisible] = useState(false);
+  const [selectedFilesToEncrypt, setSelectedFilesToEncrypt] = useState<File[]>([]);
+
   // 监听文件列表变化，设置全选状态
   useEffect(() => {
     if (uploadingFiles.size > 0) {
@@ -283,14 +288,17 @@ const DesktopFileUploadModal: React.FC<DesktopFileUploadModalProps> = ({
       .filter(file => selectedRowKeys.includes(file.file.name))
       .map(file => file.file);
 
-    if (typeof onEncryptFiles === 'function') {
-      onEncryptFiles(selectedFiles, (encryptedFiles, originalFiles) => {
-        if (typeof onEncryptComplete === 'function') {
-          onEncryptComplete(encryptedFiles, originalFiles);
-        }
-        setSelectedRowKeys([]);
-      });
+    setSelectedFilesToEncrypt(selectedFiles);
+    setEncryptModalVisible(true);
+  };
+
+  // 处理加密完成
+  const handleEncryptComplete = (encryptedFiles: File[], originalFiles: File[]) => {
+    if (typeof onEncryptComplete === 'function') {
+      onEncryptComplete(encryptedFiles, originalFiles);
     }
+    setSelectedRowKeys([]);
+    setEncryptModalVisible(false);
   };
 
   // 处理分片上传标记
@@ -491,152 +499,163 @@ const DesktopFileUploadModal: React.FC<DesktopFileUploadModalProps> = ({
   }, [isUploading, uploadingFiles]);
 
   return (
-    <Modal
-      open={visible}
-      title={<FormattedMessage id="modal.fileUpload.title" />}
-      width={800}
-      maskClosable={false}
-      closable={!isUploading}
-      onCancel={onCancel}
-      footer={
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between',
-          gap: '8px'
-        }}>
-          <Space size="middle">
-            <Button 
-              icon={<LockOutlined />}
-              onClick={handleEncryptFiles} 
-              disabled={isUploading || selectedRowKeys.length === 0}
-            >
-              <FormattedMessage id="modal.fileUpload.encrypt" />
-            </Button>
-            <Button 
-              onClick={handleBatchRemove} 
-              disabled={isUploading}
-            >
-              <FormattedMessage id="modal.fileUpload.clear" />
-            </Button>
-            <Button
-              icon={<CloudUploadOutlined />}
-              onClick={handleMarkChunkUpload}
-              disabled={isUploading || selectedRowKeys.length === 0}
-            >
-              <FormattedMessage id="modal.fileUpload.markChunkUpload" defaultMessage="分片上传" />
-            </Button>
-          </Space>
-          <Space size="middle">
-            <Button 
-              onClick={onCancel}
-              disabled={isUploading}
-            >
-              <FormattedMessage id="modal.fileUpload.cancel" />
-            </Button>
-            <Button
-              type="primary"
-              onClick={onStartUpload}
-              disabled={!canStartUpload}
-            >
-              <FormattedMessage id="modal.fileUpload.start" />
-            </Button>
-          </Space>
-        </div>
-      }
-      bodyStyle={{ 
-        minHeight: '520px',
-        display: 'flex',
-        flexDirection: 'column'
-      }}
-    >
-      {isUploading && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <Space>
-              <Text>总进度</Text>
-              <Text style={{ color: token.colorPrimary }}>{uploadStats.progress}%</Text>
+    <>
+      <Modal
+        open={visible}
+        title={<FormattedMessage id="modal.fileUpload.title" />}
+        width={800}
+        maskClosable={false}
+        closable={!isUploading}
+        onCancel={onCancel}
+        footer={
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            gap: '8px'
+          }}>
+            <Space size="middle">
+              <Button 
+                icon={<LockOutlined />}
+                onClick={handleEncryptFiles} 
+                disabled={isUploading || selectedRowKeys.length === 0}
+              >
+                <FormattedMessage id="modal.fileUpload.encrypt" />
+              </Button>
+              <Button 
+                onClick={handleBatchRemove} 
+                disabled={isUploading}
+              >
+                <FormattedMessage id="modal.fileUpload.clear" />
+              </Button>
+              <Button
+                icon={<CloudUploadOutlined />}
+                onClick={handleMarkChunkUpload}
+                disabled={isUploading || selectedRowKeys.length === 0}
+              >
+                <FormattedMessage id="modal.fileUpload.markChunkUpload" defaultMessage="分片上传" />
+              </Button>
             </Space>
-            <Space>
-              <Text type="secondary">速度：{formatSpeed(uploadStats.speed)}</Text>
-              <Text type="secondary">剩余时间：{formatTime(uploadStats.remainingTime)}</Text>
+            <Space size="middle">
+              <Button 
+                onClick={onCancel}
+                disabled={isUploading}
+              >
+                <FormattedMessage id="modal.fileUpload.cancel" />
+              </Button>
+              <Button
+                type="primary"
+                onClick={onStartUpload}
+                disabled={!canStartUpload}
+              >
+                <FormattedMessage id="modal.fileUpload.start" />
+              </Button>
             </Space>
           </div>
-          <Progress 
-            percent={uploadStats.progress} 
-            status={uploadStats.progress === 100 ? 'success' : 'active'} 
-            strokeColor={{
-              '0%': token.colorPrimary,
-              '100%': token.colorSuccess,
-            }}
-          />
-          <TotalProgressText>
-            已上传：<span className="uploaded">{formatBytes(uploadStats.uploadedSize)}</span>
-            <span className="total"> / {formatBytes(uploadStats.totalSize)}</span>
-          </TotalProgressText>
-        </div>
-      )}
-      
-      <div style={{ marginBottom: 16 }}>
-        <Space>
-          <Upload
-            showUploadList={false}
-            multiple
-            beforeUpload={(file, fileList) => {
-              // 检查文件是否与现有文件重复
-              const duplicateFiles = fileList.filter(newFile => 
-                existingFiles.some(existingFile => existingFile.name === newFile.name) ||
-                Array.from(uploadingFiles.keys()).includes(newFile.name)
-              );
-              
-              // 如果有重复文件，标记它们
-              if (duplicateFiles.length > 0) {
-                const filesWithDuplicateFlag = fileList.map(file => ({
-                  file,
-                  isDuplicate: existingFiles.some(existingFile => existingFile.name === file.name) ||
-                              Array.from(uploadingFiles.keys()).includes(file.name)
-                }));
-                onAddFiles(filesWithDuplicateFlag);
-              } else {
-                onAddFiles(fileList.map(file => ({ file, isDuplicate: false })));
-              }
-              return false;
-            }}
-            disabled={isUploading}
-          >
-            <Button 
-              icon={<PlusOutlined />}
+        }
+        styles={{ 
+          body: {
+            minHeight: '520px',
+            display: 'flex',
+            flexDirection: 'column'
+          }
+        }}
+      >
+        {isUploading && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Space>
+                <Text>总进度</Text>
+                <Text style={{ color: token.colorPrimary }}>{uploadStats.progress}%</Text>
+              </Space>
+              <Space>
+                <Text type="secondary">速度：{formatSpeed(uploadStats.speed)}</Text>
+                <Text type="secondary">剩余时间：{formatTime(uploadStats.remainingTime)}</Text>
+              </Space>
+            </div>
+            <Progress 
+              percent={uploadStats.progress} 
+              status={uploadStats.progress === 100 ? 'success' : 'active'} 
+              strokeColor={{
+                '0%': token.colorPrimary,
+                '100%': token.colorSuccess,
+              }}
+            />
+            <TotalProgressText>
+              已上传：<span className="uploaded">{formatBytes(uploadStats.uploadedSize)}</span>
+              <span className="total"> / {formatBytes(uploadStats.totalSize)}</span>
+            </TotalProgressText>
+          </div>
+        )}
+        
+        <div style={{ marginBottom: 16 }}>
+          <Space>
+            <Upload
+              showUploadList={false}
+              multiple
+              beforeUpload={(file, fileList) => {
+                // 检查文件是否与现有文件重复
+                const duplicateFiles = fileList.filter(newFile => 
+                  existingFiles.some(existingFile => existingFile.name === newFile.name) ||
+                  Array.from(uploadingFiles.keys()).includes(newFile.name)
+                );
+                
+                // 如果有重复文件，标记它们
+                if (duplicateFiles.length > 0) {
+                  const filesWithDuplicateFlag = fileList.map(file => ({
+                    file,
+                    isDuplicate: existingFiles.some(existingFile => existingFile.name === file.name) ||
+                                Array.from(uploadingFiles.keys()).includes(file.name)
+                  }));
+                  onAddFiles(filesWithDuplicateFlag);
+                } else {
+                  onAddFiles(fileList.map(file => ({ file, isDuplicate: false })));
+                }
+                return false;
+              }}
               disabled={isUploading}
             >
-              <FormattedMessage id="modal.fileUpload.addMore" />
+              <Button 
+                icon={<PlusOutlined />}
+                disabled={isUploading}
+              >
+                <FormattedMessage id="modal.fileUpload.addMore" />
+              </Button>
+            </Upload>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleBatchRemove}
+              disabled={isUploading || selectedRowKeys.length === 0}
+            >
+              <FormattedMessage id="modal.fileUpload.remove" defaultMessage="移除" />
             </Button>
-          </Upload>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={handleBatchRemove}
-            disabled={isUploading || selectedRowKeys.length === 0}
-          >
-            <FormattedMessage id="modal.fileUpload.remove" defaultMessage="移除" />
-          </Button>
-        </Space>
-      </div>
+          </Space>
+        </div>
+        
+        <Table
+          rowSelection={rowSelection}
+          columns={columns}
+          dataSource={tableData}
+          pagination={false}
+          size="small"
+          scroll={{ y: 350, x: 'max-content' }}
+          locale={{
+            emptyText: '没有选择文件'
+          }}
+          style={{ 
+            width: '100%',
+            overflowX: 'auto'
+          }}
+        />
+      </Modal>
       
-      <Table
-        rowSelection={rowSelection}
-        columns={columns}
-        dataSource={tableData}
-        pagination={false}
-        size="small"
-        scroll={{ y: 350, x: 'max-content' }}
-        locale={{
-          emptyText: '没有选择文件'
-        }}
-        style={{ 
-          width: '100%',
-          overflowX: 'auto'
-        }}
+      <FileEncryptModal
+        visible={encryptModalVisible}
+        files={selectedFilesToEncrypt}
+        onCancel={() => setEncryptModalVisible(false)}
+        onEncryptComplete={handleEncryptComplete}
       />
-    </Modal>
+    </>
   );
 };
 

@@ -15,19 +15,23 @@ const { Text, Paragraph } = Typography;
 
 const StyledModal = styled(Modal)`
   &&& {
-    position: fixed;
-    margin: 0;
-    padding: 0;
-    max-width: 100vw;
+    position: fixed !important;
+    inset: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100vw !important;
     width: 100vw !important;
-    top: 0;
+    height: 100vh !important;
+    top: 0 !important;
     pointer-events: auto;
     z-index: 2200;
   }
 
   .ant-modal-content {
-    min-height: 100vh;
+    height: 100vh;
+    width: 100vw;
     margin: 0;
+    padding: 0;
     border-radius: 0;
     display: flex;
     flex-direction: column;
@@ -38,9 +42,11 @@ const StyledModal = styled(Modal)`
   }
 
   .ant-modal-wrap {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
+    position: fixed !important;
+    inset: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
     outline: 0;
     -webkit-overflow-scrolling: touch;
   }
@@ -54,17 +60,9 @@ const StyledModal = styled(Modal)`
     pointer-events: auto;
   }
 
-  .ant-modal-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 24px;
-    background: transparent;
-  }
-
   .ant-modal-header {
     margin: 0;
-    padding: 12px 16px;
+    padding: 8px 12px;
     background: transparent;
     position: sticky;
     top: 0;
@@ -74,9 +72,21 @@ const StyledModal = styled(Modal)`
       : 'rgba(0, 0, 0, 0.06)'};
   }
 
+  .ant-modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    margin: 0;
+    background: transparent;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100vw;
+  }
+
   .ant-modal-footer {
     margin: 0;
-    padding: 12px 16px;
+    padding: 6px;
     background: transparent;
     position: sticky;
     bottom: 0;
@@ -91,26 +101,26 @@ const StyledModal = styled(Modal)`
       
       .ant-btn {
         flex: 1;
-        height: 44px;
+        height: 38px;
         font-size: 16px;
-        border-radius: 10px;
-        font-weight: 600;
+        border-radius: 6px;
+        font-weight: 500;
       }
     }
   }
 `;
 
 const SecurityTips = styled.div`
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   
   .ant-alert {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
   
   .security-features {
     background: var(--ant-color-primary-bg);
     border-radius: 8px;
-    padding: 16px;
+    padding: 12px;
     
     .ant-typography {
       color: var(--ant-color-text-secondary);
@@ -124,23 +134,23 @@ const SecurityTips = styled.div`
 `;
 
 const PasswordInput = styled.div`
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   
   .ant-input-affix-wrapper {
-    height: 44px;
-    border-radius: 10px;
-    padding: 0 12px;
+    height: 38px;
+    border-radius: 6px;
+    padding: 0 8px;
     
     &:not(:last-child) {
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
     
     .ant-input {
-      font-size: 16px;
+      font-size: 14px;
     }
     
     .anticon {
-      font-size: 18px;
+      font-size: 16px;
       color: var(--ant-color-text-secondary);
     }
   }
@@ -150,9 +160,9 @@ const PasswordInput = styled.div`
   }
   
   .ant-typography {
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.5;
-    margin-top: 8px;
+    margin-top: 6px;
     color: var(--ant-color-text-secondary);
     display: flex;
     align-items: center;
@@ -168,16 +178,16 @@ const PasswordInput = styled.div`
 const FileList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 8px;
+  margin-top: 16px;
 `;
 
 const FileItem = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 8px;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 6px;
   background: ${props => props.theme.mode === 'dark'
     ? 'rgba(255, 255, 255, 0.04)'
     : 'rgba(0, 0, 0, 0.02)'};
@@ -186,10 +196,10 @@ const FileItem = styled.div`
 const FileHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 
   .icon {
-    font-size: 24px;
+    font-size: 20px;
   }
 
   .info {
@@ -197,8 +207,8 @@ const FileHeader = styled.div`
     min-width: 0;
 
     .name {
-      font-size: 14px;
-      margin-bottom: 4px;
+      font-size: 13px;
+      margin-bottom: 2px;
       display: block;
     }
 
@@ -211,7 +221,15 @@ const FileHeader = styled.div`
 
 const FileProgress = styled.div`
   .ant-progress {
-    margin: 8px 0;
+    margin: 4px 0;
+    
+    .ant-progress-inner {
+      height: 6px;
+    }
+    
+    .ant-progress-bg {
+      height: 6px !important;
+    }
   }
 
   .progress-text {
@@ -252,7 +270,7 @@ const MobileFileEncryptModal = ({
       
       reader.onload = async (e) => {
         try {
-          // 更新加密进度
+          // 更新加密进度为读取完成
           setProgress(prev => new Map(prev).set(actualFile.name, {
             status: 'encrypting',
             percent: 30
@@ -261,11 +279,23 @@ const MobileFileEncryptModal = ({
           // 将文件内容转换为 WordArray
           const contentArray = CryptoJS.lib.WordArray.create(e.target.result);
           
+          // 更新进度为开始加密
+          setProgress(prev => new Map(prev).set(actualFile.name, {
+            status: 'encrypting',
+            percent: 50
+          }));
+
           // 使用 CryptoJS 加密文件内容
           const encrypted = CryptoJS.AES.encrypt(contentArray, password, {
             mode: CryptoJS.mode.CBC,
             padding: CryptoJS.pad.Pkcs7
           });
+          
+          // 更新进度为加密完成
+          setProgress(prev => new Map(prev).set(actualFile.name, {
+            status: 'encrypting',
+            percent: 80
+          }));
           
           // 创建加密文件头标记
           const headerText = "MSTCRYPT";
@@ -349,9 +379,12 @@ const MobileFileEncryptModal = ({
       });
       setProgress(initialProgress);
 
-      // 并行加密所有文件
-      const encryptPromises = originalFilesList.map(file => encryptFile(file));
-      const encryptedFiles = await Promise.all(encryptPromises);
+      // 串行加密所有文件，以避免浏览器过载
+      const encryptedFiles = [];
+      for (const file of originalFilesList) {
+        const encryptedFile = await encryptFile(file);
+        encryptedFiles.push(encryptedFile);
+      }
 
       // 调用完成回调，同时传递加密后的文件和原始文件
       if (typeof onEncryptComplete === 'function') {
@@ -408,22 +441,21 @@ const MobileFileEncryptModal = ({
         </div>
       ]}
       width="100vw"
-      styles={{
-        body: {
-          minHeight: '100vh',
-          margin: 0,
-          padding: '24px',
-          display: 'flex',
-          flexDirection: 'column',
-          background: 'transparent'
-        }
-      }}
       style={{ 
         top: 0,
         padding: 0,
         margin: 0,
         maxWidth: '100vw',
-        overflow: 'hidden'
+        height: '100vh'
+      }}
+      bodyStyle={{ 
+        height: 'calc(100vh - 110px)',
+        margin: 0,
+        padding: '24px',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'transparent',
+        overflow: 'auto'
       }}
       maskClosable={false}
       closable={!encrypting}

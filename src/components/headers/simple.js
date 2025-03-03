@@ -88,6 +88,28 @@ const BrandName = styled.div`
   color: var(--ant-color-text);
   display: flex;
   align-items: center;
+
+  @media (max-width: 768px) {
+    font-size: 1.25rem;
+    
+    .full-name {
+      display: none;
+    }
+    
+    .short-name {
+      display: block;
+    }
+  }
+
+  @media (min-width: 769px) {
+    .full-name {
+      display: block;
+    }
+    
+    .short-name {
+      display: none;
+    }
+  }
 `;
 
 const XHighlight = styled.span`
@@ -561,7 +583,9 @@ export default function SimpleHeader() {
         <LeftSection>
           <LogoLink to="/">
             <BrandName>
-              MyStorage<XHighlight>X</XHighlight>
+              <span className="full-name">MyStorage</span>
+              <span className="short-name">MS</span>
+              <XHighlight>X</XHighlight>
             </BrandName>
           </LogoLink>
         </LeftSection>
