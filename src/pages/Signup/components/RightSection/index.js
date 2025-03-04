@@ -143,7 +143,7 @@ export const RightSection = ({
           <FormattedMessage id="signup.title" />
         </Logo>
         <Form onSubmit={handleSubmit} autoComplete="off">
-          <FormItem>
+          <FormItem index={0}>
             <InputWrapper>
               <CountrySelector
                 onClick={() => setShowCountryDropdown(!showCountryDropdown)}
@@ -201,7 +201,7 @@ export const RightSection = ({
             </InputWrapper>
           </FormItem>
 
-          <FormItem>
+          <FormItem index={1}>
             <InputWrapper>
               <Input
                 type="text"
@@ -227,7 +227,7 @@ export const RightSection = ({
             </InputWrapper>
           </FormItem>
 
-          <FormItem>
+          <FormItem index={2}>
             <InputWrapper>
               <Input
                 type="text"
@@ -249,9 +249,9 @@ export const RightSection = ({
               <BorderGlow className={emailFocused ? "active" : ""} />
               {!email.includes('@') && (
                 <EmailSuffixButton
+                  ref={emailSuffixButtonRef}
                   type="button"
                   onClick={() => setShowSuffixDropdown(!showSuffixDropdown)}
-                  ref={emailSuffixButtonRef}
                 >
                   <DownOutlined />
                 </EmailSuffixButton>
@@ -260,9 +260,9 @@ export const RightSection = ({
                 ref={dropdownRef}
                 className={showSuffixDropdown ? "show" : ""}
               >
-                {emailSuffixes.map((suffix, index) => (
+                {emailSuffixes.map(suffix => (
                   <EmailSuffixOption
-                    key={index}
+                    key={suffix}
                     type="button"
                     onClick={() => handleSuffixClick(suffix)}
                   >
@@ -273,15 +273,15 @@ export const RightSection = ({
             </InputWrapper>
           </FormItem>
 
-          <FormItem>
+          <FormItem index={3}>
             <InputWrapper>
               <Input
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 required
-                placeholder={intl.formatMessage({ id: 'signup.verificationCode.placeholder' })}
-                maxLength={6}
+                placeholder={intl.formatMessage({ id: "signup.verificationCode.placeholder" })}
+                autoComplete="off"
                 onFocus={() => setCodeFocused(true)}
                 onBlur={() => setCodeFocused(false)}
               />
@@ -289,23 +289,24 @@ export const RightSection = ({
               <VerifyCodeButton
                 type="button"
                 onClick={handleSendCode}
-                disabled={countdown > 0}
+                disabled={countdown > 0 || isSending}
                 className={isSending ? 'sending' : ''}
               >
-                {isSending 
-                  ? intl.formatMessage({ id: 'signup.verificationCode.sending' })
-                  : countdown > 0 
-                    ? intl.formatMessage(
-                        { id: 'signup.verificationCode.retry' },
-                        { seconds: Math.floor(countdown) }
-                      )
-                    : intl.formatMessage({ id: 'signup.verificationCode.send' })
-                }
+                {isSending ? (
+                  <FormattedMessage id="signup.verificationCode.sending" />
+                ) : countdown > 0 ? (
+                  <FormattedMessage 
+                    id="signup.verificationCode.retry"
+                    values={{ seconds: countdown }}
+                  />
+                ) : (
+                  <FormattedMessage id="signup.verificationCode.send" />
+                )}
               </VerifyCodeButton>
             </InputWrapper>
           </FormItem>
 
-          <FormItem>
+          <FormItem index={4}>
             <InputWrapper>
               <Input
                 type={showPassword ? "text" : "password"}
@@ -321,7 +322,6 @@ export const RightSection = ({
               <PasswordToggle
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                tabIndex="-1"
               >
                 {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
               </PasswordToggle>
@@ -347,7 +347,7 @@ export const RightSection = ({
             </InputWrapper>
           </FormItem>
 
-          <FormItem>
+          <FormItem index={5}>
             <InputWrapper>
               <Input
                 type={showConfirmPassword ? "text" : "password"}
@@ -363,7 +363,6 @@ export const RightSection = ({
               <PasswordToggle
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                tabIndex="-1"
               >
                 {showConfirmPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
               </PasswordToggle>
@@ -373,18 +372,19 @@ export const RightSection = ({
           {error && <ErrorText>{error}</ErrorText>}
 
           <SubmitButton type="submit" disabled={loading}>
-            <FormattedMessage 
-              id={loading ? "signup.loading" : "signup.button"} 
-            />
+            {loading ? (
+              <FormattedMessage id="signup.loading" />
+            ) : (
+              <FormattedMessage id="signup.button" />
+            )}
           </SubmitButton>
-
-          <Footer>
-            <FormattedMessage id="signup.login" />{' '}
-            <Link to="/login">
-              <FormattedMessage id="signup.login.link" />
-            </Link>
-          </Footer>
         </Form>
+        <Footer>
+          <FormattedMessage id="signup.login" />{' '}
+          <Link to="/login">
+            <FormattedMessage id="signup.login.link" />
+          </Link>
+        </Footer>
       </LoginBox>
     </StyledRightSection>
   );

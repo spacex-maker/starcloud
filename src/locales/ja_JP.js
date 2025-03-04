@@ -21,6 +21,7 @@ export default {
   'login.verificationCode.error': '認証コードの送信に失敗しました',
   'login.verificationCode.required': '認証コードを入力してください',
   'login.verificationCode.invalid': '認証コードの形式が正しくありません',
+  'signup.page.title': '新規登録 - MyStorageX',
   'signup.title': 'MyStorageX',
   'signup.welcome': 'MyStorageXへようこそ',
   'signup.description': 'アカウントを作成して、クラウドストレージの旅を始めましょう',

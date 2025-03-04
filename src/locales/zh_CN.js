@@ -13,6 +13,7 @@ export default {
   'login.success': '登录成功',
   'login.forgotPassword': '忘记密码？',
   'login.forgotPassword.link': '点击这里重置',
+  'signup.page.title': '注册 - MyStorageX',
   'signup.title': 'MyStorageX',
   'signup.welcome': '欢迎加入 MyStorageX',
   'signup.description': '创建您的账号，开启云端存储之旅',

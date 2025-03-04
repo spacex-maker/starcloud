@@ -13,6 +13,7 @@ export default {
   'login.success': '로그인 성공',
   'login.forgotPassword': '비밀번호를 잊으셨나요?',
   'login.forgotPassword.link': '여기를 클릭하여 재설정',
+  'signup.page.title': '회원가입 - MyStorageX',
   'signup.title': 'MyStorageX',
   'signup.welcome': 'MyStorageX에 오신 것을 환영합니다',
   'signup.description': '계정을 만들고 클라우드 스토리지 여정을 시작하세요',

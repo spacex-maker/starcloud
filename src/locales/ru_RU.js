@@ -13,6 +13,7 @@ export default {
   'login.success': 'Вход выполнен успешно',
   'login.forgotPassword': 'Забыли пароль?',
   'login.forgotPassword.link': 'Нажмите здесь для сброса',
+  'signup.page.title': 'Регистрация - MyStorageX',
   'signup.title': 'MyStorageX',
   'signup.welcome': 'Добро пожаловать в MyStorageX',
   'signup.description': 'Создайте аккаунт, чтобы начать использовать облачное хранилище',

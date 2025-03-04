@@ -128,4 +128,5 @@ export default {
   'modal.fileUpload.encrypt.mobile': 'تشفير',
   'modal.fileUpload.addMore.mobile': 'إضافة',
   'productLog.title': 'سجل تحديثات المنتج',
+  'signup.page.title': 'التسجيل - MyStorageX',
 }; 
