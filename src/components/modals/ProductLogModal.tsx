@@ -4,7 +4,7 @@ import { FormattedMessage } from 'react-intl';
 import styled from 'styled-components';
 import instance from 'api/axios';
 import { CloseOutlined, BulbOutlined } from '@ant-design/icons';
-import FeedbackModal from 'components/modals/FeedbackModal';
+import FeedbackModalEntry from 'components/modals/FeedbackModalEntry';
 
 const { Text } = Typography;
 
@@ -340,7 +340,7 @@ const ProductLogModal: React.FC<ProductLogModalProps> = ({ open, onClose }) => {
           )}
         </ContentContainer>
       </ScrollContainer>
-      <FeedbackModal
+      <FeedbackModalEntry
         open={isFeedbackVisible}
         onClose={() => setIsFeedbackVisible(false)}
       />
