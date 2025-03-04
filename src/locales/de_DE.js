@@ -249,15 +249,5 @@ export default {
   'decrypt.fileInfo.speed': 'Geschwindigkeit',
   'decrypt.fileInfo.timeRemaining': 'Verbleibende Zeit',
   'decrypt.fileInfo.timeSpent': 'Verstrichene Zeit',
-  'decrypt.fileInfo.error': 'Fehlermeldung',
-  // Entschlüsselungsschritte
-  'decrypt.steps.title': 'Entschlüsselungsschritte',
-  'decrypt.steps.step1.title': 'Verschlüsselte Datei auswählen',
-  'decrypt.steps.step1.description': 'Wählen Sie .encrypted-Dateien aus, die mit dem MyStorage-Verschlüsselungstool verschlüsselt wurden, unterstützt Drag & Drop oder Klick zum Auswählen',
-  'decrypt.steps.step2.title': 'Entschlüsselungspasswort eingeben',
-  'decrypt.steps.step2.description': 'Geben Sie das bei der Verschlüsselung festgelegte Passwort ein, das Passwort wird nur für die lokale Entschlüsselung verwendet und nicht übertragen oder gespeichert',
-  'decrypt.steps.step3.title': 'Entschlüsselung starten',
-  'decrypt.steps.step3.description': 'Nach dem Klicken auf die Schaltfläche entschlüsselt das System Ihre Dateien lokal mit dem AES-256-CBC-Algorithmus',
-  'decrypt.steps.step4.title': 'Originaldatei erhalten',
-  'decrypt.steps.step4.description': 'Nach Abschluss der Entschlüsselung wird die Originaldatei automatisch heruntergeladen, der Entschlüsselungsprozess ist vollständig verlustfrei und gewährleistet die Dateiintegrität'
+  'decrypt.fileInfo.error': 'Fehlermeldung'
 }; 

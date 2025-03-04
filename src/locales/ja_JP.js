@@ -257,15 +257,5 @@ export default {
   'decrypt.fileInfo.speed': '速度',
   'decrypt.fileInfo.timeRemaining': '残り時間',
   'decrypt.fileInfo.timeSpent': '経過時間',
-  'decrypt.fileInfo.error': 'エラーメッセージ',
-  // 復号化ステップ
-  'decrypt.steps.title': '復号化ステップ',
-  'decrypt.steps.step1.title': '暗号化ファイルの選択',
-  'decrypt.steps.step1.description': 'MyStorage暗号化ツールで暗号化された.encryptedファイルを選択します。ドラッグ＆ドロップまたはクリックで選択可能です',
-  'decrypt.steps.step2.title': '復号化パスワードの入力',
-  'decrypt.steps.step2.description': '暗号化時に設定したパスワードを入力します。パスワードはローカルでの復号化にのみ使用され、送信や保存はされません',
-  'decrypt.steps.step3.title': '復号化開始',
-  'decrypt.steps.step3.description': 'ボタンをクリックすると、システムはAES-256-CBCアルゴリズムを使用してローカルでファイルを復号化します',
-  'decrypt.steps.step4.title': '元のファイルの取得',
-  'decrypt.steps.step4.description': '復号化が完了すると、元のファイルが自動的にダウンロードされます。復号化プロセスは完全に可逆的で、ファイルの整合性を保証します'
+  'decrypt.fileInfo.error': 'エラーメッセージ'
 }; 

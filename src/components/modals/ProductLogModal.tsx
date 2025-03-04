@@ -3,7 +3,8 @@ import { Timeline, Spin, Typography, Tag } from 'antd';
 import { FormattedMessage } from 'react-intl';
 import styled from 'styled-components';
 import instance from 'api/axios';
-import { CloseOutlined } from '@ant-design/icons';
+import { CloseOutlined, BulbOutlined } from '@ant-design/icons';
+import FeedbackModal from 'components/modals/FeedbackModal';
 
 const { Text } = Typography;
 
@@ -32,8 +33,8 @@ const FullScreenOverlay = styled.div<{ visible: boolean }>`
   right: 0;
   bottom: 0;
   background: ${props => props.theme.mode === 'dark'
-    ? 'rgba(0, 0, 0, 0.45)'
-    : 'rgba(255, 255, 255, 0.45)'};
+    ? 'rgba(0, 0, 0, 0.2)'
+    : 'rgba(255, 255, 255, 0.2)'};
   backdrop-filter: blur(8px);
   z-index: 1000;
   display: ${props => props.visible ? 'flex' : 'none'};
@@ -41,11 +42,33 @@ const FullScreenOverlay = styled.div<{ visible: boolean }>`
   align-items: center;
 `;
 
+const Header = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1002;
+  padding: 16px;
+  background: ${props => props.theme.mode === 'dark'
+    ? 'rgba(0, 0, 0, 0.3)'
+    : 'rgba(255, 255, 255, 0.3)'};
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 64px;
+  box-shadow: 0 1px 20px ${props => props.theme.mode === 'dark'
+    ? 'rgba(0, 0, 0, 0.15)'
+    : 'rgba(255, 255, 255, 0.15)'};
+`;
+
 const ScrollContainer = styled.div`
   width: 100%;
-  height: 100%;
+  height: calc(100% - 64px);
   overflow-y: auto;
-  padding: 40px 20px;
+  padding: 20px;
+  margin-top: 64px;
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -66,43 +89,71 @@ const ContentContainer = styled.div`
   position: relative;
 `;
 
-const CloseButton = styled.button`
+const ActionButton = styled.button`
   position: fixed;
-  top: 20px;
-  right: 20px;
-  background: transparent;
-  border: none;
+  background: ${props => props.theme.mode === 'dark'
+    ? 'rgba(0, 0, 0, 0.6)'
+    : 'rgba(255, 255, 255, 0.6)'};
+  border: 1px solid ${props => props.theme.mode === 'dark'
+    ? 'rgba(255, 255, 255, 0.1)'
+    : 'rgba(0, 0, 0, 0.1)'};
   color: ${props => props.theme.mode === 'dark' ? '#fff' : '#000'};
-  font-size: 24px;
+  font-size: 14px;
   cursor: pointer;
-  width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: background-color 0.2s;
+  gap: 8px;
+  border-radius: 20px;
+  transition: all 0.2s;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px ${props => props.theme.mode === 'dark'
+    ? 'rgba(0, 0, 0, 0.3)'
+    : 'rgba(0, 0, 0, 0.1)'};
+  z-index: 1003;
+  padding: 0 16px;
+  font-weight: 500;
 
   &:hover {
     background: ${props => props.theme.mode === 'dark'
       ? 'rgba(255, 255, 255, 0.1)'
       : 'rgba(0, 0, 0, 0.1)'};
+    transform: scale(1.05);
   }
+
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+const FeedbackButton = styled(ActionButton)`
+  top: 12px;
+  right: 64px;
+`;
+
+const CloseButton = styled(ActionButton)`
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  padding: 0;
+  font-size: 20px;
+  border-radius: 50%;
 `;
 
 const Title = styled.h1`
   text-align: center;
   color: ${props => props.theme.mode === 'dark' ? '#fff' : '#000'};
-  margin-bottom: 40px;
-  font-size: 28px;
+  margin: 0;
+  font-size: 24px;
   font-weight: 600;
 `;
 
 const StyledTimeline = styled(Timeline)`
   .ant-timeline-item-tail {
     border-inline-start: 2px solid ${props => props.theme.mode === 'dark'
-      ? 'rgba(255, 255, 255, 0.2)'
-      : 'rgba(0, 0, 0, 0.2)'};
+      ? 'rgba(255, 255, 255, 0.1)'
+      : 'rgba(0, 0, 0, 0.1)'};
   }
 
   .ant-timeline-item-content {
@@ -132,10 +183,14 @@ const ContentWrapper = styled.div`
   margin-top: 8px;
   padding: 16px;
   background: ${props => props.theme.mode === 'dark'
-    ? 'rgba(255, 255, 255, 0.05)'
-    : 'rgba(0, 0, 0, 0.02)'};
+    ? 'rgba(255, 255, 255, 0.02)'
+    : 'rgba(0, 0, 0, 0.01)'};
   border-radius: 12px;
   color: ${props => props.theme.mode === 'dark' ? '#fff' : '#000'};
+  backdrop-filter: blur(4px);
+  border: 1px solid ${props => props.theme.mode === 'dark'
+    ? 'rgba(255, 255, 255, 0.05)'
+    : 'rgba(0, 0, 0, 0.05)'};
 `;
 
 const LoadingWrapper = styled.div`
@@ -152,6 +207,7 @@ const ProductLogModal: React.FC<ProductLogModalProps> = ({ open, onClose }) => {
   const [total, setTotal] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
+  const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
 
   const fetchLogs = async (page: number) => {
     try {
@@ -234,14 +290,20 @@ const ProductLogModal: React.FC<ProductLogModalProps> = ({ open, onClose }) => {
 
   return (
     <FullScreenOverlay visible={open}>
-      <CloseButton onClick={onClose}>
-        <CloseOutlined />
-      </CloseButton>
+      <Header>
+        <Title>
+          <FormattedMessage id="productLog.title" defaultMessage="产品更新日志" />
+        </Title>
+        <FeedbackButton onClick={() => setIsFeedbackVisible(true)}>
+          <BulbOutlined />
+          <FormattedMessage id="productLog.feedback" defaultMessage="提需求" />
+        </FeedbackButton>
+        <CloseButton onClick={onClose}>
+          <CloseOutlined />
+        </CloseButton>
+      </Header>
       <ScrollContainer ref={containerRef}>
         <ContentContainer>
-          <Title>
-            <FormattedMessage id="productLog.title" defaultMessage="产品更新日志" />
-          </Title>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px' }}>
               <Spin size="large" />
@@ -278,6 +340,10 @@ const ProductLogModal: React.FC<ProductLogModalProps> = ({ open, onClose }) => {
           )}
         </ContentContainer>
       </ScrollContainer>
+      <FeedbackModal
+        open={isFeedbackVisible}
+        onClose={() => setIsFeedbackVisible(false)}
+      />
     </FullScreenOverlay>
   );
 };

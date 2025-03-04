@@ -245,15 +245,5 @@ export default {
   'decrypt.fileInfo.speed': 'Vitesse',
   'decrypt.fileInfo.timeRemaining': 'Temps restant',
   'decrypt.fileInfo.timeSpent': 'Temps écoulé',
-  'decrypt.fileInfo.error': 'Message d\'erreur',
-  // Étapes de Déchiffrement
-  'decrypt.steps.title': 'Étapes de Déchiffrement',
-  'decrypt.steps.step1.title': 'Sélectionner le Fichier Chiffré',
-  'decrypt.steps.step1.description': 'Sélectionnez les fichiers .encrypted chiffrés par l\'outil de chiffrement MyStorage, supporte le glisser-déposer ou le clic pour sélectionner',
-  'decrypt.steps.step2.title': 'Saisir le Mot de Passe de Déchiffrement',
-  'decrypt.steps.step2.description': 'Entrez le mot de passe défini lors du chiffrement, le mot de passe ne sera utilisé que pour le déchiffrement local et ne sera ni transmis ni stocké',
-  'decrypt.steps.step3.title': 'Démarrer le Déchiffrement',
-  'decrypt.steps.step3.description': 'Après avoir cliqué sur le bouton, le système déchiffrera vos fichiers localement en utilisant l\'algorithme AES-256-CBC',
-  'decrypt.steps.step4.title': 'Obtenir le Fichier Original',
-  'decrypt.steps.step4.description': 'Une fois le déchiffrement terminé, le fichier original sera automatiquement téléchargé, le processus de déchiffrement est totalement sans perte et garantit l\'intégrité du fichier'
+  'decrypt.fileInfo.error': 'Message d\'erreur'
 }; 
