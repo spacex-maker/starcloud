@@ -250,15 +250,5 @@ export default {
   'decrypt.fileInfo.speed': 'Скорость',
   'decrypt.fileInfo.timeRemaining': 'Оставшееся время',
   'decrypt.fileInfo.timeSpent': 'Затраченное время',
-  'decrypt.fileInfo.error': 'Сообщение об ошибке',
-  // Шаги расшифровки
-  'decrypt.steps.title': 'Шаги расшифровки',
-  'decrypt.steps.step1.title': 'Выбор зашифрованного файла',
-  'decrypt.steps.step1.description': 'Выберите файлы .encrypted, зашифрованные инструментом шифрования MyStorage, поддерживается перетаскивание или выбор кликом',
-  'decrypt.steps.step2.title': 'Ввод пароля расшифровки',
-  'decrypt.steps.step2.description': 'Введите пароль, установленный при шифровании, пароль будет использоваться только для локальной расшифровки и не будет передаваться или сохраняться',
-  'decrypt.steps.step3.title': 'Начало расшифровки',
-  'decrypt.steps.step3.description': 'После нажатия кнопки система расшифрует ваши файлы локально с использованием алгоритма AES-256-CBC',
-  'decrypt.steps.step4.title': 'Получение исходного файла',
-  'decrypt.steps.step4.description': 'После завершения расшифровки исходный файл будет автоматически загружен, процесс расшифровки полностью обратим и гарантирует целостность файла'
+  'decrypt.fileInfo.error': 'Сообщение об ошибке'
 }; 

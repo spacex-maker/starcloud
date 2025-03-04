@@ -264,14 +264,9 @@ export default {
   'decrypt.fileInfo.error': 'Error Message',
   'page.decrypt.title': 'File Decryption Tool',
   'page.decrypt.subtitle': 'Decrypt your files securely and quickly',
-  // Decryption Steps
-  'decrypt.steps.title': 'Decryption Steps',
-  'decrypt.steps.step1.title': 'Select Encrypted File',
-  'decrypt.steps.step1.description': 'Select .encrypted files encrypted by MyStorage encryption tool, supports drag and drop or click to select',
-  'decrypt.steps.step2.title': 'Enter Decryption Password',
-  'decrypt.steps.step2.description': 'Enter the password set during encryption, the password will only be used for local decryption and will not be transmitted or stored',
-  'decrypt.steps.step3.title': 'Start Decryption',
-  'decrypt.steps.step3.description': 'After clicking the button, the system will decrypt your files locally using the AES-256-CBC algorithm',
-  'decrypt.steps.step4.title': 'Get Original File',
-  'decrypt.steps.step4.description': 'After decryption is complete, the original file will be automatically downloaded, the decryption process is completely lossless and ensures file integrity'
+  'filelist.modal.newFolder.title': 'New Folder',
+  'filelist.modal.newFolder.placeholder': 'Please enter folder name',
+  'filelist.modal.newFolder.ok': 'Create',
+  'filelist.modal.newFolder.cancel': 'Cancel',
+  'language.selector.title': 'Select Language'
 }; 

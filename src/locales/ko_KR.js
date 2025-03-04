@@ -250,15 +250,5 @@ export default {
   'decrypt.fileInfo.timeSpent': '소요 시간',
   'decrypt.fileInfo.error': '오류 메시지',
   'page.decrypt.title': '복호화 도구',
-  'page.decrypt.subtitle': '파일을 안전하고 빠르게 복호화',
-  // 복호화 단계
-  'decrypt.steps.title': '복호화 단계',
-  'decrypt.steps.step1.title': '암호화된 파일 선택',
-  'decrypt.steps.step1.description': 'MyStorage 암호화 도구로 암호화된 .encrypted 파일을 선택합니다. 드래그 앤 드롭 또는 클릭으로 선택 가능',
-  'decrypt.steps.step2.title': '복호화 비밀번호 입력',
-  'decrypt.steps.step2.description': '암호화 시 설정한 비밀번호를 입력합니다. 비밀번호는 로컬 복호화에만 사용되며 전송되거나 저장되지 않습니다',
-  'decrypt.steps.step3.title': '복호화 시작',
-  'decrypt.steps.step3.description': '버튼을 클릭하면 시스템이 AES-256-CBC 알고리즘을 사용하여 로컬에서 파일을 복호화합니다',
-  'decrypt.steps.step4.title': '원본 파일 받기',
-  'decrypt.steps.step4.description': '복호화가 완료되면 원본 파일이 자동으로 다운로드됩니다. 복호화 과정은 완전 무손실이며 파일 무결성을 보장합니다'
+  'page.decrypt.subtitle': '파일을 안전하고 빠르게 복호화'
 }; 

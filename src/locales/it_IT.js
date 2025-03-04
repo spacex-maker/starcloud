@@ -249,15 +249,5 @@ export default {
   'decrypt.fileInfo.speed': 'Velocità',
   'decrypt.fileInfo.timeRemaining': 'Tempo Rimanente',
   'decrypt.fileInfo.timeSpent': 'Tempo Trascorso',
-  'decrypt.fileInfo.error': 'Messaggio di Errore',
-  // Passaggi di Decrittografia
-  'decrypt.steps.title': 'Passaggi di Decrittografia',
-  'decrypt.steps.step1.title': 'Seleziona File Crittografato',
-  'decrypt.steps.step1.description': 'Seleziona i file .encrypted crittografati con lo strumento di crittografia MyStorage, supporta il trascinamento o il clic per selezionare',
-  'decrypt.steps.step2.title': 'Inserisci Password di Decrittografia',
-  'decrypt.steps.step2.description': 'Inserisci la password impostata durante la crittografia, la password verrà utilizzata solo per la decrittografia locale e non verrà trasmessa o memorizzata',
-  'decrypt.steps.step3.title': 'Avvia Decrittografia',
-  'decrypt.steps.step3.description': 'Dopo aver cliccato sul pulsante, il sistema decrittograferà i tuoi file localmente utilizzando l\'algoritmo AES-256-CBC',
-  'decrypt.steps.step4.title': 'Ottieni File Originale',
-  'decrypt.steps.step4.description': 'Al termine della decrittografia, il file originale verrà scaricato automaticamente, il processo di decrittografia è completamente senza perdite e garantisce l\'integrità del file'
+  'decrypt.fileInfo.error': 'Messaggio di Errore'
 }; 

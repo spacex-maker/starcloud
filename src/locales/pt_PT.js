@@ -207,15 +207,5 @@ export default {
   'decrypt.fileInfo.speed': 'Velocidade',
   'decrypt.fileInfo.timeRemaining': 'Tempo Restante',
   'decrypt.fileInfo.timeSpent': 'Tempo Decorrido',
-  'decrypt.fileInfo.error': 'Mensagem de Erro',
-  // Etapas de Descriptografia
-  'decrypt.steps.title': 'Etapas de Descriptografia',
-  'decrypt.steps.step1.title': 'Selecionar Arquivo Criptografado',
-  'decrypt.steps.step1.description': 'Selecione arquivos .encrypted criptografados pela ferramenta de criptografia MyStorage, suporta arrastar e soltar ou clicar para selecionar',
-  'decrypt.steps.step2.title': 'Inserir Senha de Descriptografia',
-  'decrypt.steps.step2.description': 'Digite a senha definida durante a criptografia, a senha será usada apenas para descriptografia local e não será transmitida ou armazenada',
-  'decrypt.steps.step3.title': 'Iniciar Descriptografia',
-  'decrypt.steps.step3.description': 'Após clicar no botão, o sistema descriptografará seus arquivos localmente usando o algoritmo AES-256-CBC',
-  'decrypt.steps.step4.title': 'Obter Arquivo Original',
-  'decrypt.steps.step4.description': 'Após a conclusão da descriptografia, o arquivo original será baixado automaticamente, o processo de descriptografia é completamente sem perdas e garante a integridade do arquivo'
+  'decrypt.fileInfo.error': 'Mensagem de Erro'
 }; 

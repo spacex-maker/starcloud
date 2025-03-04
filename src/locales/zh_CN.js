@@ -206,14 +206,24 @@ export default {
   
   // 解密步骤
   'decrypt.steps.title': '解密步骤',
-  'decrypt.steps.step1.title': '选择加密文件',
-  'decrypt.steps.step1.description': '选择使用 MyStorage 加密工具加密的 .encrypted 文件，支持拖拽或点击选择',
-  'decrypt.steps.step2.title': '输入解密密码',
-  'decrypt.steps.step2.description': '输入加密时设置的密码，密码将仅用于本地解密，不会被传输或存储',
-  'decrypt.steps.step3.title': '开始解密',
-  'decrypt.steps.step3.description': '点击按钮后，系统将使用 AES-256-CBC 算法在本地解密您的文件',
-  'decrypt.steps.step4.title': '获取原始文件',
-  'decrypt.steps.step4.description': '解密完成后，原始文件将自动下载，解密过程完全无损，保证文件完整性',
+  'decrypt.steps.items': [
+    {
+      title: '选择加密文件',
+      description: '选择使用 MyStorage 加密工具加密的 .encrypted 文件，支持拖拽或点击选择'
+    },
+    {
+      title: '输入解密密码',
+      description: '输入加密时设置的密码，密码将仅用于本地解密，不会被传输或存储'
+    },
+    {
+      title: '开始解密',
+      description: '点击按钮后，系统将使用 AES-256-CBC 算法在本地解密您的文件'
+    },
+    {
+      title: '获取原始文件',
+      description: '解密完成后，原始文件将自动下载，解密过程完全无损，保证文件完整性'
+    }
+  ],
 
   // 安全特性
   'security.features.title': '安全特性',

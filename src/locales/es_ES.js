@@ -249,15 +249,5 @@ export default {
   'decrypt.fileInfo.speed': 'Velocidad',
   'decrypt.fileInfo.timeRemaining': 'Tiempo Restante',
   'decrypt.fileInfo.timeSpent': 'Tiempo Transcurrido',
-  'decrypt.fileInfo.error': 'Mensaje de Error',
-  // Pasos de Desencriptación
-  'decrypt.steps.title': 'Pasos de Desencriptación',
-  'decrypt.steps.step1.title': 'Seleccionar Archivo Encriptado',
-  'decrypt.steps.step1.description': 'Seleccione archivos .encrypted encriptados por la herramienta de encriptación MyStorage, admite arrastrar y soltar o hacer clic para seleccionar',
-  'decrypt.steps.step2.title': 'Ingresar Contraseña de Desencriptación',
-  'decrypt.steps.step2.description': 'Ingrese la contraseña establecida durante la encriptación, la contraseña solo se utilizará para la desencriptación local y no se transmitirá ni almacenará',
-  'decrypt.steps.step3.title': 'Iniciar Desencriptación',
-  'decrypt.steps.step3.description': 'Después de hacer clic en el botón, el sistema desencriptará sus archivos localmente usando el algoritmo AES-256-CBC',
-  'decrypt.steps.step4.title': 'Obtener Archivo Original',
-  'decrypt.steps.step4.description': 'Después de completar la desencriptación, el archivo original se descargará automáticamente, el proceso de desencriptación es completamente sin pérdidas y garantiza la integridad del archivo'
+  'decrypt.fileInfo.error': 'Mensaje de Error'
 }; 
