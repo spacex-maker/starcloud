@@ -1,6 +1,6 @@
 import React, { memo, useMemo, useState } from 'react';
 import type { FC } from 'react';
-import { Table, Space, Button, Typography, TablePaginationConfig, theme, Pagination, Grid, Modal, Input, Image, Dropdown, Tooltip } from 'antd';
+import { Table, Space, Button, Typography, TablePaginationConfig, theme, Pagination, Grid, Modal, Input, Image, Dropdown, Tooltip, message } from 'antd';
 import type { MenuProps } from 'antd';
 import { ThemeContext } from 'styled-components';
 import styled from 'styled-components';
@@ -270,6 +270,27 @@ const FileList: FC<FileListProps> = memo(({
     },
   ], [handleFolderClick, handlePreview, handleDelete, onDownload, deletingIds]);
 
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: onSelectChange,
+    getCheckboxProps: (record: FileModel) => ({
+      disabled: record.isDirectory,
+    }),
+  };
+
+  const handleBatchDownloadWithCheck = (files: FileModel[]) => {
+    const downloadableFiles = files.filter(file => 
+      selectedRowKeys.includes(file.id) && !file.isDirectory
+    );
+    
+    if (downloadableFiles.length === 0) {
+      message.warning('请选择要下载的文件（不支持文件夹下载）');
+      return;
+    }
+
+    handleBatchDownload(downloadableFiles);
+  };
+
   return (
     <div style={{ 
       height: '100%', 
@@ -293,10 +314,7 @@ const FileList: FC<FileListProps> = memo(({
         }}>
           <TableWrapper>
             <Table<FileModel>
-              rowSelection={{
-                selectedRowKeys,
-                onChange: onSelectChange,
-              }}
+              rowSelection={rowSelection}
               columns={columns}
               dataSource={sortedFiles}
               rowKey="id"
@@ -329,9 +347,7 @@ const FileList: FC<FileListProps> = memo(({
                 <Space size={8}>
                   <RoundedButton
                     icon={<DownloadOutlined />}
-                    onClick={() => handleBatchDownload(
-                      filteredFiles.filter(file => selectedRowKeys.includes(file.id))
-                    )}
+                    onClick={() => handleBatchDownloadWithCheck(filteredFiles)}
                   >
                     {screens.md && <FormattedMessage id="filelist.action.batchDownload" />}
                   </RoundedButton>
