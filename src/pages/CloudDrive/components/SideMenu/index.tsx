@@ -13,7 +13,7 @@ import {
   HistoryOutlined,
 } from '@ant-design/icons';
 import { FormattedMessage } from 'react-intl';
-import FeedbackModal from 'components/modals/FeedbackModal';
+import FeedbackModalEntry from 'components/modals/FeedbackModalEntry';
 import AboutModal from 'components/modals/AboutModal';
 import ProductLogModal from 'components/modals/ProductLogModal';
 import { useNavigate } from 'react-router-dom';
@@ -243,7 +243,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ selectedKeys, onSelect, collapsed, 
         onClick={() => onCollapse(true)}
       />
 
-      <FeedbackModal
+      <FeedbackModalEntry
         open={isFeedbackVisible}
         onClose={() => setIsFeedbackVisible(false)}
       />
