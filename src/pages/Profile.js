@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
-import SimpleHeader from "components/headers/simple.js";
+import SimpleHeader from "components/headers/simple";
 import { ReactComponent as EditIcon } from "feather-icons/dist/icons/edit-2.svg";
 import { ReactComponent as SaveIcon } from "feather-icons/dist/icons/check.svg";
 import { ReactComponent as CancelIcon } from "feather-icons/dist/icons/x.svg";
