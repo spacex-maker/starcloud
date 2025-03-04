@@ -234,7 +234,8 @@ const AllFiles = () => {
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      padding: '10px'
     }}>
       <ActionBar>
         <Space size={screens.md ? 8 : 4} className="flex-nowrap">
