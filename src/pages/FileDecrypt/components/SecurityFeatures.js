@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Modal, Typography, Space, Divider, Tabs } from 'antd';
+import { useIntl } from 'react-intl';
 import CBCEncryptionDiagram from './CBCEncryptionDiagram';
 import ChunkDecryptDiagram from './ChunkDecryptDiagram';
 
@@ -471,44 +472,43 @@ const ClickableText = styled(Text)`
 const SecurityFeatures = () => {
   const [aesModalVisible, setAesModalVisible] = useState(false);
   const [chunkModalVisible, setChunkModalVisible] = useState(false);
+  const intl = useIntl();
   
   const features = [
     {
       icon: 'bi bi-shield-lock-fill',
-      title: '本地解密保护',
-      description: '所有解密操作均在本地浏览器中完成，确保您的文件内容和密码绝不会上传到服务器，为您的数据安全保驾护航',
+      title: intl.formatMessage({ id: 'security.features.localDecryption.title' }),
+      description: intl.formatMessage({ id: 'security.features.localDecryption.description' }),
       primary: true
     },
     {
       icon: 'bi bi-key-fill',
-      title: '军事级加密算法',
+      title: intl.formatMessage({ id: 'security.features.militaryEncryption.title' }),
       description: (
         <>
-          采用 
+          {intl.formatMessage({ id: 'security.features.militaryEncryption.description' })}
           <ClickableText onClick={() => setAesModalVisible(true)}>
-            AES-256-CBC
-          </ClickableText> 
-          加密算法，这是目前最安全的对称加密标准，可以抵御已知的所有攻击方式
+            {intl.formatMessage({ id: 'security.features.learnMore' })}
+          </ClickableText>
         </>
       ),
       primary: true
     },
     {
       icon: 'bi bi-fingerprint',
-      title: '隐私数据保护',
-      description: '严格的隐私保护机制，不保存任何解密密码，不记录文件内容，让您高枕无忧地使用我们的服务',
+      title: intl.formatMessage({ id: 'security.features.privacyProtection.title' }),
+      description: intl.formatMessage({ id: 'security.features.privacyProtection.description' }),
       primary: false
     },
     {
       icon: 'bi bi-layers-fill',
-      title: '智能分块解密',
+      title: intl.formatMessage({ id: 'security.features.smartDecryption.title' }),
       description: (
         <>
-          采用
+          {intl.formatMessage({ id: 'security.features.smartDecryption.description' })}
           <ClickableText onClick={() => setChunkModalVisible(true)}>
-            智能分块解密技术
+            {intl.formatMessage({ id: 'security.features.learnMore' })}
           </ClickableText>
-          ，显著提升解密速度，同时大幅降低内存占用，让解密更快更稳定
         </>
       ),
       primary: false
@@ -679,7 +679,7 @@ function encrypt($text, $key) {
         title={
           <Space>
             <i className="bi bi-shield-lock-fill" style={{ color: '#52c41a' }} />
-            <span>AES-256-CBC 加密算法详解</span>
+            <span>{intl.formatMessage({ id: 'security.features.modal.title' })}</span>
           </Space>
         }
         open={aesModalVisible}
@@ -688,30 +688,30 @@ function encrypt($text, $key) {
         footer={null}
       >
         <Typography>
-          <Title level={4}>什么是 AES-256-CBC？</Title>
+          <Title level={4}>{intl.formatMessage({ id: 'security.features.aes.what' })}</Title>
           <Paragraph>
-            AES-256-CBC 是一种高级加密标准（Advanced Encryption Standard）的实现方式，其中：
+            {intl.formatMessage({ id: 'security.features.aes.description' })}
           </Paragraph>
           <ul>
-            <li><Text strong>AES</Text>：对称加密算法的一种，由美国国家标准与技术研究院（NIST）于2001年确立</li>
-            <li><Text strong>256</Text>：使用256位密钥长度，提供最高级别的安全性</li>
-            <li><Text strong>CBC</Text>：密码分组链接（Cipher Block Chaining）模式，提供更好的加密安全性</li>
+            <li><Text strong>AES</Text>: {intl.formatMessage({ id: 'security.features.aes.detail.1' })}</li>
+            <li><Text strong>256</Text>: {intl.formatMessage({ id: 'security.features.aes.detail.2' })}</li>
+            <li><Text strong>CBC</Text>: {intl.formatMessage({ id: 'security.features.aes.detail.3' })}</li>
           </ul>
 
           <Divider />
           
-          <Title level={4}>工作原理</Title>
+          <Title level={4}>{intl.formatMessage({ id: 'security.features.aes.how' })}</Title>
           <Paragraph>
-            AES-256-CBC 的加密过程主要包含以下步骤：
+            {intl.formatMessage({ id: 'security.features.aes.process' })}
           </Paragraph>
           <ol>
-            <li>将明文数据分割成固定大小的块（128位）</li>
-            <li>生成随机的初始化向量（IV）</li>
-            <li>使用CBC模式将前一个密文块与当前明文块进行XOR运算</li>
-            <li>使用256位密钥对XOR结果进行AES加密</li>
+            <li>{intl.formatMessage({ id: 'security.features.aes.step1' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.aes.step2' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.aes.step3' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.aes.step4' })}</li>
           </ol>
 
-          <Paragraph>加密过程示例：</Paragraph>
+          <Paragraph>{intl.formatMessage({ id: 'security.features.aes.example' })}</Paragraph>
           <CodeTabs
             defaultActiveKey="javascript"
             items={[
@@ -745,33 +745,35 @@ function encrypt($text, $key) {
 
           <Divider />
 
-          <Title level={4}>安全特性</Title>
+          <Title level={4}>{intl.formatMessage({ id: 'security.features.aes.security' })}</Title>
           <Paragraph>
-            AES-256-CBC 提供了多重安全保障：
+            {intl.formatMessage({ id: 'security.features.aes.security.intro' })}
           </Paragraph>
           <ul>
-            <li>256位密钥提供 2^256 种可能的组合，即使使用超级计算机也无法在合理时间内暴力破解</li>
-            <li>CBC模式确保相同的明文块会产生不同的密文块，增加加密的随机性</li>
-            <li>初始化向量（IV）的使用确保即使使用相同的密钥，每次加密的结果也都不同</li>
-            <li>被广泛应用于军事、金融等高安全性要求的领域</li>
+            <li>{intl.formatMessage({ id: 'security.features.aes.security.point1' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.aes.security.point2' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.aes.security.point3' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.aes.security.point4' })}</li>
           </ul>
 
           <AlgorithmImage>
             <CBCEncryptionDiagram />
-            <Text type="secondary" style={{ marginTop: 16 }}>CBC 模式加密过程动态示意图</Text>
+            <Text type="secondary" style={{ marginTop: 16 }}>
+              {intl.formatMessage({ id: 'security.features.aes.diagram' })}
+            </Text>
           </AlgorithmImage>
 
           <Divider />
 
-          <Title level={4}>为什么选择 AES-256-CBC？</Title>
+          <Title level={4}>{intl.formatMessage({ id: 'security.features.aes.why' })}</Title>
           <Paragraph>
-            我们选择 AES-256-CBC 作为加密标准的原因：
+            {intl.formatMessage({ id: 'security.features.aes.why.intro' })}
           </Paragraph>
           <ul>
-            <li>经过广泛验证的安全性，至今没有实用的攻击方法</li>
-            <li>优秀的性能表现，加解密速度快</li>
-            <li>硬件加速支持，主流处理器都内置了 AES 指令集</li>
-            <li>广泛的工具支持，各种编程语言都有成熟的实现</li>
+            <li>{intl.formatMessage({ id: 'security.features.aes.why.point1' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.aes.why.point2' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.aes.why.point3' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.aes.why.point4' })}</li>
           </ul>
         </Typography>
       </Modal>
@@ -780,7 +782,7 @@ function encrypt($text, $key) {
         title={
           <Space>
             <i className="bi bi-layers-fill" style={{ color: '#52c41a' }} />
-            <span>智能分块解密技术详解</span>
+            <span>{intl.formatMessage({ id: 'security.features.chunk.title' })}</span>
           </Space>
         }
         open={chunkModalVisible}
@@ -789,32 +791,32 @@ function encrypt($text, $key) {
         footer={null}
       >
         <Typography>
-          <Title level={4}>什么是智能分块解密？</Title>
+          <Title level={4}>{intl.formatMessage({ id: 'security.features.chunk.what' })}</Title>
           <Paragraph>
-            智能分块解密是一种针对大文件优化的解密技术，它将大文件分割成多个小块进行并行处理，具有以下特点：
+            {intl.formatMessage({ id: 'security.features.chunk.description' })}
           </Paragraph>
           <ul>
-            <li><Text strong>动态分块</Text>：根据文件大小和系统内存自动调整分块大小</li>
-            <li><Text strong>并行处理</Text>：多个数据块同时解密，充分利用多核CPU</li>
-            <li><Text strong>内存优化</Text>：通过流式处理控制内存使用，避免内存溢出</li>
-            <li><Text strong>断点续传</Text>：支持解密过程中断后继续，提高容错性</li>
+            <li><Text strong>{intl.formatMessage({ id: 'security.features.chunk.feature1.title' })}</Text>: {intl.formatMessage({ id: 'security.features.chunk.feature1.desc' })}</li>
+            <li><Text strong>{intl.formatMessage({ id: 'security.features.chunk.feature2.title' })}</Text>: {intl.formatMessage({ id: 'security.features.chunk.feature2.desc' })}</li>
+            <li><Text strong>{intl.formatMessage({ id: 'security.features.chunk.feature3.title' })}</Text>: {intl.formatMessage({ id: 'security.features.chunk.feature3.desc' })}</li>
+            <li><Text strong>{intl.formatMessage({ id: 'security.features.chunk.feature4.title' })}</Text>: {intl.formatMessage({ id: 'security.features.chunk.feature4.desc' })}</li>
           </ul>
 
           <Divider />
           
-          <Title level={4}>工作原理</Title>
+          <Title level={4}>{intl.formatMessage({ id: 'security.features.chunk.how' })}</Title>
           <Paragraph>
-            智能分块解密的处理流程如下：
+            {intl.formatMessage({ id: 'security.features.chunk.process' })}
           </Paragraph>
           <ol>
-            <li>文件预分析：计算最优分块大小和数量</li>
-            <li>数据分块：将加密文件切分成大小相等的数据块</li>
-            <li>并行解密：多个数据块同时进行解密操作</li>
-            <li>流式写入：解密后的数据块按顺序写入目标文件</li>
+            <li>{intl.formatMessage({ id: 'security.features.chunk.step1' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.chunk.step2' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.chunk.step3' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.chunk.step4' })}</li>
           </ol>
 
           <CodeBlock>
-            <code>{`// 分块解密示例代码
+            <code>{intl.formatMessage({ id: 'security.features.chunk.code' }, { code: `// 分块解密示例代码
 async function chunkDecrypt(file, key, chunkSize = 1024 * 1024) {
   // 计算分块数量
   const chunks = Math.ceil(file.size / chunkSize);
@@ -842,45 +844,47 @@ async function chunkDecrypt(file, key, chunkSize = 1024 * 1024) {
   }));
   
   return decrypted;
-}`}</code>
+}` })}</code>
           </CodeBlock>
 
           <Divider />
 
-          <Title level={4}>性能优势</Title>
+          <Title level={4}>{intl.formatMessage({ id: 'security.features.chunk.performance' })}</Title>
           <Paragraph>
-            与传统的一次性解密相比，智能分块解密具有显著优势：
+            {intl.formatMessage({ id: 'security.features.chunk.performance.intro' })}
           </Paragraph>
           <ul>
-            <li>内存占用最高降低90%，4GB文件仅需400MB内存</li>
-            <li>解密速度提升3-5倍，充分利用多核CPU</li>
-            <li>支持超大文件（{'>'}4GB）解密，不受浏览器内存限制</li>
-            <li>解密过程可视化，精确显示进度和剩余时间</li>
+            <li>{intl.formatMessage({ id: 'security.features.chunk.performance.point1' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.chunk.performance.point2' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.chunk.performance.point3' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.chunk.performance.point4' })}</li>
           </ul>
 
           <Divider />
 
-          <Title level={4}>应用场景</Title>
+          <Title level={4}>{intl.formatMessage({ id: 'security.features.chunk.usage' })}</Title>
           <Paragraph>
-            智能分块解密特别适用于以下场景：
+            {intl.formatMessage({ id: 'security.features.chunk.usage.intro' })}
           </Paragraph>
           <ul>
-            <li>大型文件（如视频、数据库备份）的解密</li>
-            <li>内存受限设备（如移动设备）上的解密操作</li>
-            <li>需要并行处理的批量文件解密</li>
-            <li>要求实时进度反馈的解密任务</li>
+            <li>{intl.formatMessage({ id: 'security.features.chunk.usage.point1' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.chunk.usage.point2' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.chunk.usage.point3' })}</li>
+            <li>{intl.formatMessage({ id: 'security.features.chunk.usage.point4' })}</li>
           </ul>
 
           <AlgorithmImage>
             <ChunkDecryptDiagram />
-            <Text type="secondary" style={{ marginTop: 16 }}>智能分块解密流程示意图</Text>
+            <Text type="secondary" style={{ marginTop: 16 }}>
+              {intl.formatMessage({ id: 'security.features.chunk.diagram' })}
+            </Text>
           </AlgorithmImage>
         </Typography>
       </Modal>
 
       <FeaturesTitle>
         <i className="bi bi-shield-check-fill"></i>
-        <h3>安全特性</h3>
+        <h3>{intl.formatMessage({ id: 'security.features.title' })}</h3>
       </FeaturesTitle>
       <FeaturesGrid>
         {features.map((feature, index) => (

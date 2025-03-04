@@ -9,10 +9,12 @@ import {
   FolderOpenOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import styled from 'styled-components';
 import { Helmet } from 'react-helmet';
+import { useIntl } from 'react-intl';
 import SimpleHeader from 'components/headers/simple';
-import SecurityFeatures from 'components/features/SecurityFeatures';
+import SecurityFeatures from './components/SecurityFeatures';
+import CBCEncryptionDiagram from './components/CBCEncryptionDiagram';
+import ChunkDecryptDiagram from './components/ChunkDecryptDiagram';
 import {
   formatTime,
   formatSpeed,
@@ -33,356 +35,21 @@ import PasswordModalComponent from './components/PasswordModal';
 
 // 导入样式
 import {
-  PageContainer as StyledPageContainer,
-  ContentWrapper as StyledContentWrapper,
-  TopSection as StyledTopSection,
-  DecryptCard as StyledDecryptCard,
-  DecryptLayout as StyledDecryptLayout,
-  PageTitle as StyledPageTitle
+  PageContainer,
+  ContentWrapper,
+  TopSection,
+  DecryptCard,
+  DecryptLayout,
+  PageTitle
 } from './styles/StyledComponents';
 
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
 
-const PageContainer = styled.div`
-  min-height: 100vh;
-  background: var(--ant-color-bg-container);
-  padding-top: 64px;
-`;
-
-const ContentWrapper = styled.div`
-  max-width: 1200px;
-  margin: 64px auto 40px;
-  padding: 0 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  width: 100%;
-  box-sizing: border-box;
-
-  @media (max-width: 768px) {
-    margin: 32px auto 24px;
-    padding: 0 8px;
-    gap: 16px;
-  }
-`;
-
-const TopSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  width: 100%;
-  box-sizing: border-box;
-`;
-
-const DecryptCard = styled(Card)`
-  position: relative;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  
-  .ant-card-head {
-    border-bottom: none;
-  }
-  
-  .ant-card-body {
-    padding: 24px;
-  }
-
-  .security-tip-btn {
-    position: absolute;
-    right: 24px;
-    top: 16px;
-    z-index: 1;
-  }
-`;
-
-const DecryptLayout = styled.div`
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 24px;
-  align-items: start;
-  width: 100%;
-  box-sizing: border-box;
-
-  @media (max-width: 1200px) {
-    grid-template-columns: 280px 1fr;
-    gap: 16px;
-  }
-
-  @media (max-width: 992px) {
-    grid-template-columns: 240px 1fr;
-    gap: 12px;
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-`;
-
-const UploadSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-  box-sizing: border-box;
-
-  .upload-area {
-    width: 100%;
-    
-    .ant-upload-drag {
-      padding: 16px;
-      height: 240px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      transition: all 0.3s;
-      
-      @media (max-width: 1200px) {
-        height: 220px;
-        padding: 14px;
-      }
-      
-      @media (max-width: 992px) {
-        height: 200px;
-        padding: 12px;
-      }
-      
-      @media (max-width: 768px) {
-        height: 180px;
-      }
-      
-      @media (max-width: 576px) {
-        height: 160px;
-        padding: 10px;
-      }
-    }
-    
-    .ant-upload-drag-icon {
-      margin: 0;
-      transition: all 0.3s;
-      
-      .anticon {
-        font-size: 36px;
-        color: var(--ant-color-primary);
-        
-        @media (max-width: 992px) {
-          font-size: 32px;
-        }
-        
-        @media (max-width: 576px) {
-          font-size: 28px;
-        }
-      }
-    }
-    
-    .ant-upload-text {
-      font-size: 16px;
-      margin: 12px 0 8px;
-      transition: all 0.3s;
-      
-      @media (max-width: 992px) {
-        font-size: 14px;
-        margin: 10px 0 6px;
-      }
-      
-      @media (max-width: 576px) {
-        font-size: 13px;
-        margin: 8px 0 4px;
-      }
-    }
-    
-    .ant-upload-hint {
-      font-size: 13px;
-      padding: 0 16px;
-      transition: all 0.3s;
-      
-      @media (max-width: 992px) {
-        font-size: 12px;
-        padding: 0 12px;
-      }
-      
-      @media (max-width: 576px) {
-        font-size: 11px;
-        padding: 0 8px;
-      }
-    }
-  }
-
-  .action-buttons {
-    display: flex;
-    gap: 8px;
-    flex-direction: column;
-    width: 100%;
-
-    .ant-btn {
-      width: 100%;
-      height: 40px;
-      font-size: 14px;
-      
-      @media (max-width: 992px) {
-        height: 36px;
-        font-size: 13px;
-      }
-      
-      @media (max-width: 576px) {
-        height: 32px;
-        font-size: 12px;
-      }
-    }
-  }
-`;
-
-const FileListSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-  box-sizing: border-box;
-
-  .ant-table-wrapper {
-    width: 100%;
-    overflow-x: auto;
-    
-    .ant-table {
-      min-width: 500px;
-    }
-    
-    .ant-table-cell {
-      background: transparent !important;
-      
-      @media (max-width: 992px) {
-        padding: 12px 8px;
-      }
-      
-      @media (max-width: 576px) {
-        padding: 8px 6px;
-      }
-    }
-    
-    .file-info {
-      .file-name {
-        font-size: 14px;
-        
-        @media (max-width: 992px) {
-          font-size: 13px;
-        }
-      }
-      
-      .file-size {
-        font-size: 12px;
-        
-        @media (max-width: 992px) {
-          font-size: 11px;
-        }
-      }
-    }
-    
-    .progress {
-      width: 160px;
-      
-      @media (max-width: 1200px) {
-        width: 140px;
-      }
-      
-      @media (max-width: 992px) {
-        width: 120px;
-      }
-      
-      @media (max-width: 768px) {
-        width: 100px;
-      }
-    }
-    
-    .ant-tag {
-      margin: 0;
-      font-size: 12px;
-      
-      @media (max-width: 992px) {
-        font-size: 11px;
-        padding: 0 6px;
-      }
-    }
-  }
-`;
-
-const StepsCard = styled(Card)`
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  
-  .ant-card-head {
-    border-bottom: none;
-  }
-  
-  .ant-card-body {
-    padding: 24px;
-  }
-`;
-
-const StepsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 24px;
-  margin-top: 16px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-`;
-
-const StepItem = styled.div`
-  background: var(--ant-color-bg-container-disabled);
-  border-radius: 12px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-  
-  .step-number {
-    width: 40px;
-    height: 40px;
-    border-radius: 20px;
-    background: var(--ant-color-primary);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 18px;
-    margin-bottom: 16px;
-  }
-  
-  .step-icon {
-    font-size: 32px;
-    color: var(--ant-color-primary);
-    margin-bottom: 16px;
-  }
-  
-  h4 {
-    margin: 0 0 12px;
-    color: var(--ant-color-text);
-    font-size: 16px;
-  }
-  
-  p {
-    margin: 0;
-    color: var(--ant-color-text-secondary);
-    font-size: 14px;
-    line-height: 1.6;
-  }
-`;
-
 const FileDecryptPage = ({
-  isVipUser = false  // 添加会员状态参数
+  isVipUser = false
 }) => {
+  const intl = useIntl();
   const [files, setFiles] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [password, setPassword] = useState('');
@@ -400,7 +67,7 @@ const FileDecryptPage = ({
     // 检查是否为加密文件
     const invalidFiles = selectedFiles.filter(file => !file.name.endsWith('.encrypted'));
     if (invalidFiles.length > 0) {
-      message.error('请只选择带有 .encrypted 后缀的加密文件');
+      message.error(intl.formatMessage({ id: 'decrypt.message.invalidFile' }));
       return;
     }
     
@@ -414,7 +81,10 @@ const FileDecryptPage = ({
       if (!isDuplicate) {
         acc.push(current);
       } else {
-        message.warning(`文件 "${current.name}" 已存在，已自动去重`);
+        message.warning(intl.formatMessage(
+          { id: 'decrypt.message.duplicate' },
+          { filename: current.name }
+        ));
       }
       return acc;
     }, []);
@@ -424,21 +94,21 @@ const FileDecryptPage = ({
       const largeFiles = uniqueFiles.filter(file => file.size > 4 * 1024 * 1024 * 1024);
       if (largeFiles.length > 0) {
         Modal.warning({
-          title: '文件大小超出限制',
+          title: intl.formatMessage({ id: 'decrypt.message.oversizeTitle' }),
           content: (
             <div>
-              <p>以下文件超出非会员解密上限(4GB)：</p>
+              <p>{intl.formatMessage({ id: 'decrypt.message.oversizeContent' })}</p>
               <ul>
                 {largeFiles.map(file => (
                   <li key={file.uid}>{file.name} ({formatFileSize(file.size)})</li>
                 ))}
               </ul>
               <p style={{ color: '#ff4d4f', marginTop: 16 }}>
-                开通会员后可解密任意大小文件，并支持分块解密功能
+                {intl.formatMessage({ id: 'decrypt.message.oversizeHint' })}
               </p>
             </div>
           ),
-          okText: '我知道了'
+          okText: 'OK'
         });
         return;
       }
@@ -461,7 +131,7 @@ const FileDecryptPage = ({
   // 处理开始解密
   const handleStartDecrypt = () => {
     if (selectedFiles.length === 0) {
-      message.error('请选择要解密的文件');
+      message.error(intl.formatMessage({ id: 'decrypt.message.selectFile' }));
       return;
     }
     setPasswordModalVisible(true);
@@ -470,7 +140,7 @@ const FileDecryptPage = ({
   // 修改密码确认处理函数
   const handlePasswordConfirm = async () => {
     if (!password) {
-      message.error('请输入解密密码');
+      message.error(intl.formatMessage({ id: 'decrypt.message.enterPassword' }));
       return;
     }
 
@@ -510,11 +180,17 @@ const FileDecryptPage = ({
               await writable.write(decryptedFile);
               await writable.close();
               updateFileProgress(file.uid, 100, 'success');
-              message.success(`文件 ${fileName} 已保存到选定位置`);
+              message.success(intl.formatMessage(
+                { id: 'decrypt.message.decryptSuccess' },
+                { filename: fileName }
+              ));
             } catch (error) {
               if (error.name === 'AbortError') {
                 updateFileProgress(file.uid, 0, 'error');
-                message.info(`已取消保存文件 ${fileName}`);
+                message.info(intl.formatMessage(
+                  { id: 'decrypt.message.saveCancel' },
+                  { filename: fileName }
+                ));
               } else {
                 throw error;
               }
@@ -529,12 +205,18 @@ const FileDecryptPage = ({
             document.body.removeChild(link);
             setTimeout(() => URL.revokeObjectURL(url), 1000);
             updateFileProgress(file.uid, 100, 'success');
-            message.success(`文件 ${fileName} 已保存到下载目录`);
+            message.success(intl.formatMessage(
+              { id: 'decrypt.message.downloadSuccess' },
+              { filename: fileName }
+            ));
           }
         } catch (error) {
           console.error('文件解密失败:', file.name, error);
           updateFileProgress(file.uid, 0, 'error', error.message);
-          message.error(`文件 ${file.name} 解密失败: ${error.message}`);
+          message.error(intl.formatMessage(
+            { id: 'decrypt.message.decryptError' },
+            { filename: file.name, error: error.message }
+          ));
         }
       }
 
@@ -542,7 +224,7 @@ const FileDecryptPage = ({
       setPassword('');
     } catch (error) {
       console.error('批量解密失败:', error);
-      message.error('批量解密失败，请重试');
+      message.error(intl.formatMessage({ id: 'decrypt.message.batchError' }));
     } finally {
       setDecrypting(false);
     }
@@ -612,7 +294,7 @@ const FileDecryptPage = ({
     return {
       name: file.name,
       size: formatFileSize(file.size),
-      lastModified: lastModified ? lastModified.toLocaleString() : '未知',
+      lastModified: lastModified ? lastModified.toLocaleString() : intl.formatMessage({ id: 'common.unknown' }),
       type: file.type || 'application/octet-stream'
     };
   };
@@ -622,7 +304,7 @@ const FileDecryptPage = ({
     const fileInfo = getFileLocationInfo(file);
     
     Modal.info({
-      title: '文件信息',
+      title: intl.formatMessage({ id: 'decrypt.fileInfo.modal.title' }),
       width: 480,
       content: (
         <div style={{ 
@@ -633,19 +315,19 @@ const FileDecryptPage = ({
         }}>
           <Space direction="vertical" style={{ width: '100%' }}>
             <div>
-              <Text type="secondary">文件名称：</Text>
+              <Text type="secondary">{intl.formatMessage({ id: 'decrypt.fileInfo.name' })}：</Text>
               <Text copyable>{fileInfo.name}</Text>
             </div>
             <div>
-              <Text type="secondary">文件大小：</Text>
+              <Text type="secondary">{intl.formatMessage({ id: 'decrypt.fileInfo.size' })}：</Text>
               <Text>{fileInfo.size}</Text>
             </div>
             <div>
-              <Text type="secondary">最后修改：</Text>
+              <Text type="secondary">{intl.formatMessage({ id: 'decrypt.fileInfo.lastModified' })}：</Text>
               <Text>{fileInfo.lastModified}</Text>
             </div>
             <div>
-              <Text type="secondary">文件类型：</Text>
+              <Text type="secondary">{intl.formatMessage({ id: 'decrypt.fileInfo.type' })}：</Text>
               <Text>{fileInfo.type}</Text>
             </div>
           </Space>
@@ -656,32 +338,35 @@ const FileDecryptPage = ({
 
   return (
     <App>
-      <StyledPageContainer>
+      <PageContainer>
         <Helmet>
-          <title>文件解密工具 - MyStorage</title>
-          <meta name="description" content="安全的文件解密工具 - 在浏览器中本地解密您的文件，保护您的隐私" />
+          <title>{intl.formatMessage({ id: 'page.decrypt.helmet.title' })}</title>
+          <meta 
+            name="description" 
+            content={intl.formatMessage({ id: 'page.decrypt.helmet.description' })}
+          />
         </Helmet>
         
         <SimpleHeader />
         
-        <StyledPageTitle>
+        <PageTitle>
           <Title level={2}>
-            <LockOutlined /> MyStorage 文件解密工具
+            <LockOutlined /> {intl.formatMessage({ id: 'page.decrypt.title' })}
           </Title>
           <Text type="secondary" className="subtitle">
-            安全、快速、无损地解密您的文件
+            {intl.formatMessage({ id: 'page.decrypt.subtitle' })}
           </Text>
-        </StyledPageTitle>
+        </PageTitle>
 
-        <StyledContentWrapper>
-          <StyledTopSection>
-            <StyledDecryptCard
+        <ContentWrapper>
+          <TopSection>
+            <DecryptCard
               title={
                 <Space>
                   <LockOutlined style={{ color: '#1677ff' }} />
-                  <span>文件解密</span>
+                  <span>{intl.formatMessage({ id: 'page.decrypt.title' })}</span>
                   {files.length > 0 && (
-                    <Tag color="blue">{files.length} 个文件</Tag>
+                    <Tag color="blue">{files.length} {intl.formatMessage({ id: 'common.files' })}</Tag>
                   )}
                 </Space>
               }
@@ -692,9 +377,9 @@ const FileDecryptPage = ({
                 onClick={() => setSecurityTipVisible(true)}
                 className="security-tip-btn"
               >
-                安全提示
+                {intl.formatMessage({ id: 'decrypt.security.modal.title' })}
               </Button>
-              <StyledDecryptLayout>
+              <DecryptLayout>
                 <FileUploadSection
                   files={files}
                   maxFileSize={maxFileSize}
@@ -714,13 +399,13 @@ const FileDecryptPage = ({
                   handleSelectionChange={handleSelectionChange}
                   handleShowFileInfo={handleShowFileInfo}
                 />
-              </StyledDecryptLayout>
-            </StyledDecryptCard>
+              </DecryptLayout>
+            </DecryptCard>
 
             <SecurityFeatures />
             <DecryptStepsComponent />
-          </StyledTopSection>
-        </StyledContentWrapper>
+          </TopSection>
+        </ContentWrapper>
 
         <PasswordModalComponent
           visible={passwordModalVisible}
@@ -739,7 +424,7 @@ const FileDecryptPage = ({
           onClose={() => setSecurityTipVisible(false)}
           isVipUser={isVipUser}
         />
-      </StyledPageContainer>
+      </PageContainer>
     </App>
   );
 };

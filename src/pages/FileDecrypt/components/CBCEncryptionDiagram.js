@@ -1,5 +1,6 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
+import { useIntl } from 'react-intl';
 
 const flowAnimation = keyframes`
   0% {
@@ -90,49 +91,71 @@ const SVGWrapper = styled.div`
 `;
 
 const CBCEncryptionDiagram = () => {
+  const intl = useIntl();
+
   return (
     <DiagramContainer>
       <SVGWrapper>
         <svg viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet">
           {/* 初始化向量 (IV) */}
           <rect x="50" y="50" width="100" height="60" rx="8" className="iv" />
-          <text x="100" y="85" className="text" textAnchor="middle">IV</text>
+          <text x="100" y="85" className="text" textAnchor="middle">
+            {intl.formatMessage({ id: 'security.diagram.iv' })}
+          </text>
 
           {/* 明文块 */}
           <rect x="50" y="160" width="100" height="60" rx="8" className="block" />
-          <text x="100" y="195" className="text" textAnchor="middle">明文块 1</text>
+          <text x="100" y="195" className="text" textAnchor="middle">
+            {intl.formatMessage({ id: 'security.diagram.plaintext.block1' })}
+          </text>
 
           {/* XOR 操作 */}
           <circle cx="200" y="190" r="25" className="operation" />
-          <text x="200" y="195" className="text" textAnchor="middle">XOR</text>
+          <text x="200" y="195" className="text" textAnchor="middle">
+            {intl.formatMessage({ id: 'security.diagram.xor.operation' })}
+          </text>
 
           {/* 加密密钥 */}
           <rect x="250" y="50" width="100" height="60" rx="8" className="key" />
-          <text x="300" y="85" className="text" textAnchor="middle">密钥</text>
+          <text x="300" y="85" className="text" textAnchor="middle">
+            {intl.formatMessage({ id: 'security.diagram.key' })}
+          </text>
 
           {/* AES 加密 */}
           <rect x="250" y="160" width="100" height="60" rx="8" className="operation" />
-          <text x="300" y="195" className="text" textAnchor="middle">AES 加密</text>
+          <text x="300" y="195" className="text" textAnchor="middle">
+            {intl.formatMessage({ id: 'security.diagram.aes.encryption' })}
+          </text>
 
           {/* 密文块 1 */}
           <rect x="400" y="160" width="100" height="60" rx="8" className="block" />
-          <text x="450" y="195" className="text" textAnchor="middle">密文块 1</text>
+          <text x="450" y="195" className="text" textAnchor="middle">
+            {intl.formatMessage({ id: 'security.diagram.ciphertext.block1' })}
+          </text>
 
           {/* 明文块 2 */}
           <rect x="50" y="280" width="100" height="60" rx="8" className="block" />
-          <text x="100" y="315" className="text" textAnchor="middle">明文块 2</text>
+          <text x="100" y="315" className="text" textAnchor="middle">
+            {intl.formatMessage({ id: 'security.diagram.plaintext.block2' })}
+          </text>
 
           {/* XOR 操作 2 */}
           <circle cx="200" y="310" r="25" className="operation" />
-          <text x="200" y="315" className="text" textAnchor="middle">XOR</text>
+          <text x="200" y="315" className="text" textAnchor="middle">
+            {intl.formatMessage({ id: 'security.diagram.xor.operation' })}
+          </text>
 
           {/* AES 加密 2 */}
           <rect x="250" y="280" width="100" height="60" rx="8" className="operation" />
-          <text x="300" y="315" className="text" textAnchor="middle">AES 加密</text>
+          <text x="300" y="315" className="text" textAnchor="middle">
+            {intl.formatMessage({ id: 'security.diagram.aes.encryption' })}
+          </text>
 
           {/* 密文块 2 */}
           <rect x="400" y="280" width="100" height="60" rx="8" className="block" />
-          <text x="450" y="315" className="text" textAnchor="middle">密文块 2</text>
+          <text x="450" y="315" className="text" textAnchor="middle">
+            {intl.formatMessage({ id: 'security.diagram.ciphertext.block2' })}
+          </text>
 
           {/* 连接线 */}
           <path d="M 150 80 L 200 190" className="flow-path" />
