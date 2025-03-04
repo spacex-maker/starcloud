@@ -1,68 +1,169 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# MyStorageX 云存储系统
 
-## Available Script
+MyStorageX 是一个现代化的云存储解决方案，提供安全可靠的文件存储、加密和管理功能。
 
-In the project directory, you can run:
+## 🌟 主要特性
 
-### `yarn start`
+- 📁 文件管理
+  - 支持文件夹创建、删除、重命名
+  - 文件拖拽上传、文件夹上传
+  - 支持大文件分片上传
+  - 支持断点续传
+  - 文件进度管理和实时反馈
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- 🔐 安全性
+  - AES-256-CBC 端到端加密
+  - 本地文件加密/解密
+  - 多重身份验证
+  - 安全的文件传输机制
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+- 🌍 国际化
+  - 支持多语言（中文、英文、日文等11种语言）
+  - 完整的 i18n 支持
 
-### `yarn test`
+- 🎨 用户界面
+  - 响应式设计，支持移动端
+  - 深色/浅色主题切换
+  - 现代化 UI 组件
+  - 流畅的动画效果
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- ⚡ 性能优化
+  - 文件分块上传/下载
+  - 智能内存管理
+  - 高效的文件处理机制
 
-### `yarn build`
+## 🛠️ 技术栈
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- 前端框架：React
+- UI 组件：Ant Design
+- 样式解决方案：Styled Components
+- 状态管理：React Hooks
+- 国际化：react-intl
+- 文件加密：CryptoJS
+- 网络请求：Axios
+- 对象存储：腾讯云 COS
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+## 📦 安装
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+# 克隆项目
+git clone [repository-url]
 
-### `yarn eject`
+# 安装依赖
+yarn install
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+# 启动开发服务器
+yarn start
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+# 构建生产版本
+yarn build
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## 🚀 快速开始
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+1. 确保已安装 Node.js (>= 14.0.0) 和 Yarn
+2. 克隆项目并安装依赖
+3. 配置环境变量（参考 .env.example）
+4. 启动开发服务器
 
-## Learn More
+## 📚 项目结构
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```
+src/
+├── api/          # API 接口
+├── components/   # 通用组件
+├── contexts/     # React Context
+├── hooks/        # 自定义 Hooks
+├── locales/      # 国际化文件
+├── models/       # 数据模型
+├── pages/        # 页面组件
+├── services/     # 服务层
+├── styles/       # 全局样式
+└── utils/        # 工具函数
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 🔧 配置说明
 
-### Code Splitting
+### 环境变量
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+创建 .env 文件并配置以下变量：
 
-### Analyzing the Bundle Size
+```env
+REACT_APP_API_URL=你的API地址
+REACT_APP_COS_REGION=对象存储区域
+REACT_APP_COS_BUCKET=存储桶名称
+```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+### 国际化配置
 
-### Making a Progressive Web App
+国际化文件位于 `src/locales` 目录，支持以下语言：
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+- 简体中文 (zh_CN)
+- 英文 (en_US)
+- 日文 (ja_JP)
+- 韩文 (ko_KR)
+- 德文 (de_DE)
+- 法文 (fr_FR)
+- 西班牙文 (es_ES)
+- 意大利文 (it_IT)
+- 葡萄牙文 (pt_PT)
+- 俄文 (ru_RU)
+- 阿拉伯文 (ar_SA)
 
-### Advanced Configuration
+## 📝 开发指南
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
+### 添加新功能
 
-### Deployment
+1. 在相应目录创建组件
+2. 添加国际化文本
+3. 实现组件逻辑
+4. 添加到路由配置
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
+### 样式开发
 
-### `yarn build` fails to minify
+- 使用 Styled Components 进行样式开发
+- 遵循项目现有的样式规范
+- 确保深色模式兼容性
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+### 国际化开发
+
+- 在 `src/locales` 中添加翻译文本
+- 使用 `FormattedMessage` 组件或 `useIntl` Hook
+
+## 🔐 安全功能
+
+### 文件加密
+
+- 使用 AES-256-CBC 加密算法
+- 支持本地加密/解密
+- 加密过程在客户端完成
+
+### 文件传输
+
+- HTTPS 传输
+- 文件完整性校验
+- 传输过程加密
+
+## 📈 性能优化
+
+- 大文件分片上传
+- 智能内存管理
+- 缓存优化
+- 按需加载
+
+## 🤝 贡献指南
+
+1. Fork 项目
+2. 创建特性分支
+3. 提交改动
+4. 发起 Pull Request
+
+## 📄 许可证
+
+© 2024 ProTX Team. All rights reserved.
+
+## 🆘 支持
+
+- 提交 Issue
+- 查看文档
+- 联系技术支持
