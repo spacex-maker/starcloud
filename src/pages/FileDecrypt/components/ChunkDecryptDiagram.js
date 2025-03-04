@@ -1,5 +1,6 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
+import { FormattedMessage } from 'react-intl';
 
 const flowAnimation = keyframes`
   0% {
@@ -93,13 +94,13 @@ const ChunkDecryptDiagram = () => {
       <SVGContainer viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet">
         {/* 标题 */}
         <text x="400" y="40" className="title" textAnchor="middle">
-          智能分块解密流程
+          <FormattedMessage id="decrypt.diagram.title" defaultMessage="智能分块解密流程" />
         </text>
         
         {/* 原始加密文件 */}
         <rect x="50" y="80" width="200" height="60" className="block" />
         <text x="150" y="115" className="text" textAnchor="middle">
-          加密文件
+          <FormattedMessage id="decrypt.diagram.encryptedFile" defaultMessage="加密文件" />
         </text>
         
         {/* 分块过程 */}
@@ -108,8 +109,8 @@ const ChunkDecryptDiagram = () => {
           <rect x="50" y="0" width="40" height="60" className="block" />
           <rect x="100" y="0" width="40" height="60" className="block" />
           <text x="70" y="-10" className="text" textAnchor="middle">
-            智能分块
-        </text>
+            <FormattedMessage id="decrypt.diagram.smartChunking" defaultMessage="智能分块" />
+          </text>
         </g>
         
         {/* 并行解密过程 */}
@@ -118,14 +119,14 @@ const ChunkDecryptDiagram = () => {
           <rect x="50" y="0" width="40" height="60" className="block" style={{fill: '#f6ffed'}} />
           <rect x="100" y="0" width="40" height="60" className="block" style={{fill: '#f6ffed'}} />
           <text x="70" y="-10" className="text" textAnchor="middle">
-            并行解密
+            <FormattedMessage id="decrypt.diagram.parallelDecryption" defaultMessage="并行解密" />
           </text>
         </g>
         
         {/* 解密后文件 */}
         <rect x="700" y="80" width="50" height="60" className="block" style={{fill: '#f6ffed'}} />
         <text x="725" y="115" className="text" textAnchor="middle">
-          解密文件
+          <FormattedMessage id="decrypt.diagram.decryptedFile" defaultMessage="解密文件" />
         </text>
         
         {/* 流动路径 */}
@@ -137,12 +138,12 @@ const ChunkDecryptDiagram = () => {
         <g transform="translate(50, 200)">
           <rect x="0" y="0" width="700" height="80" fill="#f0f0f0" rx="4" />
           <text x="350" y="-10" className="text" textAnchor="middle">
-            内存使用优化
+            <FormattedMessage id="decrypt.diagram.memoryOptimization" defaultMessage="内存使用优化" />
           </text>
           <rect x="20" y="20" width="660" height="20" fill="#e6f7ff" rx="2" />
           <rect x="20" y="20" width="66" height="20" className="progress-bar" rx="2" />
           <text x="350" y="65" className="text" textAnchor="middle">
-            仅占用约10%内存空间
+            <FormattedMessage id="decrypt.diagram.memoryUsage" defaultMessage="仅占用约10%内存空间" />
           </text>
         </g>
         
@@ -152,7 +153,7 @@ const ChunkDecryptDiagram = () => {
           <rect x="20" y="10" width="660" height="20" fill="#e6f7ff" rx="2" />
           <rect x="20" y="10" width="330" height="20" className="progress-bar" rx="2" />
           <text x="350" y="-10" className="text" textAnchor="middle">
-            实时进度反馈
+            <FormattedMessage id="decrypt.diagram.realTimeFeedback" defaultMessage="实时进度反馈" />
           </text>
         </g>
       </SVGContainer>

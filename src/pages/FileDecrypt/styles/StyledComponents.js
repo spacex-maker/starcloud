@@ -4,12 +4,12 @@ import { Card } from 'antd';
 export const PageContainer = styled.div`
   min-height: 100vh;
   background: var(--ant-color-bg-container);
-  padding-top: 64px;
+  padding-top: 72px;
 `;
 
 export const ContentWrapper = styled.div`
   max-width: 1200px;
-  margin: 64px auto 40px;
+  margin: 88px auto 40px;
   padding: 0 24px;
   display: flex;
   flex-direction: column;
@@ -18,8 +18,8 @@ export const ContentWrapper = styled.div`
   box-sizing: border-box;
 
   @media (max-width: 768px) {
-    margin: 32px auto 24px;
-    padding: 0 8px;
+    margin: 48px auto 24px;
+    padding: 0 16px;
     gap: 16px;
   }
 `;
@@ -339,24 +339,22 @@ export const StyledStepItem = styled.div`
 
 export const PageTitle = styled.div`
   text-align: center;
-  margin-bottom: 32px;
-  
-  h2 {
-    margin: 0;
+  margin: 0 auto;
+  max-width: 800px;
+  padding: 0 24px;
+
+  .ant-typography {
+    margin-bottom: 8px;
   }
-  
+
   .subtitle {
-    margin-top: 8px;
-    color: var(--ant-color-text-secondary);
+    font-size: 16px;
+    display: block;
   }
 
   @media (max-width: 768px) {
-    margin-bottom: 24px;
-    
-    h2 {
-      font-size: 24px !important;
-    }
-    
+    padding: 0 16px;
+
     .subtitle {
       font-size: 14px;
     }

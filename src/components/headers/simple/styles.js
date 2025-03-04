@@ -43,7 +43,7 @@ export const Header = styled.header`
   border-bottom: 1px solid ${props => props.theme.mode === 'dark'
     ? 'rgba(255, 255, 255, 0.05)'
     : 'rgba(0, 0, 0, 0.05)'};
-  padding: 0 48px;
+  padding: 0 35px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: ${props => props.scrolled
     ? props.theme.mode === 'dark'

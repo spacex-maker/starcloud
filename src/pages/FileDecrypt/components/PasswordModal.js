@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, Input, Typography } from 'antd';
+import { useIntl } from 'react-intl';
 
 const { Text } = Typography;
 
@@ -11,22 +12,24 @@ const PasswordModal = ({
   onCancel,
   decrypting
 }) => {
+  const intl = useIntl();
+  
   return (
     <Modal
-      title="输入解密密码"
+      title={intl.formatMessage({ id: 'decrypt.password.modal.title' })}
       open={visible}
       onOk={onOk}
       onCancel={onCancel}
       confirmLoading={decrypting}
     >
       <Input.Password
-        placeholder="请输入解密密码"
+        placeholder={intl.formatMessage({ id: 'decrypt.password.modal.placeholder' })}
         value={password}
         onChange={(e) => onPasswordChange(e.target.value)}
         style={{ marginTop: 16 }}
       />
       <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-        请输入加密时设置的密码，密码将仅用于本地解密
+        {intl.formatMessage({ id: 'decrypt.password.modal.hint' })}
       </Text>
     </Modal>
   );

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Table, Space, Tag, Progress, Button, Tooltip, Divider, Typography } from 'antd';
 import { InfoCircleOutlined, LockOutlined } from '@ant-design/icons';
+import { useIntl } from 'react-intl';
 import { formatFileSize, formatSpeed, formatTime, getEllipsisFileName } from '../../../utils';
 import { StyledFileListSection } from '../styles/StyledComponents';
 
@@ -15,19 +16,21 @@ const FileListSection = ({
   handleSelectionChange,
   handleShowFileInfo
 }) => {
+  const intl = useIntl();
+
   const getStatusText = (status) => {
     switch (status) {
-      case 'pending': return '等待解密';
-      case 'decrypting': return '解密中';
-      case 'success': return '解密成功';
-      case 'error': return '解密失败';
-      default: return '未知状态';
+      case 'pending': return intl.formatMessage({ id: 'decrypt.fileList.status.pending' });
+      case 'decrypting': return intl.formatMessage({ id: 'decrypt.fileList.status.decrypting' });
+      case 'success': return intl.formatMessage({ id: 'decrypt.fileList.status.success' });
+      case 'error': return intl.formatMessage({ id: 'decrypt.fileList.status.error' });
+      default: return intl.formatMessage({ id: 'common.unknown' });
     }
   };
 
   const columns = [
     {
-      title: '文件名',
+      title: intl.formatMessage({ id: 'decrypt.fileList.column.name' }),
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
@@ -48,7 +51,7 @@ const FileListSection = ({
       ),
     },
     {
-      title: '状态',
+      title: intl.formatMessage({ id: 'decrypt.fileList.column.status' }),
       key: 'status',
       width: 280,
       render: (_, record) => {
@@ -56,7 +59,7 @@ const FileListSection = ({
         const stats = fileStats.get(record.uid);
         
         if (fileStatus.status === 'pending') {
-          return <Tag>等待解密</Tag>;
+          return <Tag>{intl.formatMessage({ id: 'decrypt.fileList.status.pending' })}</Tag>;
         }
         
         return (
@@ -78,7 +81,7 @@ const FileListSection = ({
                     color="error" 
                     style={{ cursor: 'pointer' }}
                   >
-                    解密失败
+                    {intl.formatMessage({ id: 'decrypt.fileList.status.error' })}
                   </Tag>
                 </Tooltip>
               ) : (
@@ -95,9 +98,9 @@ const FileListSection = ({
             {(fileStatus.status === 'decrypting' || fileStatus.status === 'success') && stats && (
               <div style={{ fontSize: '12px', color: 'var(--ant-color-text-secondary)' }}>
                 <Space split={<Divider type="vertical" style={{ margin: '0 4px' }} />}>
-                  {fileStatus.status === 'decrypting' && <span>速度：{formatSpeed(stats.speed)}</span>}
-                  <span>用时：{formatTime(stats.timeSpent)}</span>
-                  {fileStatus.status === 'decrypting' && <span>剩余：{formatTime(stats.remainingTime)}</span>}
+                  {fileStatus.status === 'decrypting' && <span>{intl.formatMessage({ id: 'common.speed' })}: {formatSpeed(stats.speed)}</span>}
+                  <span>{intl.formatMessage({ id: 'common.timeSpent' })}: {formatTime(stats.timeSpent)}</span>
+                  {fileStatus.status === 'decrypting' && <span>{intl.formatMessage({ id: 'common.remaining' })}: {formatTime(stats.remainingTime)}</span>}
                 </Space>
               </div>
             )}
@@ -106,21 +109,21 @@ const FileListSection = ({
       },
     },
     {
-      title: '操作',
+      title: intl.formatMessage({ id: 'decrypt.fileList.column.actions' }),
       key: 'action',
       width: 180,
       render: (_, record) => {
         const fileStatus = fileProgress.get(record.uid) || { progress: 0, status: 'pending' };
         return (
           <Space size={4}>
-            <Tooltip title="查看文件信息">
+            <Tooltip title={intl.formatMessage({ id: 'decrypt.fileList.action.info' })}>
               <Button
                 type="text"
                 size="small"
                 icon={<InfoCircleOutlined />}
                 onClick={() => handleShowFileInfo(record)}
               >
-                文件信息
+                {intl.formatMessage({ id: 'decrypt.fileList.action.info' })}
               </Button>
             </Tooltip>
           </Space>
@@ -145,7 +148,7 @@ const FileListSection = ({
         pagination={false}
         size="middle"
         locale={{
-          emptyText: '暂无文件，请添加需要解密的文件'
+          emptyText: intl.formatMessage({ id: 'decrypt.fileList.empty' })
         }}
       />
     </StyledFileListSection>

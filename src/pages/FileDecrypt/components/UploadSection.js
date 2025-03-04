@@ -1,6 +1,7 @@
 import React from 'react';
 import { Upload, Button, message } from 'antd';
 import { InboxOutlined, LockOutlined } from '@ant-design/icons';
+import { useIntl } from 'react-intl';
 import { formatFileSize } from '../../../utils';
 import { StyledUploadSection } from '../styles/StyledComponents';
 
@@ -15,6 +16,8 @@ const UploadSection = ({
   handleStartDecrypt,
   handleClearFiles
 }) => {
+  const intl = useIntl();
+  
   return (
     <StyledUploadSection>
       <div className="upload-area">
@@ -32,10 +35,13 @@ const UploadSection = ({
             <InboxOutlined />
           </p>
           <p className="ant-upload-text">
-            点击或拖拽文件
+            {intl.formatMessage({ id: 'decrypt.upload.dragText' })}
           </p>
           <p className="ant-upload-hint">
-            支持批量添加 .encrypted 文件，单个文件最大 {formatFileSize(maxFileSize)}
+            {intl.formatMessage(
+              { id: 'decrypt.upload.hint' },
+              { maxSize: formatFileSize(maxFileSize) }
+            )}
           </p>
         </Dragger>
       </div>
@@ -48,7 +54,7 @@ const UploadSection = ({
           loading={decrypting}
           disabled={selectedFiles.length === 0}
         >
-          解密选中文件
+          {intl.formatMessage({ id: 'decrypt.upload.button.decrypt' })}
         </Button>
         {files.length > 0 && (
           <Button
@@ -56,7 +62,7 @@ const UploadSection = ({
             onClick={handleClearFiles}
             disabled={decrypting}
           >
-            清空列表
+            {intl.formatMessage({ id: 'decrypt.upload.button.clear' })}
           </Button>
         )}
       </div>

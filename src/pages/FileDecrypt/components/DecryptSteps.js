@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { useIntl, defineMessages } from 'react-intl';
 
 const StepsContainer = styled.div`
   background: var(--ant-color-bg-container);
@@ -195,42 +196,88 @@ const StepContent = styled.div`
   }
 `;
 
+const messages = defineMessages({
+  title: {
+    id: 'decrypt.steps.title',
+    defaultMessage: '解密步骤'
+  },
+  step1Title: {
+    id: 'decrypt.steps.step1.title',
+    defaultMessage: '选择加密文件'
+  },
+  step1Description: {
+    id: 'decrypt.steps.step1.description',
+    defaultMessage: '选择使用 MyStorage 加密工具加密的 .encrypted 文件，支持拖拽或点击选择'
+  },
+  step2Title: {
+    id: 'decrypt.steps.step2.title',
+    defaultMessage: '输入解密密码'
+  },
+  step2Description: {
+    id: 'decrypt.steps.step2.description',
+    defaultMessage: '输入加密时设置的密码，密码将仅用于本地解密，不会被传输或存储'
+  },
+  step3Title: {
+    id: 'decrypt.steps.step3.title',
+    defaultMessage: '开始解密'
+  },
+  step3Description: {
+    id: 'decrypt.steps.step3.description',
+    defaultMessage: '点击按钮后，系统将使用 AES-256-CBC 算法在本地解密您的文件'
+  },
+  step4Title: {
+    id: 'decrypt.steps.step4.title',
+    defaultMessage: '获取原始文件'
+  },
+  step4Description: {
+    id: 'decrypt.steps.step4.description',
+    defaultMessage: '解密完成后，原始文件将自动下载，解密过程完全无损，保证文件完整性'
+  }
+});
+
 const DecryptSteps = () => {
+  const intl = useIntl();
+  
   const steps = [
     {
-      icon: 'bi bi-file-earmark-lock2',
-      title: '选择加密文件',
-      description: '选择使用 MyStorage 加密工具加密的 .encrypted 文件，支持拖拽或点击选择',
-      active: true
+      title: intl.formatMessage(messages.step1Title),
+      description: intl.formatMessage(messages.step1Description)
     },
     {
-      icon: 'bi bi-key',
-      title: '输入解密密码',
-      description: '输入加密时设置的密码，密码将仅用于本地解密，不会被传输或存储',
-      active: true
+      title: intl.formatMessage(messages.step2Title),
+      description: intl.formatMessage(messages.step2Description)
     },
     {
-      icon: 'bi bi-shield-lock',
-      title: '开始解密',
-      description: '点击按钮后，系统将使用 AES-256-CBC 算法在本地解密您的文件',
-      active: false
+      title: intl.formatMessage(messages.step3Title),
+      description: intl.formatMessage(messages.step3Description)
     },
     {
-      icon: 'bi bi-download',
-      title: '获取原始文件',
-      description: '解密完成后，原始文件将自动下载，解密过程完全无损，保证文件完整性',
-      active: false
+      title: intl.formatMessage(messages.step4Title),
+      description: intl.formatMessage(messages.step4Description)
     }
   ];
+
+  const icons = [
+    'bi bi-file-earmark-lock2',
+    'bi bi-key',
+    'bi bi-shield-lock',
+    'bi bi-download'
+  ];
+
+  const stepsWithIcons = steps.map((step, index) => ({
+    ...step,
+    icon: icons[index],
+    active: index < 2
+  }));
 
   return (
     <StepsContainer>
       <StepsTitle>
         <i className="bi bi-shield-check"></i>
-        <h3>解密步骤</h3>
+        <h3>{intl.formatMessage(messages.title)}</h3>
       </StepsTitle>
       <Timeline>
-        {steps.map((step, index) => (
+        {stepsWithIcons.map((step, index) => (
           <StepItem key={index}>
             <StepIcon $active={step.active}>
               <i className={step.icon}></i>
