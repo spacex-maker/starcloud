@@ -1,5 +1,17 @@
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { slideInFromLeft } from '../../styles';
+
+const gradientShift = keyframes`
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+`;
 
 export const LeftSection = styled.div`
   flex: 1;
@@ -9,12 +21,31 @@ export const LeftSection = styled.div`
   align-items: center;
   background: ${props => props.theme.mode === 'dark' 
     ? 'linear-gradient(135deg, var(--ant-color-primary) 0%, var(--ant-color-primary-7) 100%)'
-    : 'linear-gradient(135deg, #1677ff 0%, #4096ff 100%)'};
+    : 'linear-gradient(135deg, #FF0080 0%, #7928CA 25%, #FF4D4D 50%, #00C6FF 75%, #FF0080 100%)'};
+  background-size: ${props => props.theme.mode === 'dark' ? '100% 100%' : '400% 400%'};
   padding: 2rem;
   color: white;
   position: relative;
   overflow: hidden;
   animation: ${slideInFromLeft} 0.8s ease-out forwards;
+
+  ${props => props.theme.mode !== 'dark' && css`
+    animation: ${slideInFromLeft} 0.8s ease-out forwards,
+               ${gradientShift} 10s ease infinite;
+  `}
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: ${props => props.theme.mode === 'dark' 
+      ? 'none'
+      : 'linear-gradient(45deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.25) 100%)'};
+    pointer-events: none;
+  }
 
   @media (max-width: 768px) {
     display: none;

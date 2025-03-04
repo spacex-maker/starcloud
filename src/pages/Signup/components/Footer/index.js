@@ -17,7 +17,9 @@ export const Footer = () => {
 
 export const PhilosophyQuote = ({ children }) => (
   <PhilosophyQuoteWrapper>
-    {children}
+    {children.split('').map((char, index) => (
+      <span key={index}>{char}</span>
+    ))}
   </PhilosophyQuoteWrapper>
 );
 

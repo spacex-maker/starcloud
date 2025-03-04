@@ -3,7 +3,9 @@ import { PhilosophyQuoteWrapper, PoweredByWrapper } from './styles';
 
 export const PhilosophyQuote = ({ children }) => (
   <PhilosophyQuoteWrapper>
-    {children}
+    {[...children].map((char, index) => (
+      <span key={index}>{char}</span>
+    ))}
   </PhilosophyQuoteWrapper>
 );
 

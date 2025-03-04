@@ -1,6 +1,17 @@
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { slideInFromRight, fadeInScale, marqueeGlow, sendingPulse, glowRipple } from '../../styles';
+
+const slideUpFade = keyframes`
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
 
 export const RightSection = styled.div`
   flex: 1;
@@ -10,7 +21,7 @@ export const RightSection = styled.div`
   align-items: center;
   padding: 2rem;
   background: ${props => props.theme.mode === 'dark' 
-    ? 'var(--ant-color-bg-container)' 
+    ? '#1f1f1f'
     : '#ffffff'};
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -32,10 +43,10 @@ export const LoginBox = styled.div`
     ? 'transparent' 
     : '#ffffff'};
   border-radius: 1rem;
-  box-shadow: ${props => props.theme.mode === 'dark' 
-    ? 'none' 
-    : '0 4px 24px rgba(0, 0, 0, 0.08)'};
-  animation: ${fadeInScale} 0.5s ease-out forwards;
+  box-shadow: none;
+  opacity: 0;
+  animation: ${slideUpFade} 0.8s ease-out forwards;
+  animation-delay: 0.3s;
 
   @media (max-width: 768px) {
     padding: 1.5rem;
@@ -49,6 +60,9 @@ export const Logo = styled.h1`
   text-align: center;
   margin-bottom: 2rem;
   color: var(--ant-color-text);
+  opacity: 0;
+  animation: ${slideUpFade} 0.8s ease-out forwards;
+  animation-delay: 0.1s;
 `;
 
 export const Form = styled.form`
@@ -61,6 +75,9 @@ export const FormItem = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  opacity: 0;
+  animation: ${slideUpFade} 0.8s ease-out forwards;
+  animation-delay: ${props => 0.4 + props.index * 0.1}s;
 `;
 
 export const InputWrapper = styled.div`

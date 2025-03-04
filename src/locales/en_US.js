@@ -13,6 +13,7 @@ export default {
   'login.success': 'Login successful',
   'login.forgotPassword': 'Forgot password?',
   'login.forgotPassword.link': 'Click here to reset',
+  'signup.page.title': 'Sign Up - MyStorageX',
   'signup.title': 'MyStorageX',
   'signup.welcome': 'Welcome to MyStorageX',
   'signup.description': 'Create your account to start your cloud storage journey',
