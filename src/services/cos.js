@@ -45,134 +45,163 @@ class COSService {
   }
 
   async uploadFile(file, path = '', onProgress, useChunkUpload = false, resumeData = null) {
-    if (!this.cos) {
-      await this.init();
-    }
+    try {
+      if (!this.cos) {
+        const initialized = await this.init();
+        if (!initialized) {
+          throw new Error('COS 初始化失败');
+        }
+      }
 
-    return new Promise((resolve, reject) => {
-      const key = path ? `${path}${file.name}` : file.name;
-      let lastProgress = resumeData ? resumeData.progress : 0;
-      let isTaskCancelled = false;
+      return new Promise((resolve, reject) => {
+        const key = path ? `${path}${file.name}` : file.name;
+        let lastProgress = resumeData ? resumeData.progress : 0;
+        let lastUpdateTime = Date.now();
+        let isTaskCancelled = false;
 
-      // 创建上传任务
-      const taskId = resumeData ? resumeData.taskId : `${key}_${Date.now()}`;
-      console.log('创建上传任务，taskId:', taskId, '续传数据:', resumeData, '是否分片上传:', useChunkUpload);
+        // 创建上传任务
+        const taskId = resumeData ? resumeData.taskId : `${key}_${Date.now()}`;
+        
+        // 存储任务信息
+        this.uploadTasks.set(taskId, {
+          taskId,
+          tid: null,
+          file,
+          path,
+          status: 'uploading',
+          progress: lastProgress,
+          onProgress,
+          uploadId: resumeData?.uploadId,
+          partNumber: resumeData?.partNumber,
+          useChunkUpload,
+          startTime: Date.now(),
+          totalBytes: file.size,
+          uploadedBytes: (lastProgress / 100) * file.size
+        });
 
-      // 存储任务信息的占位符
-      this.uploadTasks.set(taskId, {
-        taskId,
-        tid: null,
-        file,
-        path,
-        status: 'uploading',
-        progress: lastProgress,
-        onProgress,
-        uploadId: resumeData?.uploadId,
-        partNumber: resumeData?.partNumber,
-        useChunkUpload
-      });
+        // 根据是否使用分片上传选择不同的上传方法
+        const uploadMethod = useChunkUpload ? this.cos.sliceUploadFile : this.cos.putObject;
+        const uploadOptions = {
+          Bucket: 'px-1258150206',
+          Region: 'ap-nanjing',
+          Key: key,
+          Body: file,
+          onProgress: (progressData) => {
+            if (isTaskCancelled) {
+              return;
+            }
 
-      // 根据是否使用分片上传选择不同的上传方法
-      const uploadMethod = useChunkUpload ? this.cos.sliceUploadFile : this.cos.putObject;
-      const uploadOptions = {
-        Bucket: 'px-1258150206',
-        Region: 'ap-nanjing',
-        Key: key,
-        Body: file,
-        onProgress: (progressData) => {
-          if (isTaskCancelled) {
+            const now = Date.now();
+            const timeDiff = (now - lastUpdateTime) / 1000; // 转换为秒
+            
+            if (timeDiff >= 0.5) { // 至少每500ms更新一次
+              const percent = Math.min(Math.round(progressData.percent * 100), 100);
+              const taskInfo = this.uploadTasks.get(taskId);
+              
+              if (taskInfo) {
+                const currentBytes = (percent / 100) * file.size;
+                const bytesDiff = currentBytes - taskInfo.uploadedBytes;
+                const speed = bytesDiff / timeDiff; // 字节/秒
+                
+                taskInfo.progress = percent;
+                taskInfo.speed = speed;
+                taskInfo.uploadedBytes = currentBytes;
+                taskInfo.lastUpdateTime = now;
+                
+                onProgress(percent, speed, taskId);
+                lastProgress = percent;
+                lastUpdateTime = now;
+              }
+            }
+          }
+        };
+
+        // 如果使用分片上传，添加分片相关配置
+        if (useChunkUpload) {
+          Object.assign(uploadOptions, {
+            ChunkSize: 1024 * 1024 * 50, // 50MB 分片大小
+            AsyncLimit: 3, // 并发数
+            ChunkParallel: true,
+            SliceSize: 1024 * 1024 * 50,
+            RetryTimes: 3,
+            onTaskReady: (tid) => {
+              const taskInfo = this.uploadTasks.get(taskId);
+              if (taskInfo) {
+                taskInfo.tid = tid;
+                taskInfo.status = 'uploading';
+              }
+            }
+          });
+
+          // 如果有续传数据，添加到上传选项中
+          if (resumeData?.uploadId) {
+            uploadOptions.UploadId = resumeData.uploadId;
+            uploadOptions.PartNumber = resumeData.partNumber;
+          }
+        }
+
+        const task = uploadMethod.call(this.cos, uploadOptions, (err, data) => {
+          const taskInfo = this.uploadTasks.get(taskId);
+          
+          if (isTaskCancelled && useChunkUpload) {
+            // 只有分片上传才需要保存进度信息
+            if (taskInfo && data) {
+              taskInfo.uploadId = data.UploadId;
+              taskInfo.partNumber = data.CurrPartNumber;
+              taskInfo.status = 'paused';
+            }
             return;
           }
 
-          const percent = progressData.percent * 100;
-          const speed = progressData.speed;
-          
-          if (percent >= lastProgress) {
-            lastProgress = percent;
-            const taskInfo = this.uploadTasks.get(taskId);
+          if (err) {
             if (taskInfo) {
-              taskInfo.progress = percent;
-              taskInfo.speed = speed;
+              taskInfo.status = 'error';
+              taskInfo.error = err.message;
             }
-            onProgress(percent, speed, taskId);
-          }
-        }
-      };
-
-      // 如果使用分片上传，添加分片相关配置
-      if (useChunkUpload) {
-        Object.assign(uploadOptions, {
-          ChunkSize: 1024 * 1024 * 50, // 50MB 分片大小
-          AsyncLimit: 3, // 并发数
-          ChunkParallel: true,
-          SliceSize: 1024 * 1024 * 50,
-          RetryTimes: 3,
-          onTaskReady: (tid) => {
-            console.log('分片上传任务创建成功，任务ID:', tid);
-            const taskInfo = this.uploadTasks.get(taskId);
+            console.error('上传失败:', {
+              fileName: file.name,
+              error: err.message
+            });
+            this.uploadTasks.delete(taskId);
+            reject(err);
+          } else {
             if (taskInfo) {
-              taskInfo.tid = tid;
+              taskInfo.status = 'success';
+              taskInfo.progress = 100;
+              taskInfo.speed = 0;
             }
+            onProgress(100, 0, taskId);
+            this.uploadTasks.delete(taskId);
+            resolve({
+              url: `${this.host}${key}`,
+              key: key,
+              etag: data.ETag,
+              location: data.Location,
+              taskId,
+              ...data
+            });
           }
         });
 
-        // 如果有续传数据，添加到上传选项中
-        if (resumeData?.uploadId) {
-          console.log('使用续传数据:', resumeData);
-          uploadOptions.UploadId = resumeData.uploadId;
-          uploadOptions.PartNumber = resumeData.partNumber;
-        }
-      }
-
-      const task = uploadMethod.call(this.cos, uploadOptions, (err, data) => {
-        if (isTaskCancelled && useChunkUpload) {
-          // 只有分片上传才需要保存进度信息
-          const taskInfo = this.uploadTasks.get(taskId);
-          if (taskInfo && data) {
-            taskInfo.uploadId = data.UploadId;
-            taskInfo.partNumber = data.CurrPartNumber;
-            console.log('保存上传进度:', {
-              uploadId: data.UploadId,
-              partNumber: data.CurrPartNumber,
-              progress: taskInfo.progress
-            });
-          }
-          return;
-        }
-
-        // 完成后删除任务记录
-        console.log('上传任务完成或出错，删除任务记录:', taskId);
-        this.uploadTasks.delete(taskId);
-        
-        if (err) {
-          reject(err);
-        } else {
-          onProgress(100, 0, taskId);
-          resolve({
-            url: `${this.host}${key}`,
-            key: key,
-            etag: data.ETag,
-            location: data.Location,
-            taskId,
-            ...data
-          });
+        // 更新任务信息
+        const taskInfo = this.uploadTasks.get(taskId);
+        if (taskInfo) {
+          taskInfo.cancel = () => {
+            isTaskCancelled = true;
+            if (taskInfo.tid && useChunkUpload) {
+              taskInfo.status = 'cancelling';
+              this.cos.cancelTask(taskInfo.tid);
+            } else {
+              taskInfo.status = 'cancelled';
+              this.uploadTasks.delete(taskId);
+            }
+          };
         }
       });
-
-      console.log('获取到的上传任务对象:', task);
-
-      // 更新任务信息
-      const taskInfo = this.uploadTasks.get(taskId);
-      if (taskInfo) {
-        taskInfo.cancel = () => {
-          isTaskCancelled = true;
-          if (taskInfo.tid && useChunkUpload) {
-            this.cos.cancelTask(taskInfo.tid);
-          }
-        };
-        console.log('已更新任务对象');
-      }
-    });
+    } catch (error) {
+      console.error('上传过程发生错误:', error);
+      throw error;
+    }
   }
 
   // 暂停上传
@@ -318,6 +347,38 @@ class COSService {
         }
       });
     });
+  }
+
+  async renameFile(oldKey, newKey) {
+    if (!this.cos) {
+      await this.init();
+    }
+
+    try {
+      // 1. 复制文件到新的位置
+      await new Promise((resolve, reject) => {
+        this.cos.putObjectCopy({
+          Bucket: 'px-1258150206',
+          Region: 'ap-nanjing',
+          Key: newKey,
+          CopySource: encodeURIComponent('px-1258150206.cos.ap-nanjing.myqcloud.com/' + oldKey)
+        }, (err, data) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
+        });
+      });
+
+      // 2. 删除原文件
+      await this.deleteFile(oldKey);
+
+      return true;
+    } catch (error) {
+      console.error('重命名文件失败:', error);
+      throw error;
+    }
   }
 }
 

@@ -77,16 +77,17 @@ export const formatFileSize = (bytes, options = {}) => {
  * @returns {string} 处理后的文件名
  */
 export const getEllipsisFileName = (fileName) => {
-  if (!fileName || fileName.length <= 30) return fileName;
+  if (!fileName) return '';
   
-  const ext = fileName.split('.').pop();
-  const name = fileName.slice(0, fileName.length - ext.length - 1);
+  const parts = fileName.split('.');
+  const ext = parts.length > 1 ? parts.pop() : '';
+  const name = parts.join('.');
   
-  if (name.length <= 30) return fileName;
+  if (name.length <= 20) return fileName;
   
-  const start = name.slice(0, 12);
-  const end = name.slice(-12);
-  return `${start}...${end}.${ext}`;
+  const start = name.slice(0, 8);
+  const end = name.slice(-8);
+  return ext ? `${start}...${end}.${ext}` : `${start}...${end}`;
 };
 
 /**

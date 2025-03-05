@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Upload, Space, Grid } from 'antd';
+import type { TablePaginationConfig } from 'antd/es/table';
 import {
   FolderOutlined,
   CloudUploadOutlined,
@@ -54,6 +55,7 @@ const AllFiles = () => {
   const [loading, setLoading] = useState(false);
   const [currentPath, setCurrentPath] = useState('');
   const [currentParentId, setCurrentParentId] = useState(0);
+  const [currentFolder, setCurrentFolder] = useState<any>(null);
   const [fileUploadModalVisible, setFileUploadModalVisible] = useState(false);
   const [fileEncryptModalProps, setFileEncryptModalProps] = useState<FileEncryptModalProps | null>(null);
   const [rootDirectoryId, setRootDirectoryId] = useState<number | null>(null);
@@ -91,7 +93,8 @@ const AllFiles = () => {
   } = useUpload(
     currentParentId, 
     userInfo,
-    currentPath, 
+    currentPath,
+    currentFolder,
     pagination, 
     setPagination,
     setLoading,
@@ -137,7 +140,9 @@ const AllFiles = () => {
     setFiles,
     setFilteredFiles,
     setSearchText,
-    setLoading
+    setLoading,
+    setCurrentParentId,
+    setCurrentFolder
   );
 
   const {
@@ -332,6 +337,12 @@ const AllFiles = () => {
           handleCreateFolder={handleCreateFolder}
           previewImage={previewImage}
           handlePreviewClose={handlePreviewClose}
+          currentParentId={currentParentId}
+          setLoading={setLoading}
+          setFiles={setFiles}
+          setFilteredFiles={setFilteredFiles}
+          setSearchText={setSearchText}
+          setPagination={setPagination}
         />
       </div>
 
