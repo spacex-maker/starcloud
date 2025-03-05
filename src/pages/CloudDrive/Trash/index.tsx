@@ -2,14 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Card, Input, Space, Row, Col, Typography, Tooltip } from 'antd';
 import { DeleteOutlined, UndoOutlined, SearchOutlined } from '@ant-design/icons';
 import { FormattedMessage } from 'react-intl';
-import instance from 'api/axios';
-import type { FileModel } from 'models/file/FileModel';
+import instance from '../../../api/axios';
+import type { FileModel } from '../../../models/file/FileModel';
 import FileList from './components/FileList';
-import { useFileOperations } from './hooks/useFileOperations';
+import useFileOperations from './hooks/useFileOperations';
 import styled from 'styled-components';
 import { RoundedButton, RoundedSearch } from '../components/styles/StyledComponents';
+import { TablePaginationConfig } from 'antd';
+import type { Key } from 'react';
 
-const { Search } = Input;
 const { Title } = Typography;
 
 const StyledCard = styled(Card)`
@@ -47,51 +48,35 @@ const ActionBar = styled.div`
     }
   }
 `;
-
 const Trash: React.FC = () => {
   const [files, setFiles] = useState<FileModel[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: 1,
     pageSize: 10,
     total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
   });
 
-  const loadRecycledFiles = async (searchName?: string, page?: number, pageSize?: number) => {
-    try {
-      const params = {
-        name: searchName || '',
-        currentPage: page || pagination.currentPage,
-        pageSize: pageSize || pagination.pageSize,
-      };
-
-      const response = await instance.post('/productx/file-storage/list-recycled', params);
-      
-      if (response.data?.success && response.data?.data?.data) {
-        setFiles(response.data.data.data);
-        setPagination(prev => ({
-          ...prev,
-          total: response.data.data.totalNum || 0,
-        }));
-      } else {
-        console.error('Invalid response format:', response.data);
-        setFiles([]);
-      }
-    } catch (error) {
-      console.error('加载回收站文件失败:', error);
-      setFiles([]);
-    }
-  };
-
   const {
-    selectedRowKeys,
-    loading,
     handleRestore,
     handleDelete,
     handleBatchRestore,
     handleBatchDelete,
     handleSelectChange,
-  } = useFileOperations(loadRecycledFiles, searchText, pagination);
+    loadRecycledFiles,
+  } = useFileOperations({
+    pagination,
+    setPagination,
+    setFiles,
+    setSearchText,
+    selectedRowKeys,
+    setSelectedRowKeys,
+    setLoading,
+  });
 
   useEffect(() => {
     loadRecycledFiles();
@@ -99,17 +84,11 @@ const Trash: React.FC = () => {
 
   const handleSearch = (value: string) => {
     setSearchText(value);
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-    loadRecycledFiles(value, 1, pagination.pageSize);
-  };
-
-  const handlePageChange = (page: number, pageSize: number) => {
     setPagination(prev => ({
       ...prev,
-      currentPage: page,
-      pageSize: pageSize,
+      current: 1,
     }));
-    loadRecycledFiles(searchText, page, pageSize);
+    loadRecycledFiles(value);
   };
 
   return (
@@ -162,14 +141,23 @@ const Trash: React.FC = () => {
 
       <div style={{ marginTop: 24 }}>
         <FileList
-          loading={loading}
           files={files}
+          loading={loading}
           selectedRowKeys={selectedRowKeys}
           onSelectChange={handleSelectChange}
           onRestore={handleRestore}
           onDelete={handleDelete}
-          pagination={pagination}
-          onPageChange={handlePageChange}
+          pagination={{
+            ...pagination,
+            onChange: (page: number, pageSize: number) => {
+              setPagination({
+                ...pagination,
+                current: page,
+                pageSize: pageSize
+              });
+              loadRecycledFiles(searchText);
+            }
+          }}
         />
       </div>
     </StyledCard>

@@ -1,6 +1,6 @@
-import React, { FC } from 'react';
-import { Table, Space, Button, Typography, theme, Tooltip } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import React, { FC, memo, useMemo } from 'react';
+import { Table, Typography, Tooltip, Button } from 'antd';
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import { DeleteOutlined, UndoOutlined } from '@ant-design/icons';
 import { FormattedMessage } from 'react-intl';
 import { formatFileSize } from 'utils/format';
@@ -10,6 +10,32 @@ import styled from 'styled-components';
 
 const { Text } = Typography;
 
+const ActionButtonWrapper = styled.div`
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+`;
+
+const ActionIconButton = styled(Button)`
+  &.restore-button {
+    color: var(--ant-color-primary);
+    
+    &:hover {
+      color: var(--ant-color-primary-hover);
+      background: var(--ant-color-primary-bg-hover);
+    }
+  }
+  
+  &.delete-button {
+    color: var(--ant-color-error);
+    
+    &:hover {
+      color: var(--ant-color-error-hover);
+      background: var(--ant-color-error-bg-hover);
+    }
+  }
+`;
+
 interface FileListProps {
   loading: boolean;
   files: FileModel[];
@@ -17,12 +43,7 @@ interface FileListProps {
   onSelectChange: (selectedRowKeys: React.Key[]) => void;
   onRestore: (file: FileModel) => void;
   onDelete: (file: FileModel) => void;
-  pagination: {
-    currentPage: number;
-    pageSize: number;
-    total: number;
-  };
-  onPageChange: (page: number, pageSize: number) => void;
+  pagination: TablePaginationConfig;
 }
 
 const TableWrapper = styled.div`
@@ -78,54 +99,7 @@ const TableWrapper = styled.div`
   }
 `;
 
-const ActionButtonWrapper = styled.div`
-  display: flex;
-  gap: 8px;
-  opacity: 0.8;
-  transition: opacity 0.3s;
-
-  &:hover {
-    opacity: 1;
-  }
-`;
-
-const ActionIconButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border-radius: 6px;
-
-  &.ant-btn-text:not(:disabled):hover {
-    background: ${props => props.theme.mode === 'dark'
-      ? 'rgba(255, 255, 255, 0.08)'
-      : 'rgba(0, 0, 0, 0.04)'};
-  }
-
-  .anticon {
-    font-size: 16px;
-  }
-
-  &.restore-button {
-    color: ${props => props.theme.token?.colorPrimary};
-    
-    &:hover {
-      color: ${props => props.theme.token?.colorPrimaryHover};
-    }
-  }
-
-  &.delete-button {
-    color: ${props => props.theme.token?.colorError};
-    
-    &:hover {
-      color: ${props => props.theme.token?.colorErrorHover};
-    }
-  }
-`;
-
-const FileList: FC<FileListProps> = ({
+const FileList: FC<FileListProps> = memo(({
   loading,
   files,
   selectedRowKeys,
@@ -133,11 +107,8 @@ const FileList: FC<FileListProps> = ({
   onRestore,
   onDelete,
   pagination,
-  onPageChange,
 }) => {
-  const { token } = theme.useToken();
-
-  const columns: ColumnsType<FileModel> = [
+  const columns: ColumnsType<FileModel> = useMemo(() => [
     {
       title: <FormattedMessage id="filelist.column.name" />,
       dataIndex: 'name',
@@ -154,11 +125,7 @@ const FileList: FC<FileListProps> = ({
           setFilteredFiles={() => {}}
           setSearchText={() => {}}
           setPagination={() => {}}
-          pagination={{
-            currentPage: 1,
-            pageSize: 10,
-            total: 0
-          }}
+          pagination={pagination}
         />
       ),
     },
@@ -196,41 +163,25 @@ const FileList: FC<FileListProps> = ({
         </ActionButtonWrapper>
       ),
     },
-  ];
+  ], [pagination, onRestore, onDelete]);
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: onSelectChange,
+  };
 
   return (
     <TableWrapper>
-      <Table<FileModel>
-        rowSelection={{
-          selectedRowKeys,
-          onChange: onSelectChange,
-          columnWidth: 48,
-        }}
+      <Table
+        rowSelection={rowSelection}
         columns={columns}
         dataSource={files}
-        rowKey="id"
         loading={loading}
-        rowClassName={(record) => record.isDirectory ? 'folder-row' : ''}
-        locale={{
-          emptyText: (
-            <div style={{ padding: '24px 0' }}>
-              <Text type="secondary">回收站为空</Text>
-            </div>
-          )
-        }}
-        pagination={{
-          current: pagination.currentPage,
-          pageSize: pagination.pageSize,
-          total: pagination.total,
-          onChange: onPageChange,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total) => `共 ${total} 项`,
-          size: 'default',
-        }}
+        pagination={pagination}
+        rowKey="id"
       />
     </TableWrapper>
   );
-};
+});
 
 export default FileList; 

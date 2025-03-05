@@ -15,7 +15,6 @@ const { Content, Sider } = Layout;
 
 const CloudDrivePage = () => {
   const [selectedKeys, setSelectedKeys] = useState(['all']);
-  const [userInfo, setUserInfo] = useState(null);
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(window.innerWidth < 769);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 769);
@@ -29,7 +28,6 @@ const CloudDrivePage = () => {
       navigate('/login');
       return;
     }
-    setUserInfo(JSON.parse(storedUserInfo));
   }, [navigate]);
 
   useEffect(() => {

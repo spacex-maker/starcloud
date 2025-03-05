@@ -1,5 +1,6 @@
 import React from 'react';
 import {Typography, Grid } from 'antd';
+import type { DuplicateAction } from '../../pages/CloudDrive/AllFiles/components/FileUploadModal';
 
 import DesktopFileUploadModal from './DesktopFileUploadModal';
 import MobileFileUploadModal from './MobileFileUploadModal';
@@ -12,10 +13,10 @@ interface FileUploadModalProps {
   isUploading: boolean;
   onStartUpload: (files: any[]) => void;
   onCancel: () => void;
-  onDuplicateDecision: (fileName: string, action: string) => void;
+  onDuplicateDecision: (fileName: string, action: DuplicateAction) => void;
   onRemoveFiles: (fileNames: string[]) => void;
   onAddFiles: (files: any[]) => void;
-  onEncryptFiles: (files: any[], callback: (encryptedFiles: any[], originalFiles: any[]) => void) => void;
+  onEncryptFiles: (files: any[]) => void;
   onEncryptComplete: (encryptedFiles: any[], originalFiles: any[]) => void;
   onUploadComplete: () => void;
   existingFiles: any[];

@@ -17,6 +17,7 @@ import { RoundedButton } from '../../components/styles/StyledComponents';
 import { FormattedMessage, useIntl } from 'react-intl';
 import FileItem from './FileItem';
 import { formatFileSize, isImageFile } from 'utils/format';
+import type { TableRowSelection, TablePaginationConfig } from 'antd/es/table/interface';
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -31,28 +32,28 @@ interface PreviewImageType {
 interface FileListProps {
   loading: boolean;
   filteredFiles: FileModel[];
-  searchText: string;
+  selectedRowKeys: Key[];
+  onSelectChange: (selectedRowKeys: Key[]) => void;
   handleFolderClick: (record: FileModel) => void;
   handlePreview: (record: FileModel) => void;
   handleDelete: (record: FileModel) => void;
   handleBatchDelete: (files: FileModel[]) => void;
   handleBatchDownload: (files: FileModel[]) => void;
-  selectedRowKeys: Key[];
-  onSelectChange: (selectedRowKeys: Key[]) => void;
   onDownload: (record: FileModel) => void;
   newFolderModalVisible: boolean;
   setNewFolderModalVisible: (visible: boolean) => void;
   newFolderName: string;
   setNewFolderName: (name: string) => void;
   handleCreateFolder: () => void;
-  previewImage: PreviewImageType;
+  previewImage: any;
   handlePreviewClose: () => void;
   currentParentId: number;
   setLoading: (loading: boolean) => void;
   setFiles: (files: FileModel[]) => void;
   setFilteredFiles: (files: FileModel[]) => void;
   setSearchText: (text: string) => void;
-  setPagination: (pagination: any) => void;
+  setPagination: (pagination: TablePaginationConfig) => void;
+  pagination: TablePaginationConfig;
 }
 
 interface ThemedTableProps {
@@ -120,13 +121,13 @@ const TableWrapper = styled.div`
 const FileList: FC<FileListProps> = memo(({
   loading,
   filteredFiles,
+  selectedRowKeys,
+  onSelectChange,
   handleFolderClick,
   handlePreview,
   handleDelete,
   handleBatchDelete,
   handleBatchDownload,
-  selectedRowKeys,
-  onSelectChange,
   onDownload,
   newFolderModalVisible,
   setNewFolderModalVisible,
@@ -141,6 +142,7 @@ const FileList: FC<FileListProps> = memo(({
   setFilteredFiles,
   setSearchText,
   setPagination,
+  pagination,
 }) => {
   const { token } = useToken();
   const screens = Grid.useBreakpoint();
@@ -209,6 +211,7 @@ const FileList: FC<FileListProps> = memo(({
           setFilteredFiles={setFilteredFiles}
           setSearchText={setSearchText}
           setPagination={setPagination}
+          pagination={pagination}
         />
       ),
     },
@@ -299,13 +302,16 @@ const FileList: FC<FileListProps> = memo(({
         );
       },
     },
-  ], [handleFolderClick, handlePreview, handleDelete, onDownload, deletingIds, currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText, setPagination]);
+  ], [handleFolderClick, handlePreview, handleDelete, onDownload, deletingIds, currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination]);
 
-  const rowSelection = {
+  const rowSelection: TableRowSelection<FileModel> = {
     selectedRowKeys,
     onChange: onSelectChange,
+    columnWidth: 48,
+    preserveSelectedRowKeys: true,
     getCheckboxProps: (record: FileModel) => ({
-      disabled: record.isDirectory,
+      disabled: false,
+      name: record.name,
     }),
   };
 

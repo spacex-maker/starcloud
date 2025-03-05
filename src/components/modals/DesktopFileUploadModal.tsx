@@ -20,6 +20,7 @@ import { getFileIcon } from '../../utils/fileIcon';
 import { getStatusIcon, getStatusText } from '../../utils/uploadStatus';
 import { FormattedMessage, useIntl } from 'react-intl';
 import FileEncryptModal from './FileEncryptModal';
+import type { DuplicateAction } from '../../pages/CloudDrive/AllFiles/components/FileUploadModal';
 
 const { Text } = Typography;
 
@@ -118,17 +119,18 @@ interface UploadFile {
   errorMessage?: string;
 }
 
-interface DesktopFileUploadModalProps {
+export interface DesktopFileUploadModalProps {
   visible: boolean;
   uploadingFiles: Map<string, UploadFile>;
   isUploading: boolean;
   onStartUpload: () => void;
   onCancel: () => void;
-  onDuplicateDecision: (fileName: string, action: string) => void;
+  onDuplicateDecision: (fileName: string, action: DuplicateAction) => void;
   onRemoveFiles: (fileNames: string[]) => void;
   onAddFiles: (files: any[]) => void;
-  onEncryptFiles: (files: any[], callback: (encryptedFiles: any[], originalFiles: any[]) => void) => void;
+  onEncryptFiles: (files: any[]) => void;
   onEncryptComplete: (encryptedFiles: any[], originalFiles: any[]) => void;
+  onUploadComplete: () => void;
   existingFiles: any[];
   onPauseUpload: (taskId: string) => void;
   onResumeUpload: (taskId: string) => void;
@@ -166,6 +168,7 @@ const DesktopFileUploadModal: React.FC<DesktopFileUploadModalProps> = ({
     message.warning('恢复上传功能未实现');
   },
   onEncryptComplete,
+  onUploadComplete,
   existingFiles = [],
   setUploadStates,
 }) => {

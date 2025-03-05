@@ -100,14 +100,6 @@ const DeleteFileModal = ({
                   <Text>{record.updateTime}</Text>
                 </div>
               )}
-              {record.storagePath && (
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Text type="secondary">存储路径：</Text>
-                  <Text ellipsis style={{ maxWidth: '300px' }} title={record.storagePath}>
-                    {record.storagePath}
-                  </Text>
-                </div>
-              )}
             </div>
           </div>
         </div>

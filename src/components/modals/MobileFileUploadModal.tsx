@@ -26,20 +26,22 @@ import {
   DuplicateTag,
   MobileModalGlobalStyle
 } from './MobileFileUploadModal.styles';
+import type { DuplicateAction } from '../../pages/CloudDrive/AllFiles/components/FileUploadModal';
 
 const { Text } = Typography;
 
-interface MobileFileUploadModalProps {
+export interface MobileFileUploadModalProps {
   visible: boolean;
   uploadingFiles: Map<string, any>;
   isUploading: boolean;
   onStartUpload: () => void;
   onCancel: () => void;
-  onDuplicateDecision: (fileName: string, action: string) => void;
+  onDuplicateDecision: (fileName: string, action: DuplicateAction) => void;
   onRemoveFiles: (fileNames: string[]) => void;
   onAddFiles: (files: any[]) => void;
-  onEncryptFiles: (files: any[], callback: (encryptedFiles: any[], originalFiles: any[]) => void) => void;
+  onEncryptFiles: (files: any[]) => void;
   onEncryptComplete: (encryptedFiles: any[], originalFiles: any[]) => void;
+  onUploadComplete: () => void;
   existingFiles: any[];
   onPauseUpload: (taskId: string) => void;
   onResumeUpload: (taskId: string) => void;
@@ -77,6 +79,7 @@ const MobileFileUploadModal: React.FC<MobileFileUploadModalProps> = ({
     message.warning('恢复上传功能未实现');
   },
   onEncryptComplete,
+  onUploadComplete,
   existingFiles = [],
   setUploadStates,
 }) => {

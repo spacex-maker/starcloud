@@ -5,7 +5,7 @@ import { formatFileSize } from 'utils/format';
 
 
 // 获取根目录信息
-export const fetchRootDirectory = async (
+export const fetchRootDirectory = async ({
   setLoading, 
   setRootDirectoryId, 
   setCurrentParentId, 
@@ -14,7 +14,7 @@ export const fetchRootDirectory = async (
   setSearchText,
   setPagination,
   pagination
-) => {
+}) => {
   try {
     setLoading(true);
     
@@ -85,7 +85,15 @@ export const fetchRootDirectory = async (
         console.warn('未找到根目录');
         setRootDirectoryId(null);
         // 直接加载 parentId 为 0 的内容，并传入分页参数
-        loadFiles(0, setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination);
+        loadFiles({
+          parentId: 0,
+          setLoading,
+          setFiles,
+          setFilteredFiles,
+          setSearchText,
+          setPagination,
+          pagination
+        });
       }
     } else {
       throw new Error(response.data.message || '获取根目录信息失败');
@@ -94,14 +102,22 @@ export const fetchRootDirectory = async (
     console.error('获取根目录信息失败:', error);
     message.error('获取根目录信息失败: ' + (error.message || '未知错误'));
     // 加载 parentId 为 0 的内容时也传入分页参数
-    loadFiles(0, setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination);
+    loadFiles({
+      parentId: 0,
+      setLoading,
+      setFiles,
+      setFilteredFiles,
+      setSearchText,
+      setPagination,
+      pagination
+    });
   } finally {
     setLoading(false);
   }
 };
 
 // 修改加载文件的函数以支持分页
-export const loadFiles = async (
+export const loadFiles = async ({
   parentId,
   setLoading,
   setFiles,
@@ -109,7 +125,7 @@ export const loadFiles = async (
   setSearchText,
   setPagination,
   pagination
-) => {
+}) => {
   try {
     setLoading(true);
     const response = await instance.post('/productx/file-storage/list', {
@@ -176,7 +192,7 @@ export const checkDuplicates = (files, existingFiles = []) => {
   return { duplicates, unique };
 };
 
-export const deleteFile = async (
+export const deleteFile = async ({
   record, 
   setLoading, 
   currentParentId, 
@@ -185,7 +201,7 @@ export const deleteFile = async (
   setSearchText,
   setPagination,
   pagination
-) => {
+}) => {
   try {
     setLoading(true);
     
@@ -200,15 +216,15 @@ export const deleteFile = async (
     if (response.data && response.data.success) {
       message.success('删除成功');
       // Refresh file list with pagination
-      await loadFiles(
-        currentParentId, 
-        setLoading, 
-        setFiles, 
-        setFilteredFiles, 
+      await loadFiles({
+        parentId: currentParentId,
+        setLoading,
+        setFiles,
+        setFilteredFiles,
         setSearchText,
         setPagination,
         pagination
-      );
+      });
     } else {
       throw new Error(response.data.message || '删除失败');
     }

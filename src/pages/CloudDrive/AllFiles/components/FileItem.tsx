@@ -14,6 +14,7 @@ import { formatFileSize, isImageFile, getEllipsisFileName } from 'utils/format';
 import styled from 'styled-components';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { updateFileName, loadFiles } from 'services/fileService';
+import { TablePaginationConfig } from 'antd/es/table/interface';
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -69,7 +70,8 @@ interface FileItemProps {
   setFiles: (files: FileModel[]) => void;
   setFilteredFiles: (files: FileModel[]) => void;
   setSearchText: (text: string) => void;
-  setPagination: (pagination: any) => void;
+  setPagination: (pagination: TablePaginationConfig) => void;
+  pagination: TablePaginationConfig;
 }
 
 const FileItem: React.FC<FileItemProps> = ({
@@ -81,7 +83,8 @@ const FileItem: React.FC<FileItemProps> = ({
   setFiles,
   setFilteredFiles,
   setSearchText,
-  setPagination
+  setPagination,
+  pagination
 }) => {
   const { token } = useToken();
   const intl = useIntl();
@@ -106,14 +109,15 @@ const FileItem: React.FC<FileItemProps> = ({
       const success = await updateFileName(file.id, newName, currentParentId);
       if (success) {
         // 刷新文件列表
-        await loadFiles(
-          currentParentId,
+        await loadFiles({
+          parentId: currentParentId,
           setLoading,
           setFiles,
           setFilteredFiles,
           setSearchText,
-          setPagination
-        );
+          setPagination,
+          pagination
+        });
         setIsRenaming(false);
       }
     } finally {

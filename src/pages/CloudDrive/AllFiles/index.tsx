@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Layout, Upload, Space, Grid, Pagination } from 'antd';
 import type { TablePaginationConfig } from 'antd/es/table';
 import type { Key } from 'react';
@@ -29,6 +29,7 @@ import { useFileOperations } from '../hooks/useFileOperations';
 import { useFolderOperations } from '../hooks/useFolderOperations';
 import { useSearch } from '../hooks/useSearch';
 import { useDownload } from '../hooks/useDownload';
+import type { DuplicateAction } from './components/FileUploadModal';
 
 const { Content } = Layout;
 
@@ -80,7 +81,7 @@ interface PaginationState {
   total: number;
 }
 
-interface UserInfo {
+export interface UserInfo {
   username: string;
   [key: string]: any;
 }
@@ -97,90 +98,78 @@ interface FileEncryptModalProps {
   [key: string]: any;
 }
 
+interface UploadState {
+  files: Map<string, any>;
+  isUploading: boolean;
+}
+
 const AllFiles = () => {
-  const [files, setFiles] = useState<FileModel[]>([]);
+  // 基础状态
   const [loading, setLoading] = useState(false);
-  const [currentPath, setCurrentPath] = useState('');
+  const [files, setFiles] = useState<FileModel[]>([]);
+  const [filteredFiles, setFilteredFiles] = useState<FileModel[]>([]);
+  const [searchText, setSearchText] = useState('');
   const [currentParentId, setCurrentParentId] = useState(0);
+  const [newFolderModalVisible, setNewFolderModalVisible] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: 1,
+    pageSize: 20,
+    total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+  });
+
+  // 文件夹相关状态
+  const [currentPath, setCurrentPath] = useState('');
+  const [rootDirectoryId, setRootDirectoryId] = useState(0);
   const [currentFolder, setCurrentFolder] = useState<FileModel | null>(null);
+
+  // 上传相关状态
   const [fileUploadModalVisible, setFileUploadModalVisible] = useState(false);
   const [fileEncryptModalProps, setFileEncryptModalProps] = useState<FileEncryptModalProps | null>(null);
-  const [rootDirectoryId, setRootDirectoryId] = useState<number | null>(null);
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
-  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
-  const [pagination, setPagination] = useState<PaginationState>({
-    currentPage: 1,
-    pageSize: 10,
-    total: 0
+  const [uploadStates, setUploadStates] = useState<UploadState>({
+    files: new Map(),
+    isUploading: false
   });
+
+  // 用户信息
+  const [userInfo, setUserInfo] = useState<UserInfo>({ username: '' });
+
   const screens = Grid.useBreakpoint();
   const intl = useIntl();
 
-  // 获取用户信息
-  useEffect(() => {
-    const storedUserInfo = localStorage.getItem('userInfo');
-    if (storedUserInfo) {
-      setUserInfo(JSON.parse(storedUserInfo));
-    }
-  }, []);
-
-  // Initialize custom hooks
-  const { searchText, filteredFiles, setFilteredFiles, handleSearch, setSearchText } = useSearch(files);
-  
-  const { 
-    uploadStates,
-    setUploadStates,
-    handleUpload,
-    uploadFiles,
-    handleDuplicateDecision,
-    handleRemoveFiles,
-    handleAddFiles,
-    handleEncryptFiles,
-    handlePauseUpload,
-    handleResumeUpload
-  } = useUpload(
-    currentParentId, 
-    userInfo,
-    currentPath,
-    currentFolder,
-    pagination, 
-    setPagination,
-    setLoading,
-    setFiles,
-    setFilteredFiles,
-    setSearchText
-  );
-
   const {
-    selectedRowKeys: fileSelectedRowKeys,
+    selectedRowKeys,
     previewImage,
     handleDelete,
+    modalDeletingId,
     handleBatchDelete,
     handlePreview,
     handlePreviewClose,
     handleSelectChange: handleFileSelectChange
-  } = useFileOperations(
-    currentParentId, 
-    pagination, 
+  } = useFileOperations({
+    currentParentId,
+    pagination,
     setPagination,
     setFiles,
     setFilteredFiles,
     setSearchText
-  );
+  });
 
   const {
-    newFolderModalVisible,
-    setNewFolderModalVisible,
-    newFolderName,
-    setNewFolderName,
+    newFolderModalVisible: useFolderModalVisible,
+    setNewFolderModalVisible: setUseFolderModalVisible,
+    newFolderName: useFolderName,
+    setNewFolderName: setUseFolderName,
     creatingFolder,
     pathHistory,
     handleCreateFolder,
     handleFolderClick,
     handlePathClick,
     handleHomeClick
-  } = useFolderOperations(
+  } = useFolderOperations({
     currentParentId,
     userInfo,
     currentPath,
@@ -192,7 +181,7 @@ const AllFiles = () => {
     setLoading,
     setCurrentParentId,
     setCurrentFolder
-  );
+  });
 
   const {
     downloadTasks,
@@ -204,12 +193,68 @@ const AllFiles = () => {
     handleBatchDownload
   } = useDownload();
 
+  const {
+    handleUpload,
+    uploadFiles,
+    handleDuplicateDecision,
+    handleRemoveFiles,
+    handleAddFiles,
+    handleEncryptFiles,
+    handlePauseUpload,
+    handleResumeUpload
+  } = useUpload({
+    currentParentId,
+    uploadStates,
+    setUploadStates,
+    setFileUploadModalVisible,
+    setFileEncryptModalProps,
+    setFiles,
+    setFilteredFiles,
+    setSearchText,
+    setPagination,
+    pagination
+  });
+
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+    if (!value) {
+      setFilteredFiles(files);
+      return;
+    }
+    const filtered = files.filter(file => 
+      file.name.toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredFiles(filtered);
+  };
+
   const handleDownloadCollapse = (collapsed: boolean) => {
     setDownloadManagerVisible(!collapsed);
   };
 
+  const handlePageChange = (page: number, pageSize: number) => {
+    setPagination(prev => ({
+      ...prev,
+      current: page,
+      pageSize: pageSize
+    }));
+    
+    loadFiles({
+      parentId: currentParentId,
+      setLoading,
+      setFiles,
+      setFilteredFiles,
+      setSearchText,
+      setPagination,
+      pagination: {
+        ...pagination,
+        current: page,
+        pageSize: pageSize
+      }
+    });
+  };
+
   useEffect(() => {
-    fetchRootDirectory(
+    fetchRootDirectory({
       setLoading,
       setRootDirectoryId,
       setCurrentParentId,
@@ -218,29 +263,8 @@ const AllFiles = () => {
       setSearchText,
       setPagination,
       pagination
-    );
+    });
   }, []);
-
-  const handlePageChange = (page: number, pageSize: number) => {
-    setPagination(prev => ({
-      ...prev,
-      currentPage: page,
-      pageSize: pageSize
-    }));
-    
-    loadFiles(
-      currentParentId,
-      setLoading,
-      setFiles,
-      setFilteredFiles,
-      setSearchText,
-      setPagination,
-      {
-        currentPage: page,
-        pageSize: pageSize
-      }
-    );
-  };
 
   const handleCloseUploadModal = () => {
     if (!uploadStates.isUploading) {
@@ -352,15 +376,15 @@ const AllFiles = () => {
             </RoundedButton>
             <RoundedButton
               icon={<ReloadOutlined />}
-              onClick={() => loadFiles(
-                currentParentId, 
+              onClick={() => loadFiles({
+                parentId: currentParentId, 
                 setLoading, 
                 setFiles, 
                 setFilteredFiles, 
                 setSearchText,
                 setPagination,
                 pagination
-              )}
+              })}
               loading={loading}
             >
               <span className="action-button-text">
@@ -392,14 +416,13 @@ const AllFiles = () => {
         <FileList
           loading={loading}
           filteredFiles={filteredFiles}
-          searchText={searchText}
+          selectedRowKeys={selectedRowKeys}
+          onSelectChange={handleFileSelectChange}
           handleFolderClick={handleFolderClick}
           handlePreview={handlePreview}
           handleDelete={handleDelete}
           handleBatchDelete={handleBatchDelete}
           handleBatchDownload={handleBatchDownload}
-          selectedRowKeys={selectedRowKeys}
-          onSelectChange={handleFileSelectChange}
           onDownload={startDownload}
           newFolderModalVisible={newFolderModalVisible}
           setNewFolderModalVisible={setNewFolderModalVisible}
@@ -414,6 +437,7 @@ const AllFiles = () => {
           setFilteredFiles={setFilteredFiles}
           setSearchText={setSearchText}
           setPagination={setPagination}
+          pagination={pagination}
         />
       </ListSection>
 
@@ -464,7 +488,7 @@ const AllFiles = () => {
         isUploading={uploadStates.isUploading}
         onStartUpload={uploadFiles}
         onCancel={handleCloseUploadModal}
-        onDuplicateDecision={handleDuplicateDecision}
+        onDuplicateDecision={handleDuplicateDecision as (fileName: string, action: DuplicateAction) => void}
         onRemoveFiles={handleRemoveFiles}
         onAddFiles={handleAddFiles}
         onEncryptFiles={handleEncryptFiles}
@@ -474,15 +498,15 @@ const AllFiles = () => {
         onResumeUpload={handleResumeUpload}
         setUploadStates={setUploadStates}
         onUploadComplete={() => {
-          loadFiles(
-            currentParentId,
+          loadFiles({
+            parentId: currentParentId,
             setLoading,
             setFiles,
             setFilteredFiles,
             setSearchText,
             setPagination,
             pagination
-          );
+          });
         }}
       />
 
