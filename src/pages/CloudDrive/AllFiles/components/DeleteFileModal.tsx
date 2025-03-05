@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Typography } from 'antd';
+import { Modal, Typography, Tooltip } from 'antd';
 import {
   DeleteOutlined,
   WarningFilled,
@@ -7,18 +7,26 @@ import {
   FileImageOutlined,
   FileOutlined,
 } from '@ant-design/icons';
-import { formatFileSize } from 'utils/format';
+import { formatFileSize, getEllipsisFileName } from 'utils/format';
+import type { FileModel } from 'models/file/FileModel';
 
 const { Text } = Typography;
 
-const DeleteConfirmModal = ({ 
+interface DeleteFileModalProps {
+  record: FileModel;
+  onConfirm: () => Promise<void>;
+  isDeleting: boolean;
+  isImageFile: (filename: string) => boolean;
+}
+
+const DeleteFileModal = ({ 
   record,
   onConfirm,
-  isDeleting = false,
+  isDeleting,
   isImageFile,
-}) => {
+}: DeleteFileModalProps) => {
   const fileName = record.name;
-  const isFolder = record.type === 'folder';
+  const isFolder = record.isDirectory;
 
   const modalConfig = {
     title: (
@@ -63,9 +71,11 @@ const DeleteConfirmModal = ({
               <FileOutlined style={{ color: '#91d5ff', fontSize: '24px', marginRight: '12px' }} />
             )}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <Text strong ellipsis title={fileName}>
-                {fileName}
-              </Text>
+              <Tooltip title={fileName}>
+                <Text strong ellipsis>
+                  {getEllipsisFileName(fileName)}
+                </Text>
+              </Tooltip>
             </div>
           </div>
           <div style={{ padding: '12px' }}>
@@ -76,18 +86,18 @@ const DeleteConfirmModal = ({
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Text type="secondary">大小：</Text>
-                <Text>{isFolder ? '-' : formatFileSize(record.size)}</Text>
+                <Text>{isFolder ? '-' : (record.size != null ? formatFileSize(record.size) : '未知大小')}</Text>
               </div>
-              {record.createdAt && (
+              {record.createTime && (
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Text type="secondary">创建时间：</Text>
-                  <Text>{new Date(record.createdAt).toLocaleString()}</Text>
+                  <Text>{record.createTime}</Text>
                 </div>
               )}
-              {record.updatedAt && (
+              {record.updateTime && (
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Text type="secondary">修改时间：</Text>
-                  <Text>{new Date(record.updatedAt).toLocaleString()}</Text>
+                  <Text>{record.updateTime}</Text>
                 </div>
               )}
               {record.storagePath && (
@@ -119,4 +129,4 @@ const DeleteConfirmModal = ({
   return Modal.confirm(modalConfig);
 };
 
-export default DeleteConfirmModal; 
+export default DeleteFileModal; 

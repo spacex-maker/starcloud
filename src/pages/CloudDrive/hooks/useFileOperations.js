@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import { message, Modal } from 'antd';
-import { DeleteOutlined, WarningFilled } from '@ant-design/icons';
-import { Typography } from 'antd';
 import { deleteFile, loadFiles } from 'services/fileService';
 import { isImageFile } from 'utils/format';
-import DeleteConfirmModal from 'components/modals/DeleteConfirmModal';
-
-const { Text } = Typography;
+import DeleteFileModal from '../AllFiles/components/DeleteFileModal';
+import BatchDeleteModal from '../AllFiles/components/BatchDeleteModal';
 
 export const useFileOperations = (
   currentParentId, 
@@ -26,7 +23,7 @@ export const useFileOperations = (
   const [modalDeletingId, setModalDeletingId] = useState(null);
 
   const handleDelete = (record) => {
-    DeleteConfirmModal({
+    DeleteFileModal({
       record,
       onConfirm: async () => {
         try {
@@ -57,62 +54,10 @@ export const useFileOperations = (
     }
 
     const selectedItems = filteredFiles.filter(file => selectedRowKeys.includes(file.id));
-    const maxDisplayItems = 5;
-    const hasFolder = selectedItems.some(item => item.isDirectory);
 
-    Modal.confirm({
-      title: (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <DeleteOutlined style={{ color: '#ff4d4f', fontSize: '20px' }} />
-          <span>确认删除 {selectedRowKeys.length} 个{hasFolder ? '文件/文件夹' : '文件'}？</span>
-        </div>
-      ),
-      icon: null,
-      width: 520,
-      content: (
-        <div>
-          <div style={{ 
-            padding: '12px',
-            background: 'var(--ant-color-error-bg)',
-            border: '1px solid var(--ant-color-error-border)',
-            borderRadius: '8px',
-            marginBottom: '16px'
-          }}>
-            <Text type="danger">
-              <WarningFilled style={{ marginRight: '8px' }} />
-              此操作将永久删除以下文件，且无法恢复
-            </Text>
-          </div>
-          <div style={{ 
-            maxHeight: '200px',
-            overflow: 'auto',
-            border: '1px solid var(--ant-color-border)',
-            borderRadius: '8px'
-          }}>
-            {selectedItems.slice(0, maxDisplayItems).map(item => (
-              <div key={item.id} style={{ padding: '8px', borderBottom: '1px solid var(--ant-color-border)' }}>
-                <Text>{item.name}</Text>
-              </div>
-            ))}
-            {selectedItems.length > maxDisplayItems && (
-              <div style={{ 
-                padding: '8px', 
-                borderTop: '1px solid var(--ant-color-border)',
-                color: 'var(--ant-color-text-secondary)',
-                textAlign: 'center'
-              }}>
-                还有 {selectedItems.length - maxDisplayItems} 个文件未显示
-              </div>
-            )}
-          </div>
-        </div>
-      ),
-      okText: '删除',
-      okButtonProps: {
-        danger: true,
-      },
-      cancelText: '取消',
-      onOk: async () => {
+    BatchDeleteModal({
+      selectedItems,
+      onConfirm: async () => {
         let loading = false;
         try {
           loading = true;
@@ -148,7 +93,7 @@ export const useFileOperations = (
         } finally {
           loading = false;
         }
-      },
+      }
     });
   };
 

@@ -3,11 +3,13 @@ import { message } from 'antd';
 import { cosService } from 'services/cos';
 import instance from 'api/axios';
 import { loadFiles } from 'services/fileService';
+import { formatFileSize } from 'utils/format';
 
 export const useUpload = (
   currentParentId, 
   userInfo, 
-  currentPath, 
+  currentPath,
+  currentFolder,
   pagination, 
   setPagination,
   setLoading,
@@ -61,6 +63,14 @@ export const useUpload = (
       return;
     }
 
+    console.log('开始上传文件:');
+    console.log('- 目标文件夹ID:', currentParentId);
+    console.log('- 目标文件夹名称:', currentFolder?.name || '根目录');
+    console.log('- 上传的文件:', filesToUpload.map(file => {
+      const fileObj = file instanceof File ? file : file.file;
+      return `${fileObj.name} (${formatFileSize(fileObj.size)})`;
+    }).join('\n  '));
+
     const initialUploadStates = new Map();
     
     filesToUpload.forEach(file => {
@@ -101,7 +111,7 @@ export const useUpload = (
     }));
 
     try {
-      const fullPath = `${userInfo.username}/${currentPath}`;
+      const fullPath = `${userInfo.username}/`;
       
       const uploadPromises = Array.from(initialUploadStates.values()).map(async fileState => {
         try {
@@ -135,6 +145,10 @@ export const useUpload = (
                   const uploadedBytes = (progressDiff / 100) * fileState.fileSize;
                   const currentSpeed = uploadedBytes / timeDiff;
                   
+                  // 计算总上传字节数和总时间
+                  const totalUploadedBytes = state.totalUploadedBytes || 0;
+                  const totalUploadTime = state.totalUploadTime || 0;
+                  
                   const newFiles = new Map(prev.files);
                   newFiles.set(fileState.file.name, {
                     ...state,
@@ -142,7 +156,12 @@ export const useUpload = (
                     speed: currentSpeed,
                     lastProgress: progress,
                     lastTime: now,
-                    taskId: taskId || state.taskId
+                    taskId: taskId || state.taskId,
+                    // 累计上传的字节数和时间
+                    totalUploadedBytes: totalUploadedBytes + uploadedBytes,
+                    totalUploadTime: totalUploadTime + timeDiff,
+                    // 记录文件总大小，用于最终计算
+                    totalFileSize: fileState.fileSize
                   });
                   
                   return {
@@ -157,16 +176,33 @@ export const useUpload = (
             fileState.useChunkUpload
           );
 
+          // 在状态更新中计算平均速度
+          let calculatedAverageSpeed = 0;
+          
           setUploadStates(prev => {
+            const state = prev.files.get(fileState.file.name);
+            // 使用文件总大小除以总时间来计算平均速度
+            calculatedAverageSpeed = Math.round(
+              state?.totalFileSize / (state?.totalUploadTime || 1)
+            );
+
             const newFiles = new Map(prev.files);
-            const state = newFiles.get(fileState.file.name);
             newFiles.set(fileState.file.name, {
               ...state,
               status: 'creating',
               progress: 100,
               speed: 0,
-              taskId: state.taskId
+              taskId: state.taskId,
+              averageSpeed: calculatedAverageSpeed
             });
+
+            console.log('文件上传完成:', {
+              fileName: fileState.file.name,
+              fileSize: state?.totalFileSize,
+              totalTime: state?.totalUploadTime,
+              averageSpeed: calculatedAverageSpeed
+            });
+
             return { ...prev, files: newFiles };
           });
 
@@ -181,7 +217,8 @@ export const useUpload = (
             mimeType: fileState.file.type,
             storageType: 'COS',
             downloadUrl: uploadResult.url,
-            visibility: 'PRIVATE'
+            visibility: 'PRIVATE',
+            uploadAverageSpeed: calculatedAverageSpeed
           });
 
           setUploadStates(prev => {

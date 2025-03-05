@@ -51,12 +51,14 @@ export const fetchRootDirectory = async (
               id: file.id,
               name: file.name,
               type: file.isDirectory ? 'folder' : 'file',
-              size: formatFileSize(file.size),
+              size: file.size,
+              rawSize: file.size,
               downloadUrl: file.downloadUrl,
               createTime: file.createTime ? new Date(file.createTime).toLocaleString() : '-',
               updateTime: file.updateTime ? new Date(file.updateTime).toLocaleString() : '-',
               storagePath: file.storagePath,
-              isDirectory: file.isDirectory
+              isDirectory: file.isDirectory,
+              extension: file.extension
             }));
             
             // 设置文件列表
@@ -122,12 +124,14 @@ export const loadFiles = async (
         id: file.id,
         name: file.name,
         size: file.size,
+        rawSize: file.size,  // 保存原始大小
         type: file.isDirectory ? 'folder' : 'file',
         createTime: file.createTime ? new Date(file.createTime).toLocaleString() : '-',
         updateTime: file.updateTime ? new Date(file.updateTime).toLocaleString() : '-',
         downloadUrl: file.downloadUrl,
         storagePath: file.storagePath,
-        isDirectory: file.isDirectory
+        isDirectory: file.isDirectory,
+        extension: file.extension
       }));
 
       setFiles(fileList);
@@ -146,7 +150,7 @@ export const loadFiles = async (
     }
   } catch (error) {
     console.error('加载文件失败:', error);
-    message.error('加载文件失败: ' + (error.message || '未知错误'));
+    message.error('加载文件失败: ' + (error?.message || '未知错误'));
   } finally {
     setLoading(false);
   }
@@ -190,8 +194,8 @@ export const deleteFile = async (
       await cosService.deleteFile(record.storagePath);
     }
     
-    // 2. Delete database record through backend API
-    const response = await instance.post('/productx/file-storage/delete', [record.id]);
+    // 2. Move file to recycle bin through backend API
+    const response = await instance.post('/productx/file-storage/recycle', [record.id]);
     
     if (response.data && response.data.success) {
       message.success('删除成功');
@@ -213,5 +217,26 @@ export const deleteFile = async (
     message.error('删除失败: ' + (error.message || '未知错误'));
   } finally {
     setLoading(false);
+  }
+};
+
+export const updateFileName = async (fileId, newName, parentId) => {
+  try {
+    const response = await instance.post('/productx/file-storage/update', {
+      id: fileId,
+      name: newName,
+      parentId: parentId
+    });
+
+    if (response.data && response.data.success) {
+      message.success('重命名成功');
+      return true;
+    } else {
+      throw new Error(response.data.message || '重命名失败');
+    }
+  } catch (error) {
+    console.error('重命名失败:', error);
+    message.error('重命名失败: ' + (error.message || '未知错误'));
+    return false;
   }
 }; 

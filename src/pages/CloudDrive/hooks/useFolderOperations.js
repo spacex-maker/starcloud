@@ -4,12 +4,23 @@ import { cosService } from 'services/cos';
 import instance from 'api/axios';
 import { loadFiles } from 'services/fileService';
 
-export const useFolderOperations = (currentParentId, userInfo, currentPath, pagination, setPagination, setFiles, setFilteredFiles, setSearchText, setLoading) => {
+export const useFolderOperations = (
+  currentParentId, 
+  userInfo, 
+  currentPath, 
+  pagination, 
+  setPagination, 
+  setFiles, 
+  setFilteredFiles, 
+  setSearchText, 
+  setLoading,
+  setCurrentParentId,
+  setCurrentFolder
+) => {
   const [newFolderModalVisible, setNewFolderModalVisible] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [pathHistory, setPathHistory] = useState([]);
-  const [currentParentIdState, setCurrentParentIdState] = useState(currentParentId);
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) {
@@ -62,6 +73,8 @@ export const useFolderOperations = (currentParentId, userInfo, currentPath, pagi
 
   const handleFolderClick = async (folder) => {
     try {
+      console.log('进入文件夹 - ID:', folder.id, '名称:', folder.name);
+      
       const newHistory = [...pathHistory, {
         id: folder.id,
         name: folder.name
@@ -70,7 +83,8 @@ export const useFolderOperations = (currentParentId, userInfo, currentPath, pagi
       const newPath = newHistory.map(p => p.name).join('/') + '/';
       
       setPathHistory(newHistory);
-      setCurrentParentIdState(folder.id);
+      setCurrentParentId(folder.id);
+      setCurrentFolder(folder);
       
       // 重置分页到第一页
       setPagination(prev => ({
@@ -107,7 +121,8 @@ export const useFolderOperations = (currentParentId, userInfo, currentPath, pagi
       const newPath = newHistory.map(p => p.name).join('/') + '/';
       
       setPathHistory(newHistory);
-      setCurrentParentIdState(targetPath.id);
+      setCurrentParentId(targetPath.id);
+      setCurrentFolder(targetPath);
       
       await loadFiles(
         targetPath.id,
@@ -127,7 +142,8 @@ export const useFolderOperations = (currentParentId, userInfo, currentPath, pagi
   const handleHomeClick = async (rootDirectoryId) => {
     try {
       setPathHistory([]);
-      setCurrentParentIdState(rootDirectoryId || 0);
+      setCurrentParentId(rootDirectoryId || 0);
+      setCurrentFolder(null);
       
       setPagination(prev => ({
         ...prev,
@@ -159,7 +175,6 @@ export const useFolderOperations = (currentParentId, userInfo, currentPath, pagi
     setNewFolderName,
     creatingFolder,
     pathHistory,
-    currentParentIdState,
     handleCreateFolder,
     handleFolderClick,
     handlePathClick,

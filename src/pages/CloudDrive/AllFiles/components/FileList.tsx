@@ -27,7 +27,13 @@ interface PreviewImageType {
   key: number;
 }
 
-type FileListProps = {
+interface PaginationState {
+  currentPage: number;
+  pageSize: number;
+  total: number;
+}
+
+interface FileListProps {
   loading: boolean;
   filteredFiles: FileModel[];
   searchText: string;
@@ -39,7 +45,7 @@ type FileListProps = {
   selectedRowKeys: React.Key[];
   onSelectChange: (selectedRowKeys: React.Key[]) => void;
   onDownload: (record: FileModel) => void;
-  pagination: TablePaginationConfig;
+  pagination: PaginationState;
   onPageChange: (page: number, pageSize: number) => void;
   newFolderModalVisible: boolean;
   setNewFolderModalVisible: (visible: boolean) => void;
@@ -48,7 +54,13 @@ type FileListProps = {
   handleCreateFolder: () => void;
   previewImage: PreviewImageType;
   handlePreviewClose: () => void;
-};
+  currentParentId: number;
+  setLoading: (loading: boolean) => void;
+  setFiles: (files: FileModel[]) => void;
+  setFilteredFiles: (files: FileModel[]) => void;
+  setSearchText: (text: string) => void;
+  setPagination: (pagination: PaginationState) => void;
+}
 
 interface ThemedTableProps {
   theme?: {
@@ -122,6 +134,12 @@ const FileList: FC<FileListProps> = memo(({
   handleCreateFolder,
   previewImage,
   handlePreviewClose,
+  currentParentId,
+  setLoading,
+  setFiles,
+  setFilteredFiles,
+  setSearchText,
+  setPagination,
 }) => {
   const { token } = useToken();
   const screens = Grid.useBreakpoint();
@@ -184,6 +202,13 @@ const FileList: FC<FileListProps> = memo(({
           file={record}
           onFolderClick={handleFolderClick}
           showSize={false}
+          currentParentId={currentParentId}
+          setLoading={setLoading}
+          setFiles={setFiles}
+          setFilteredFiles={setFilteredFiles}
+          setSearchText={setSearchText}
+          setPagination={setPagination}
+          pagination={pagination}
         />
       ),
     },
@@ -193,10 +218,16 @@ const FileList: FC<FileListProps> = memo(({
       key: 'size',
       width: 120,
       render: (size: string | number, record: FileModel) => {
-        if (record.isDirectory) return '-';
+        if (size == null) return '-';
         if (typeof size === 'string') return size;
         return formatFileSize(size);
       },
+      sorter: (a: FileModel, b: FileModel) => {
+        if (a.size == null) return -1;
+        if (b.size == null) return 1;
+        return Number(a.size) - Number(b.size);
+      },
+      sortDirections: ['descend', 'ascend']
     },
     {
       title: <FormattedMessage id="filelist.column.updateTime" />,
@@ -268,7 +299,7 @@ const FileList: FC<FileListProps> = memo(({
         );
       },
     },
-  ], [handleFolderClick, handlePreview, handleDelete, onDownload, deletingIds]);
+  ], [handleFolderClick, handlePreview, handleDelete, onDownload, deletingIds, currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination]);
 
   const rowSelection = {
     selectedRowKeys,
