@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Modal, Button, Progress, Table, Space, Badge, Tooltip, Typography, message, Upload, theme } from 'antd';
+import { Modal, Button, Progress, Table, Space, Badge, Tooltip, Typography, message, Upload, theme, Switch } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { TableRowSelection } from 'antd/es/table/interface';
 import type { AlignType } from 'rc-table/lib/interface';
@@ -302,27 +302,46 @@ const DesktopFileUploadModal: React.FC<DesktopFileUploadModalProps> = ({
   };
 
   // 处理分片上传标记
-  const handleMarkChunkUpload = () => {
+  const handleMarkChunkUpload = (fileName: string, useChunk: boolean) => {
+    setUploadStates(prev => {
+      const newFiles = new Map(prev.files);
+      const file = newFiles.get(fileName);
+      if (file) {
+        newFiles.set(fileName, {
+          ...file,
+          useChunkUpload: useChunk
+        });
+      }
+      return {
+        ...prev,
+        files: newFiles
+      };
+    });
+  };
+
+  // 处理批量标记分片上传
+  const handleBatchMarkChunkUpload = () => {
     if (selectedRowKeys.length === 0) {
       message.warning(intl.formatMessage({ id: 'modal.fileUpload.error.noSelection' }));
       return;
     }
 
-    const newFiles = new Map(uploadingFiles);
-    selectedRowKeys.forEach(fileName => {
-      const file = newFiles.get(fileName.toString());
-      if (file) {
-        newFiles.set(fileName.toString(), {
-          ...file,
-          useChunkUpload: true
-        });
-      }
+    setUploadStates(prev => {
+      const newFiles = new Map(prev.files);
+      selectedRowKeys.forEach(fileName => {
+        const file = newFiles.get(fileName.toString());
+        if (file) {
+          newFiles.set(fileName.toString(), {
+            ...file,
+            useChunkUpload: true
+          });
+        }
+      });
+      return {
+        ...prev,
+        files: newFiles
+      };
     });
-
-    setUploadStates(prev => ({
-      ...prev,
-      files: newFiles
-    }));
     message.success('已标记选中文件为分片上传');
   };
 
@@ -470,6 +489,19 @@ const DesktopFileUploadModal: React.FC<DesktopFileUploadModalProps> = ({
         return null;
       },
     },
+    {
+      title: '上传方式',
+      key: 'uploadType',
+      render: (_, file) => (
+        <Switch
+          checkedChildren="分片"
+          unCheckedChildren="普通"
+          checked={file.useChunkUpload}
+          onChange={(checked) => handleMarkChunkUpload(file.name, checked)}
+          disabled={isUploading}
+        />
+      )
+    }
   ];
 
   // 表格数据
@@ -529,7 +561,7 @@ const DesktopFileUploadModal: React.FC<DesktopFileUploadModalProps> = ({
               </Button>
               <Button
                 icon={<CloudUploadOutlined />}
-                onClick={handleMarkChunkUpload}
+                onClick={handleBatchMarkChunkUpload}
                 disabled={isUploading || selectedRowKeys.length === 0}
               >
                 <FormattedMessage id="modal.fileUpload.markChunkUpload" defaultMessage="分片上传" />

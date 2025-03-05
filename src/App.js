@@ -4,15 +4,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ConfigProvider, theme, message } from 'antd';
 import { ThemeProvider } from 'styled-components';
 import 'antd/dist/reset.css'; // 只需要这一个样式文件即可
-import SaaSProductLandingPage from "./demos/SaaSProductLandingPage";
 import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";
 import ResetPasswordPage from "./pages/ResetPassword";
-import JoinUs from "pages/JoinUs";
-import Navigation from "pages/Navigation";
 import ProfilePage from "pages/Profile";
-import About from "pages/About";
-import PartnerSurvey from "pages/PartnerSurvey";
 import CloudDrivePage from "./pages/CloudDrive"; // 新增云盘页面组件
 import zhCN from 'antd/locale/zh_CN';
 import enUS from 'antd/locale/en_US';
@@ -44,7 +39,7 @@ const RootRoute = () => {
   return isAuthenticated ? <Navigate to="/drive" /> : <HomePage />;
 };
 
-export default function App() {
+const App = () => {
   const [isDark, setIsDark] = React.useState(() => {
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -52,6 +47,7 @@ export default function App() {
   });
 
   const [locale, setLocale] = useState('zh_CN');
+  const [messageApi, contextHolder] = message.useMessage();
 
   // 设置 message 全局配置
   message.config({
@@ -229,6 +225,7 @@ export default function App() {
           locale={localeMap[locale]}
           theme={themeConfig}
         >
+          {contextHolder}
           <GlobalStyles />
           <Router>
             <Routes>
@@ -254,4 +251,6 @@ export default function App() {
       </ThemeProvider>
     </LocaleProvider>
   );
-}
+};
+
+export default App;

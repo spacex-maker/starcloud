@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { message } from 'antd';
-import { cosService } from 'services/cos';
-import instance from 'api/axios';
-import { loadFiles } from 'services/fileService';
-import { formatFileSize } from 'utils/format';
+import { cosService } from '../../../services/cos';
+import { COS_CONFIG } from '../../../services/cos/config';
+import instance from '../../../api/axios';
+import { loadFiles } from '../../../services/fileService';
+import { formatFileSize } from '../../../utils/format';
+
+// 添加调试信息
+console.log('cosService 对象:', cosService);
+console.log('cosService 类型:', Object.prototype.toString.call(cosService));
+console.log('cosService 方法列表:', Object.getOwnPropertyNames(Object.getPrototypeOf(cosService)));
+console.log('cosService 属性列表:', Object.keys(cosService));
 
 export const useUpload = (
   currentParentId, 
@@ -21,6 +28,22 @@ export const useUpload = (
     files: new Map(),
     isUploading: false
   });
+
+  const [messageApi] = message.useMessage();
+  const [messageQueue, setMessageQueue] = useState([]);
+
+  // 使用 useEffect 处理消息队列
+  useEffect(() => {
+    if (messageQueue.length > 0 && messageApi) {
+      const [currentMessage, ...rest] = messageQueue;
+      messageApi[currentMessage.type](currentMessage.content);
+      setMessageQueue(rest);
+    }
+  }, [messageQueue, messageApi]);
+
+  const showMessage = useCallback((type, content) => {
+    setMessageQueue(prev => [...prev, { type, content }]);
+  }, []);
 
   const handleUpload = async (files, existingFiles = []) => {
     if (!Array.isArray(files)) {
@@ -59,26 +82,37 @@ export const useUpload = (
 
   const uploadFiles = async (filesToUpload) => {
     if (!Array.isArray(filesToUpload) || filesToUpload.length === 0) {
-      console.warn('No files to upload');
+      console.warn('没有文件需要上传');
       return;
     }
 
-    console.log('开始上传文件:');
-    console.log('- 目标文件夹ID:', currentParentId);
-    console.log('- 目标文件夹名称:', currentFolder?.name || '根目录');
-    console.log('- 上传的文件:', filesToUpload.map(file => {
-      const fileObj = file instanceof File ? file : file.file;
-      return `${fileObj.name} (${formatFileSize(fileObj.size)})`;
-    }).join('\n  '));
+    console.log('[Upload] 开始上传文件:', {
+      targetFolderId: currentParentId,
+      folderName: currentFolder?.name || '根目录',
+      fileCount: filesToUpload.length,
+      files: filesToUpload.map(file => {
+        const fileObj = file instanceof File ? file : file.file;
+        return {
+          name: fileObj.name,
+          size: formatFileSize(fileObj.size),
+          type: fileObj.type
+        };
+      })
+    });
+
+    if (!userInfo || !userInfo.username) {
+      console.error('[Upload] 用户信息不完整，无法上传');
+      showMessage('error', '上传失败：用户信息不完整');
+      return;
+    }
 
     const initialUploadStates = new Map();
     
     filesToUpload.forEach(file => {
-      // 处理直接传入的 File 对象
       const fileObj = file instanceof File ? file : file.file;
       
       if (!fileObj || !fileObj.name) {
-        console.warn('Invalid file object:', file);
+        console.warn('[Upload] 无效的文件对象:', file);
         return;
       }
 
@@ -95,13 +129,13 @@ export const useUpload = (
         status: 'pending',
         isDuplicate: file.isDuplicate || false,
         file: fileObj,
-        taskId: null,
-        useChunkUpload: file.useChunkUpload || false
+        taskId: `${fileObj.name}_${Date.now()}`,
+        useChunkUpload: false  // 默认不使用分片上传，由用户手动选择
       });
     });
 
     if (initialUploadStates.size === 0) {
-      console.warn('No valid files to upload');
+      console.warn('[Upload] 没有有效的文件需要上传');
       return;
     }
 
@@ -112,6 +146,7 @@ export const useUpload = (
 
     try {
       const fullPath = `${userInfo.username}/`;
+      console.log('[Upload] 上传路径:', fullPath);
       
       const uploadPromises = Array.from(initialUploadStates.values()).map(async fileState => {
         try {
@@ -129,59 +164,65 @@ export const useUpload = (
             return { ...prev, files: newFiles };
           });
 
+          console.log(`[Upload] 开始上传文件: ${fileState.file.name}`);
+          // 添加更多调试信息
+          console.log('cosService 状态:', {
+            isObject: typeof cosService === 'object',
+            hasUploadFile: typeof cosService.uploadFile === 'function',
+            prototype: Object.getPrototypeOf(cosService),
+            constructor: cosService.constructor?.name
+          });
+          
           const uploadResult = await cosService.uploadFile(
             fileState.file,
-            fullPath,
-            (progress, speed, taskId) => {
-              setUploadStates(prev => {
-                const state = prev.files.get(fileState.file.name);
-                if (!state || state.uploadCompleted) return prev;
+            {
+              path: fullPath + fileState.file.name,
+              taskId: fileState.taskId,
+              onProgress: (task) => {
+                setUploadStates(prev => {
+                  const state = prev.files.get(fileState.file.name);
+                  if (!state || state.uploadCompleted) return prev;
 
-                const now = Date.now();
-                const timeDiff = (now - state.lastTime) / 1000;
-                
-                if (timeDiff >= 0.5) {
-                  const progressDiff = progress - state.lastProgress;
-                  const uploadedBytes = (progressDiff / 100) * fileState.fileSize;
-                  const currentSpeed = uploadedBytes / timeDiff;
+                  const now = Date.now();
+                  const timeDiff = (now - state.lastTime) / 1000;
                   
-                  // 计算总上传字节数和总时间
-                  const totalUploadedBytes = state.totalUploadedBytes || 0;
-                  const totalUploadTime = state.totalUploadTime || 0;
+                  if (timeDiff >= 0.5) {
+                    const progressDiff = task.progress - (state.lastProgress || 0);
+                    const uploadedBytes = task.uploadedBytes;
+                    const currentSpeed = task.uploadedBytes && timeDiff > 0 
+                      ? Math.round((task.uploadedBytes - (state.lastUploadedBytes || 0)) / timeDiff)
+                      : 0;
+                    
+                    const newFiles = new Map(prev.files);
+                    newFiles.set(fileState.file.name, {
+                      ...state,
+                      progress: task.progress,
+                      speed: currentSpeed,
+                      lastProgress: task.progress,
+                      lastTime: now,
+                      lastUploadedBytes: task.uploadedBytes,
+                      totalUploadedBytes: task.uploadedBytes,
+                      totalFileSize: task.totalBytes,
+                      totalUploadTime: (state.totalUploadTime || 0) + timeDiff
+                    });
+                    
+                    return {
+                      ...prev,
+                      files: newFiles
+                    };
+                  }
                   
-                  const newFiles = new Map(prev.files);
-                  newFiles.set(fileState.file.name, {
-                    ...state,
-                    progress: Math.round(progress),
-                    speed: currentSpeed,
-                    lastProgress: progress,
-                    lastTime: now,
-                    taskId: taskId || state.taskId,
-                    // 累计上传的字节数和时间
-                    totalUploadedBytes: totalUploadedBytes + uploadedBytes,
-                    totalUploadTime: totalUploadTime + timeDiff,
-                    // 记录文件总大小，用于最终计算
-                    totalFileSize: fileState.fileSize
-                  });
-                  
-                  return {
-                    ...prev,
-                    files: newFiles
-                  };
-                }
-                
-                return prev;
-              });
-            },
-            fileState.useChunkUpload
+                  return prev;
+                });
+              }
+            }
           );
 
-          // 在状态更新中计算平均速度
-          let calculatedAverageSpeed = 0;
+          console.log(`[Upload] 文件上传成功，开始创建文件记录: ${fileState.file.name}`);
           
+          let calculatedAverageSpeed = 0;
           setUploadStates(prev => {
             const state = prev.files.get(fileState.file.name);
-            // 使用文件总大小除以总时间来计算平均速度
             calculatedAverageSpeed = Math.round(
               state?.totalFileSize / (state?.totalUploadTime || 1)
             );
@@ -192,27 +233,19 @@ export const useUpload = (
               status: 'creating',
               progress: 100,
               speed: 0,
-              taskId: state.taskId,
-              averageSpeed: calculatedAverageSpeed
-            });
-
-            console.log('文件上传完成:', {
-              fileName: fileState.file.name,
-              fileSize: state?.totalFileSize,
-              totalTime: state?.totalUploadTime,
               averageSpeed: calculatedAverageSpeed
             });
 
             return { ...prev, files: newFiles };
           });
 
-          await instance.post('/productx/file-storage/create-directory', {
+          const createResponse = await instance.post('/productx/file-storage/create-directory', {
             parentId: currentParentId,
             isDirectory: false,
             name: fileState.file.name,
             extension: fileState.file.name.split('.').pop(),
             size: fileState.file.size,
-            storagePath: uploadResult.key,
+            storagePath: fullPath + fileState.file.name,
             hash: uploadResult.etag?.replace(/"/g, ''),
             mimeType: fileState.file.type,
             storageType: 'COS',
@@ -220,6 +253,8 @@ export const useUpload = (
             visibility: 'PRIVATE',
             uploadAverageSpeed: calculatedAverageSpeed
           });
+
+          console.log(`[Upload] 文件记录创建成功: ${fileState.file.name}`, createResponse.data);
 
           setUploadStates(prev => {
             const newFiles = new Map(prev.files);
@@ -229,14 +264,15 @@ export const useUpload = (
               status: 'success',
               uploadCompleted: true,
               fileCreated: true,
-              speed: 0,
-              taskId: null
+              speed: 0
             });
             return { ...prev, files: newFiles };
           });
 
           return { success: true, file: fileState.file };
         } catch (error) {
+          console.error(`[Upload] 文件上传失败: ${fileState.file.name}`, error);
+          
           setUploadStates(prev => {
             const newFiles = new Map(prev.files);
             const state = newFiles.get(fileState.file.name);
@@ -245,8 +281,7 @@ export const useUpload = (
               status: 'error',
               progress: 0,
               speed: 0,
-              errorMessage: error.message,
-              taskId: null
+              errorMessage: error.message || '上传失败'
             });
             return { ...prev, files: newFiles };
           });
@@ -260,10 +295,16 @@ export const useUpload = (
       const successCount = results.filter(r => r.success).length;
       const failureCount = results.filter(r => !r.success).length;
       
+      console.log('[Upload] 上传完成统计:', {
+        total: results.length,
+        success: successCount,
+        failure: failureCount
+      });
+      
       if (failureCount === 0) {
-        message.success(`成功上传 ${successCount} 个文件`);
+        showMessage('success', `成功上传 ${successCount} 个文件`);
       } else {
-        message.warning(`${successCount} 个文件上传成功，${failureCount} 个文件上传失败`);
+        showMessage('warning', `${successCount} 个文件上传成功，${failureCount} 个文件上传失败`);
       }
       
       await loadFiles(
@@ -276,8 +317,8 @@ export const useUpload = (
         pagination
       );
     } catch (error) {
-      console.error('上传过程中发生错误:', error);
-      message.error('上传过程中发生错误: ' + (error.message || '未知错误'));
+      console.error('[Upload] 上传过程中发生错误:', error);
+      showMessage('error', '上传失败: ' + (error.message || '未知错误'));
     } finally {
       setUploadStates(prev => ({
         ...prev,
@@ -315,7 +356,7 @@ export const useUpload = (
         files: newFiles
       };
     });
-    message.success('已移除选中的文件');
+    showMessage('success', '已移除选中的文件');
   };
 
   const handleAddFiles = (newFiles) => {
@@ -357,7 +398,7 @@ export const useUpload = (
 
   const handleEncryptFiles = (selectedFiles) => {
     if (!selectedFiles || selectedFiles.length === 0) {
-      message.error('请选择要加密的文件');
+      showMessage('error', '请选择要加密的文件');
       return null;
     }
 
@@ -397,7 +438,7 @@ export const useUpload = (
         }
         return { ...prev, files: newFiles };
       });
-      message.success('已暂停上传');
+      showMessage('success', '已暂停上传');
     }
   };
 
@@ -421,7 +462,7 @@ export const useUpload = (
         }
         return { ...prev, files: newFiles };
       });
-      message.success('已恢复上传');
+      showMessage('success', '已恢复上传');
     }
   };
 
