@@ -70,7 +70,6 @@ interface FileItemProps {
   setFilteredFiles: (files: FileModel[]) => void;
   setSearchText: (text: string) => void;
   setPagination: (pagination: any) => void;
-  pagination: any;
 }
 
 const FileItem: React.FC<FileItemProps> = ({
@@ -82,8 +81,7 @@ const FileItem: React.FC<FileItemProps> = ({
   setFiles,
   setFilteredFiles,
   setSearchText,
-  setPagination,
-  pagination
+  setPagination
 }) => {
   const { token } = useToken();
   const intl = useIntl();
@@ -114,8 +112,7 @@ const FileItem: React.FC<FileItemProps> = ({
           setFiles,
           setFilteredFiles,
           setSearchText,
-          setPagination,
-          pagination
+          setPagination
         );
         setIsRenaming(false);
       }

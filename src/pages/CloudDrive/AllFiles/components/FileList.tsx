@@ -1,6 +1,7 @@
 import React, { memo, useMemo, useState } from 'react';
 import type { FC } from 'react';
-import { Table, Space, Button, Typography, TablePaginationConfig, theme, Pagination, Grid, Modal, Input, Image, Dropdown, Tooltip, message } from 'antd';
+import type { Key } from 'react';
+import { Table, Space, Button, Typography, theme, Grid, Modal, Input, Image, Dropdown, Tooltip, message } from 'antd';
 import type { MenuProps } from 'antd';
 import { ThemeContext } from 'styled-components';
 import styled from 'styled-components';
@@ -27,12 +28,6 @@ interface PreviewImageType {
   key: number;
 }
 
-interface PaginationState {
-  currentPage: number;
-  pageSize: number;
-  total: number;
-}
-
 interface FileListProps {
   loading: boolean;
   filteredFiles: FileModel[];
@@ -42,11 +37,9 @@ interface FileListProps {
   handleDelete: (record: FileModel) => void;
   handleBatchDelete: (files: FileModel[]) => void;
   handleBatchDownload: (files: FileModel[]) => void;
-  selectedRowKeys: React.Key[];
-  onSelectChange: (selectedRowKeys: React.Key[]) => void;
+  selectedRowKeys: Key[];
+  onSelectChange: (selectedRowKeys: Key[]) => void;
   onDownload: (record: FileModel) => void;
-  pagination: PaginationState;
-  onPageChange: (page: number, pageSize: number) => void;
   newFolderModalVisible: boolean;
   setNewFolderModalVisible: (visible: boolean) => void;
   newFolderName: string;
@@ -59,7 +52,7 @@ interface FileListProps {
   setFiles: (files: FileModel[]) => void;
   setFilteredFiles: (files: FileModel[]) => void;
   setSearchText: (text: string) => void;
-  setPagination: (pagination: PaginationState) => void;
+  setPagination: (pagination: any) => void;
 }
 
 interface ThemedTableProps {
@@ -69,6 +62,8 @@ interface ThemedTableProps {
 }
 
 const TableWrapper = styled.div`
+  margin-bottom: 0;
+  
   .ant-table-row {
     transition: all 0.3s ease;
   }
@@ -112,6 +107,14 @@ const TableWrapper = styled.div`
       ? 'rgba(255, 255, 255, 0.04)'
       : 'rgba(0, 0, 0, 0.04)'} !important;
   }
+
+  .ant-table {
+    margin-bottom: 0 !important;
+  }
+
+  .ant-table-wrapper {
+    margin-bottom: 0 !important;
+  }
 `;
 
 const FileList: FC<FileListProps> = memo(({
@@ -125,8 +128,6 @@ const FileList: FC<FileListProps> = memo(({
   selectedRowKeys,
   onSelectChange,
   onDownload,
-  pagination,
-  onPageChange,
   newFolderModalVisible,
   setNewFolderModalVisible,
   newFolderName,
@@ -208,7 +209,6 @@ const FileList: FC<FileListProps> = memo(({
           setFilteredFiles={setFilteredFiles}
           setSearchText={setSearchText}
           setPagination={setPagination}
-          pagination={pagination}
         />
       ),
     },
@@ -299,7 +299,7 @@ const FileList: FC<FileListProps> = memo(({
         );
       },
     },
-  ], [handleFolderClick, handlePreview, handleDelete, onDownload, deletingIds, currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination]);
+  ], [handleFolderClick, handlePreview, handleDelete, onDownload, deletingIds, currentParentId, setLoading, setFiles, setFilteredFiles, setSearchText, setPagination]);
 
   const rowSelection = {
     selectedRowKeys,
@@ -334,14 +334,13 @@ const FileList: FC<FileListProps> = memo(({
       <div style={{ 
         flex: 1, 
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        marginBottom: 0
       }}>
         <div style={{ 
           position: 'absolute', 
           inset: 0, 
-          overflow: 'auto',
-          WebkitMask: 'linear-gradient(to bottom, black calc(100% - 60px), transparent 100%)',
-          mask: 'linear-gradient(to bottom, black calc(100% - 60px), transparent 100%)'
+          overflow: 'auto'
         }}>
           <TableWrapper>
             <Table<FileModel>
@@ -351,80 +350,24 @@ const FileList: FC<FileListProps> = memo(({
               rowKey="id"
               loading={loading}
               pagination={false}
-              scroll={{ x: 800, y: 'calc(100% - 8px)' }}
+              scroll={{ x: 800, y: 'calc(100vh - 300px)' }}
               tableLayout="fixed"
               rowClassName={(record) => record.isDirectory ? 'folder-row' : ''}
+              style={{ marginBottom: 0 }}
             />
           </TableWrapper>
         </div>
       </div>
-      <div style={{ 
-        position: 'sticky',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: isDark ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(1px)',
-        WebkitBackdropFilter: 'blur(1px)',
-        borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)'}`,
-        padding: '12px 0',
-        zIndex: 10,
-        marginTop: '-60px'
-      }}>
-        <div className="container-fluid px-0">
-          <div className="row align-items-center">
-            <div className="col ps-3">
-              {selectedRowKeys.length > 0 && (
-                <Space size={8}>
-                  <RoundedButton
-                    icon={<DownloadOutlined />}
-                    onClick={() => handleBatchDownloadWithCheck(filteredFiles)}
-                  >
-                    {screens.md && <FormattedMessage id="filelist.action.batchDownload" />}
-                  </RoundedButton>
-                  <RoundedButton
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => handleBatchDeleteSafely(filteredFiles)}
-                    loading={isBatchDeleting}
-                    disabled={isBatchDeleting}
-                  >
-                    {screens.md && <FormattedMessage id="filelist.action.batchDelete" />}
-                  </RoundedButton>
-                  <span className="d-none d-md-inline">
-                    <FormattedMessage 
-                      id="filelist.selected" 
-                      values={{ count: selectedRowKeys.length }} 
-                    />
-                  </span>
-                </Space>
-              )}
-            </div>
-            <div className="col-auto pe-3">
-              <Pagination 
-                {...pagination}
-                onChange={onPageChange}
-                showTotal={(total) => intl.formatMessage(
-                  { id: 'filelist.total' },
-                  { total }
-                )}
-                size={screens.md ? 'default' : 'small'}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      
+
       <Modal
         title={<FormattedMessage id="filelist.modal.newFolder.title" defaultMessage="新建文件夹" />}
         open={newFolderModalVisible}
-        onOk={handleCreateFolderSafely}
+        onOk={handleCreateFolder}
         onCancel={() => {
           setNewFolderModalVisible(false);
           setNewFolderName('');
         }}
         okButtonProps={{ 
-          loading: isCreating,
           disabled: !newFolderName.trim()
         }}
         okText={<FormattedMessage id="filelist.modal.newFolder.ok" defaultMessage="创建" />}
@@ -441,11 +384,10 @@ const FileList: FC<FileListProps> = memo(({
           value={newFolderName}
           onChange={e => setNewFolderName(e.target.value)}
           onPressEnter={(e) => {
-            if (newFolderName.trim() && !isCreating) {
-              handleCreateFolderSafely();
+            if (newFolderName.trim()) {
+              handleCreateFolder();
             }
           }}
-          disabled={isCreating}
           autoFocus
           maxLength={255}
         />

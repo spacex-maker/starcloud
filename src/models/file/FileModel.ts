@@ -1,20 +1,17 @@
 export interface FileModel {
   id: number;
   userId: number;
-  parentId: number | null;
+  parentId: number;
   isDirectory: boolean;
   name: string;
   extension: string | null;
   size: number;
-  tag: string | null;
-  storagePath: string;
-  hash: string | null;
   mimeType: string | null;
-  storageType: 'LOCAL' | 'COS';
+  storageType: 'COS' | 'LOCAL';
   downloadUrl: string | null;
-  visibility: 'PRIVATE' | 'PUBLIC' | 'SHARED';
-  version: number;
-  status: 'ACTIVE' | 'DELETED' | 'RECYCLED';
+  visibility: 'PRIVATE' | 'PUBLIC';
+  status: 'ACTIVE' | 'DELETED';
+  color: string | null;
   createTime: string;
   updateTime: string;
 }

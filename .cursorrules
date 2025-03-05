@@ -79,6 +79,9 @@ Api请求：
 
 更改页面路径后，请确保在 `src/App.js` 文件中更新路由配置。
 
+后端分页参数永远是：
+- pageSize和currentPage
+
 
 
 

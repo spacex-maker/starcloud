@@ -1,19 +1,51 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Input, Space, Button, Row, Col } from 'antd';
-import { DeleteOutlined, UndoOutlined } from '@ant-design/icons';
+import { Card, Input, Space, Row, Col, Typography, Tooltip } from 'antd';
+import { DeleteOutlined, UndoOutlined, SearchOutlined } from '@ant-design/icons';
 import { FormattedMessage } from 'react-intl';
 import instance from 'api/axios';
 import type { FileModel } from 'models/file/FileModel';
 import FileList from './components/FileList';
 import { useFileOperations } from './hooks/useFileOperations';
 import styled from 'styled-components';
+import { RoundedButton, RoundedSearch } from '../components/styles/StyledComponents';
 
 const { Search } = Input;
+const { Title } = Typography;
 
 const StyledCard = styled(Card)`
-  margin: 24px;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  margin: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
+  .ant-card-body {
+    padding: 24px;
+  }
+  
+  @media (max-width: 576px) {
+    margin: 8px;
+    .ant-card-body {
+      padding: 16px;
+    }
+  }
+`;
+
+const HeaderWrapper = styled.div`
+  margin-bottom: 24px;
+`;
+
+const ActionBar = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  .action-button-text {
+    @media (max-width: 576px) {
+      display: none;
+    }
+  }
 `;
 
 const Trash: React.FC = () => {
@@ -28,18 +60,18 @@ const Trash: React.FC = () => {
   const loadRecycledFiles = async (searchName?: string, page?: number, pageSize?: number) => {
     try {
       const params = {
-        searchName: searchName || '',
-        page: page || pagination.currentPage,
+        name: searchName || '',
+        currentPage: page || pagination.currentPage,
         pageSize: pageSize || pagination.pageSize,
       };
 
-      const response = await instance.get('/productx/file-storage/recycle', { params });
+      const response = await instance.post('/productx/file-storage/list-recycled', params);
       
-      if (response.data && Array.isArray(response.data.data)) {
-        setFiles(response.data.data);
+      if (response.data?.success && response.data?.data?.data) {
+        setFiles(response.data.data.data);
         setPagination(prev => ({
           ...prev,
-          total: response.data.total || 0,
+          total: response.data.data.totalNum || 0,
         }));
       } else {
         console.error('Invalid response format:', response.data);
@@ -82,46 +114,64 @@ const Trash: React.FC = () => {
 
   return (
     <StyledCard>
-      <Row gutter={[16, 16]} align="middle" justify="space-between">
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <Search
-            placeholder="搜索文件名"
-            allowClear
-            onSearch={handleSearch}
-            style={{ width: '100%' }}
-          />
-        </Col>
-        <Col>
-          <Space>
-            <Button
+      <HeaderWrapper>
+        <Row gutter={[0, 16]}>
+          <Col span={24}>
+            <Title level={4} style={{ margin: 0 }}>
+              <FormattedMessage id="trash.title" defaultMessage="回收站" />
+            </Title>
+          </Col>
+        </Row>
+      </HeaderWrapper>
+
+      <ActionBar>
+        <Space size={8}>
+          <Tooltip title={<FormattedMessage id="trash.action.batchRestore" defaultMessage="批量还原" />}>
+            <RoundedButton
+              type="primary"
               icon={<UndoOutlined />}
               onClick={handleBatchRestore}
               disabled={selectedRowKeys.length === 0}
             >
-              <FormattedMessage id="trash.action.batchRestore" />
-            </Button>
-            <Button
+              <span className="action-button-text">
+                <FormattedMessage id="trash.action.batchRestore" defaultMessage="批量还原" />
+              </span>
+            </RoundedButton>
+          </Tooltip>
+          <Tooltip title={<FormattedMessage id="trash.action.batchDelete" defaultMessage="永久删除" />}>
+            <RoundedButton
               danger
               icon={<DeleteOutlined />}
               onClick={handleBatchDelete}
               disabled={selectedRowKeys.length === 0}
             >
-              <FormattedMessage id="trash.action.batchDelete" />
-            </Button>
-          </Space>
-        </Col>
-      </Row>
+              <span className="action-button-text">
+                <FormattedMessage id="trash.action.batchDelete" defaultMessage="永久删除" />
+              </span>
+            </RoundedButton>
+          </Tooltip>
+        </Space>
+        <RoundedSearch
+          placeholder="搜索文件名"
+          prefix={<SearchOutlined />}
+          allowClear
+          onSearch={handleSearch}
+          style={{ width: 200 }}
+        />
+      </ActionBar>
 
-      <FileList
-        loading={loading}
-        files={files}
-        selectedRowKeys={selectedRowKeys}
-        onSelectChange={handleSelectChange}
-        onRestore={handleRestore}
-        onDelete={handleDelete}
-        pagination={pagination}
-        onPageChange={handlePageChange}
-      />
+      <div style={{ marginTop: 24 }}>
+        <FileList
+          loading={loading}
+          files={files}
+          selectedRowKeys={selectedRowKeys}
+          onSelectChange={handleSelectChange}
+          onRestore={handleRestore}
+          onDelete={handleDelete}
+          pagination={pagination}
+          onPageChange={handlePageChange}
+        />
+      </div>
     </StyledCard>
   );
 };
