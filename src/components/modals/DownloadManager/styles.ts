@@ -25,7 +25,7 @@ export const DownloadContainer = styled.div<{
   position: fixed;
   top: ${props => props.position ? props.position.y : 'auto'};
   left: ${props => props.position ? props.position.x : 'auto'};
-  bottom: ${props => props.position ? 'auto' : (props.collapsed ? '20px' : '40px')};
+  bottom: ${props => props.position ? 'auto' : (props.collapsed ? '80px' : '100px')};
   right: ${props => props.position ? 'auto' : '20px'};
   width: ${props => props.minimized ? '56px' : (
     props.isMobile && props.expanded ? 'calc(100% - 40px)' : '360px'
