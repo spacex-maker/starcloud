@@ -14,7 +14,7 @@ const GlobalStyles = createGlobalStyle`
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background: var(--ant-color-bg-container);
-    color: var(--ant-color-text);
+    color: var(--ant-color-text, ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)'});
     min-height: 100vh;
   }
 

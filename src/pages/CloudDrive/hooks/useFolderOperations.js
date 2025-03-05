@@ -53,12 +53,7 @@ export const useFolderOperations = (
         // 刷新文件列表
         await loadFiles(
           currentParentId, 
-          setLoading,
-          setFiles,
-          setFilteredFiles,
-          setSearchText,
-          setPagination,
-          pagination
+          { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
         );
       } else {
         throw new Error(response.data.message || '创建文件夹失败');
@@ -94,14 +89,16 @@ export const useFolderOperations = (
       
       await loadFiles(
         folder.id,
-        setLoading,
-        setFiles,
-        setFilteredFiles,
-        setSearchText,
-        setPagination,
-        {
-          ...pagination,
-          currentPage: 1
+        { 
+          setLoading, 
+          setFiles, 
+          setFilteredFiles, 
+          setSearchText, 
+          setPagination, 
+          pagination: {
+            ...pagination,
+            currentPage: 1
+          }
         }
       );
     } catch (error) {
@@ -126,12 +123,7 @@ export const useFolderOperations = (
       
       await loadFiles(
         targetPath.id,
-        setLoading,
-        setFiles,
-        setFilteredFiles,
-        setSearchText,
-        setPagination,
-        pagination
+        { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
       );
     } catch (error) {
       console.error('Failed to navigate to path:', error);
@@ -152,14 +144,16 @@ export const useFolderOperations = (
       
       await loadFiles(
         rootDirectoryId || 0,
-        setLoading,
-        setFiles,
-        setFilteredFiles,
-        setSearchText,
-        setPagination,
-        {
-          ...pagination,
-          currentPage: 1
+        { 
+          setLoading, 
+          setFiles, 
+          setFilteredFiles, 
+          setSearchText, 
+          setPagination, 
+          pagination: {
+            ...pagination,
+            currentPage: 1
+          }
         }
       );
     } catch (error) {

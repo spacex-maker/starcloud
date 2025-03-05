@@ -11,7 +11,8 @@ export const useFileOperations = (
   setPagination,
   setFiles,
   setFilteredFiles,
-  setSearchText
+  setSearchText,
+  setLoading
 ) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [previewImage, setPreviewImage] = useState({
@@ -28,18 +29,19 @@ export const useFileOperations = (
       onConfirm: async () => {
         try {
           setModalDeletingId(record.id);
-          await deleteFile(
-            record, 
-            () => {}, // setLoading
-            currentParentId, 
-            setFiles,
-            setFilteredFiles,
-            setSearchText,
-            setPagination,
-            pagination
+          setLoading(true);
+          await deleteFile(record);
+          message.success('删除成功');
+          // 刷新文件列表
+          await loadFiles(
+            currentParentId,
+            { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
           );
+        } catch (error) {
+          message.error('删除失败: ' + (error.message || '未知错误'));
         } finally {
           setModalDeletingId(null);
+          setLoading(false);
         }
       },
       isDeleting: modalDeletingId === record.id,
@@ -58,21 +60,9 @@ export const useFileOperations = (
     BatchDeleteModal({
       selectedItems,
       onConfirm: async () => {
-        let loading = false;
         try {
-          loading = true;
-          await Promise.all(selectedItems.map(item => 
-            deleteFile(
-              item,
-              (value) => loading = value,
-              currentParentId,
-              setFiles,
-              setFilteredFiles,
-              setSearchText,
-              setPagination,
-              pagination
-            )
-          ));
+          setLoading(true);
+          await Promise.all(selectedItems.map(item => deleteFile(item)));
           
           message.success(`成功删除 ${selectedItems.length} 个文件`);
           setSelectedRowKeys([]);
@@ -80,18 +70,13 @@ export const useFileOperations = (
           // 刷新文件列表
           await loadFiles(
             currentParentId,
-            (value) => loading = value,
-            setFiles,
-            setFilteredFiles,
-            setSearchText,
-            setPagination,
-            pagination
+            { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
           );
         } catch (error) {
           console.error('批量删除失败:', error);
           message.error('批量删除失败: ' + (error.message || '未知错误'));
         } finally {
-          loading = false;
+          setLoading(false);
         }
       }
     });

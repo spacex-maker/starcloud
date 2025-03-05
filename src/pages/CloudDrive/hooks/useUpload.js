@@ -268,12 +268,7 @@ export const useUpload = (
       
       await loadFiles(
         currentParentId, 
-        setLoading,
-        setFiles, 
-        setFilteredFiles, 
-        setSearchText,
-        setPagination,
-        pagination
+        { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
       );
     } catch (error) {
       console.error('上传过程中发生错误:', error);

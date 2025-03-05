@@ -9,6 +9,7 @@ import instance from 'api/axios';
 import FileItem from '../AllFiles/components/FileItem';
 import { RoundedButton, RoundedSearch } from '../components/styles/StyledComponents';
 import type { FileModel } from 'models/file/FileModel';
+import { FileProvider } from 'contexts/FileContext';
 
 const { Content } = Layout;
 const { Text } = Typography;
@@ -158,18 +159,6 @@ const Trash = () => {
       render: (_, record: RecycledFile) => (
         <FileItem
           file={record}
-          showSize={false}
-          currentParentId={0}
-          setLoading={() => {}}
-          setFiles={() => {}}
-          setFilteredFiles={() => {}}
-          setSearchText={() => {}}
-          setPagination={() => {}}
-          pagination={{
-            currentPage: 1,
-            pageSize: 10,
-            total: 0
-          }}
         />
       ),
     },
@@ -293,73 +282,75 @@ const Trash = () => {
   };
 
   return (
-    <Content style={{ padding: '24px' }}>
-      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Space size={8}>
-          <RoundedButton
-            icon={<ReloadOutlined />}
-            onClick={() => loadRecycledFiles(searchText)}
-            loading={loading}
-          >
-            <FormattedMessage id="filelist.action.refresh" />
-          </RoundedButton>
-          {selectedRowKeys.length > 0 && (
-            <>
-              <RoundedButton
-                icon={<UndoOutlined />}
-                onClick={handleBatchRestore}
-              >
-                还原
-              </RoundedButton>
-              <RoundedButton
-                danger
-                icon={<DeleteOutlined />}
-                onClick={handleBatchDelete}
-              >
-                永久删除
-              </RoundedButton>
-              <Text type="secondary">
-                已选择 {selectedRowKeys.length} 项
-              </Text>
-            </>
-          )}
-        </Space>
-        <RoundedSearch
-          placeholder={intl.formatMessage({ id: 'filelist.action.search' })}
-          prefix={<SearchOutlined />}
-          value={searchText}
-          onChange={e => handleSearch(e.target.value)}
-          allowClear
-          style={{ width: 200 }}
-        />
-      </div>
+    <FileProvider initialParentId={0}>
+      <Content style={{ padding: '24px' }}>
+        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Space size={8}>
+            <RoundedButton
+              icon={<ReloadOutlined />}
+              onClick={() => loadRecycledFiles(searchText)}
+              loading={loading}
+            >
+              <FormattedMessage id="filelist.action.refresh" />
+            </RoundedButton>
+            {selectedRowKeys.length > 0 && (
+              <>
+                <RoundedButton
+                  icon={<UndoOutlined />}
+                  onClick={handleBatchRestore}
+                >
+                  还原
+                </RoundedButton>
+                <RoundedButton
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={handleBatchDelete}
+                >
+                  永久删除
+                </RoundedButton>
+                <Text type="secondary">
+                  已选择 {selectedRowKeys.length} 项
+                </Text>
+              </>
+            )}
+          </Space>
+          <RoundedSearch
+            placeholder={intl.formatMessage({ id: 'filelist.action.search' })}
+            prefix={<SearchOutlined />}
+            value={searchText}
+            onChange={e => handleSearch(e.target.value)}
+            allowClear
+            style={{ width: 200 }}
+          />
+        </div>
 
-      <TableWrapper>
-        <Table<RecycledFile>
-          rowSelection={{
-            selectedRowKeys,
-            onChange: setSelectedRowKeys,
-          }}
-          columns={columns}
-          dataSource={files}
-          rowKey="id"
-          loading={loading}
-          rowClassName={(record) => record.isDirectory ? 'folder-row' : ''}
-          locale={{
-            emptyText: '回收站为空'
-          }}
-          pagination={{
-            current: pagination.currentPage,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            onChange: handlePageChange,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 项`
-          }}
-        />
-      </TableWrapper>
-    </Content>
+        <TableWrapper>
+          <Table<RecycledFile>
+            rowSelection={{
+              selectedRowKeys,
+              onChange: setSelectedRowKeys,
+            }}
+            columns={columns}
+            dataSource={files}
+            rowKey="id"
+            loading={loading}
+            rowClassName={(record) => record.isDirectory ? 'folder-row' : ''}
+            locale={{
+              emptyText: '回收站为空'
+            }}
+            pagination={{
+              current: pagination.currentPage,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              onChange: handlePageChange,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total) => `共 ${total} 项`
+            }}
+          />
+        </TableWrapper>
+      </Content>
+    </FileProvider>
   );
 };
 
