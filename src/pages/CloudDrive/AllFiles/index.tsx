@@ -234,7 +234,7 @@ const AllFiles = () => {
       flexDirection: 'column',
       height: '100%',
       overflow: 'hidden',
-      padding: '10px'
+      padding: '10px 10px 0 10px'
     }}>
       <FileProvider initialParentId={rootDirectoryId || 0}>
         <ActionBar>

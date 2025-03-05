@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Modal, Input } from 'antd';
+import { Modal, Input, Spin } from 'antd';
 import { FormattedMessage, useIntl } from 'react-intl';
+import { LoadingOutlined } from '@ant-design/icons';
 
 interface NewFolderModalProps {
   visible: boolean;
@@ -21,16 +22,17 @@ const NewFolderModal: React.FC<NewFolderModalProps> = ({
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreateFolderSafely = async () => {
-    if (isCreating) return;
+    if (isCreating || !folderName.trim()) return;
     try {
       setIsCreating(true);
-      onCreateFolder();
+      await onCreateFolder();
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleCancel = () => {
+    if (isCreating) return;
     onClose();
     setFolderName('');
   };
@@ -43,30 +45,38 @@ const NewFolderModal: React.FC<NewFolderModalProps> = ({
       onCancel={handleCancel}
       okButtonProps={{ 
         loading: isCreating,
-        disabled: !folderName.trim()
+        disabled: !folderName.trim() || isCreating
+      }}
+      cancelButtonProps={{
+        disabled: isCreating
       }}
       okText={<FormattedMessage id="filelist.modal.newFolder.ok" defaultMessage="创建" />}
       cancelText={<FormattedMessage id="filelist.modal.newFolder.cancel" defaultMessage="取消" />}
       maskClosable={false}
       keyboard={false}
+      closable={!isCreating}
       destroyOnClose
+      centered
     >
-      <Input
-        placeholder={intl.formatMessage({ 
-          id: "filelist.modal.newFolder.placeholder",
-          defaultMessage: "请输入文件夹名称"
-        })}
-        value={folderName}
-        onChange={e => setFolderName(e.target.value)}
-        onPressEnter={(e) => {
-          if (folderName.trim() && !isCreating) {
-            handleCreateFolderSafely();
-          }
-        }}
-        disabled={isCreating}
-        autoFocus
-        maxLength={255}
-      />
+      <div style={{ position: 'relative' }}>
+        <Input
+          placeholder={intl.formatMessage({ 
+            id: "filelist.modal.newFolder.placeholder",
+            defaultMessage: "请输入文件夹名称"
+          })}
+          value={folderName}
+          onChange={e => setFolderName(e.target.value)}
+          onPressEnter={(e) => {
+            if (folderName.trim() && !isCreating) {
+              handleCreateFolderSafely();
+            }
+          }}
+          disabled={isCreating}
+          autoFocus
+          maxLength={255}
+          suffix={isCreating ? <LoadingOutlined style={{ color: 'var(--ant-color-primary)' }} /> : null}
+        />
+      </div>
     </Modal>
   );
 };

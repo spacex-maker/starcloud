@@ -47,11 +47,14 @@ const FileListFooter: React.FC<FileListFooterProps> = ({
       borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)'}`,
       padding: '12px 0',
       zIndex: 10,
-      marginTop: '-60px'
+      marginTop: '-60px',
+      height: '60px',
+      display: 'flex',
+      alignItems: 'center'
     }}>
-      <div className="container-fluid px-0">
-        <div className="row align-items-center">
-          <div className="col ps-3">
+      <div className="container-fluid px-0" style={{ flex: 1 }}>
+        <div className="row align-items-center" style={{ margin: 0 }}>
+          <div className="col ps-3" style={{ minHeight: '32px' }}>
             <BatchOperations
               selectedRowKeys={selectedRowKeys}
               filteredFiles={filteredFiles}
