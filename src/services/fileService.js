@@ -85,7 +85,7 @@ export const fetchRootDirectory = async (
         console.warn('未找到根目录');
         setRootDirectoryId(null);
         // 直接加载 parentId 为 0 的内容，并传入分页参数
-        loadFiles(0, setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination);
+        loadFiles(0, { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination });
       }
     } else {
       throw new Error(response.data.message || '获取根目录信息失败');
@@ -94,22 +94,23 @@ export const fetchRootDirectory = async (
     console.error('获取根目录信息失败:', error);
     message.error('获取根目录信息失败: ' + (error.message || '未知错误'));
     // 加载 parentId 为 0 的内容时也传入分页参数
-    loadFiles(0, setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination);
+    loadFiles(0, { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination });
   } finally {
     setLoading(false);
   }
 };
 
 // 修改加载文件的函数以支持分页
-export const loadFiles = async (
-  parentId,
-  setLoading,
-  setFiles,
-  setFilteredFiles,
-  setSearchText,
-  setPagination,
-  pagination
-) => {
+export const loadFiles = async (parentId, state) => {
+  const {
+    setLoading,
+    setFiles,
+    setFilteredFiles,
+    setSearchText,
+    setPagination,
+    pagination
+  } = state;
+
   try {
     setLoading(true);
     const response = await instance.post('/productx/file-storage/list', {
@@ -176,19 +177,9 @@ export const checkDuplicates = (files, existingFiles = []) => {
   return { duplicates, unique };
 };
 
-export const deleteFile = async (
-  record, 
-  setLoading, 
-  currentParentId, 
-  setFiles, 
-  setFilteredFiles, 
-  setSearchText,
-  setPagination,
-  pagination
-) => {
+// 删除文件的核心功能
+export const deleteFile = async (record) => {
   try {
-    setLoading(true);
-    
     // 1. Delete from object storage if storagePath exists
     if (record.storagePath) {
       await cosService.deleteFile(record.storagePath);
@@ -198,25 +189,13 @@ export const deleteFile = async (
     const response = await instance.post('/productx/file-storage/recycle', [record.id]);
     
     if (response.data && response.data.success) {
-      message.success('删除成功');
-      // Refresh file list with pagination
-      await loadFiles(
-        currentParentId, 
-        setLoading, 
-        setFiles, 
-        setFilteredFiles, 
-        setSearchText,
-        setPagination,
-        pagination
-      );
+      return { success: true };
     } else {
       throw new Error(response.data.message || '删除失败');
     }
   } catch (error) {
     console.error('删除失败:', error);
-    message.error('删除失败: ' + (error.message || '未知错误'));
-  } finally {
-    setLoading(false);
+    throw error;
   }
 };
 

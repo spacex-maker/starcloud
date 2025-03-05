@@ -1,9 +1,9 @@
 import React, { useState } from "react";
+import 'antd/dist/reset.css'; // 只需要这一个样式文件即可
 import GlobalStyles from './styles/GlobalStyles';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, theme, message } from 'antd';
 import { ThemeProvider } from 'styled-components';
-import 'antd/dist/reset.css'; // 只需要这一个样式文件即可
 import SaaSProductLandingPage from "./demos/SaaSProductLandingPage";
 import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";
@@ -214,6 +214,13 @@ export default function App() {
     mediaQuery.addListener(handleChange);
     return () => mediaQuery.removeListener(handleChange);
   }, [handleThemeChange, isDark]);
+
+  // Manually set CSS variables
+  React.useEffect(() => {
+    const root = document.documentElement;
+    const textColor = isDark ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)';
+    root.style.setProperty('--ant-color-text', textColor);
+  }, [isDark]);
 
   return (
     <LocaleProvider>

@@ -17,6 +17,7 @@ import DownloadManager from 'components/modals/DownloadManager';
 import { formatFileSize } from 'utils/format';
 import { ActionBar, RoundedButton, RoundedSearch } from '../components/styles/StyledComponents';
 import { FormattedMessage, useIntl } from 'react-intl';
+import { FileProvider } from 'contexts/FileContext';
 
 // Import custom hooks
 import { useUpload } from '../hooks/useUpload';
@@ -117,7 +118,8 @@ const AllFiles = () => {
     setPagination,
     setFiles,
     setFilteredFiles,
-    setSearchText
+    setSearchText,
+    setLoading
   );
 
   const {
@@ -181,15 +183,7 @@ const AllFiles = () => {
     
     loadFiles(
       currentParentId,
-      setLoading,
-      setFiles,
-      setFilteredFiles,
-      setSearchText,
-      setPagination,
-      {
-        currentPage: page,
-        pageSize: pageSize
-      }
+      { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination: { currentPage: page, pageSize: pageSize } }
     );
   };
 
@@ -242,148 +236,140 @@ const AllFiles = () => {
       overflow: 'hidden',
       padding: '10px'
     }}>
-      <ActionBar>
-        <Space size={screens.md ? 8 : 4} className="flex-nowrap">
-          <Upload
-            multiple
-            showUploadList={false}
-            beforeUpload={(file, fileList) => {
-              if (!file || !fileList || fileList.length === 0) {
+      <FileProvider initialParentId={rootDirectoryId || 0}>
+        <ActionBar>
+          <Space size={screens.md ? 8 : 4} className="flex-nowrap">
+            <Upload
+              multiple
+              showUploadList={false}
+              beforeUpload={(file, fileList) => {
+                if (!file || !fileList || fileList.length === 0) {
+                  return false;
+                }
+                const validFiles = fileList.filter(f => f && f.name && f.size);
+                if (validFiles.length === 0) {
+                  message.warning('没有有效的文件可上传');
+                  return false;
+                }
+                handleUpload(validFiles, files);
+                setFileUploadModalVisible(true);
                 return false;
-              }
-              const validFiles = fileList.filter(f => f && f.name && f.size);
-              if (validFiles.length === 0) {
-                message.warning('没有有效的文件可上传');
-                return false;
-              }
-              handleUpload(validFiles, files);
-              setFileUploadModalVisible(true);
-              return false;
-            }}
-            disabled={uploadStates.isUploading}
-          >
+              }}
+              disabled={uploadStates.isUploading}
+            >
+              <RoundedButton
+                type="primary"
+                icon={<CloudUploadOutlined />}
+                loading={uploadStates.isUploading}
+              >
+                <span className="action-button-text">
+                  <FormattedMessage id="filelist.action.upload" />
+                </span>
+              </RoundedButton>
+            </Upload>
             <RoundedButton
-              type="primary"
-              icon={<CloudUploadOutlined />}
-              loading={uploadStates.isUploading}
+              icon={<FolderOutlined />}
+              onClick={() => setNewFolderModalVisible(true)}
             >
               <span className="action-button-text">
-                <FormattedMessage id="filelist.action.upload" />
+                <FormattedMessage id="filelist.action.newFolder" />
               </span>
             </RoundedButton>
-          </Upload>
-          <RoundedButton
-            icon={<FolderOutlined />}
-            onClick={() => setNewFolderModalVisible(true)}
-          >
-            <span className="action-button-text">
-              <FormattedMessage id="filelist.action.newFolder" />
-            </span>
-          </RoundedButton>
-          <RoundedButton
-            icon={<ReloadOutlined />}
-            onClick={() => loadFiles(
-              currentParentId, 
-              setLoading, 
-              setFiles, 
-              setFilteredFiles, 
-              setSearchText,
-              setPagination,
-              pagination
-            )}
+            <RoundedButton
+              icon={<ReloadOutlined />}
+              onClick={() => loadFiles(
+                currentParentId, 
+                { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
+              )}
+              loading={loading}
+            >
+              <span className="action-button-text">
+                <FormattedMessage id="filelist.action.refresh" />
+              </span>
+            </RoundedButton>
+          </Space>
+          <RoundedSearch
+            placeholder={intl.formatMessage({ id: 'filelist.action.search' })}
+            prefix={<SearchOutlined />}
+            value={searchText}
+            onChange={e => handleSearch(e.target.value)}
+            allowClear
+          />
+        </ActionBar>
+
+        <div className="px-4 py-2 border-b">
+          <PathHistory
+            pathHistory={pathHistory}
+            onHomeClick={() => handleHomeClick(rootDirectoryId)}
+            onPathClick={handlePathClick}
+          />
+        </div>
+
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+          <FileList
             loading={loading}
-          >
-            <span className="action-button-text">
-              <FormattedMessage id="filelist.action.refresh" />
-            </span>
-          </RoundedButton>
-        </Space>
-        <RoundedSearch
-          placeholder={intl.formatMessage({ id: 'filelist.action.search' })}
-          prefix={<SearchOutlined />}
-          value={searchText}
-          onChange={e => handleSearch(e.target.value)}
-          allowClear
+            filteredFiles={filteredFiles}
+            searchText={searchText}
+            handleFolderClick={handleFolderClick}
+            handlePreview={handlePreview}
+            handleDelete={handleDelete}
+            handleBatchDelete={handleBatchDelete}
+            handleBatchDownload={handleBatchDownload}
+            selectedRowKeys={selectedRowKeys}
+            onSelectChange={handleSelectChange}
+            onDownload={startDownload}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            newFolderModalVisible={newFolderModalVisible}
+            setNewFolderModalVisible={setNewFolderModalVisible}
+            newFolderName={newFolderName}
+            setNewFolderName={setNewFolderName}
+            handleCreateFolder={handleCreateFolder}
+            previewImage={previewImage}
+            handlePreviewClose={handlePreviewClose}
+            currentParentId={currentParentId}
+            setLoading={setLoading}
+            setFiles={setFiles}
+            setFilteredFiles={setFilteredFiles}
+            setSearchText={setSearchText}
+            setPagination={setPagination}
+          />
+        </div>
+
+        <FileUploadModal
+          visible={fileUploadModalVisible}
+          uploadingFiles={uploadStates.files}
+          isUploading={uploadStates.isUploading}
+          onStartUpload={uploadFiles}
+          onCancel={handleCloseUploadModal}
+          onDuplicateDecision={handleDuplicateDecision}
+          onRemoveFiles={handleRemoveFiles}
+          onAddFiles={handleAddFiles}
+          onEncryptFiles={handleEncryptFiles}
+          onEncryptComplete={handleEncryptComplete}
+          existingFiles={files}
+          onPauseUpload={handlePauseUpload}
+          onResumeUpload={handleResumeUpload}
+          setUploadStates={setUploadStates}
+          onUploadComplete={() => {
+            loadFiles(
+              currentParentId,
+              { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
+            );
+          }}
         />
-      </ActionBar>
 
-      <div className="px-4 py-2 border-b">
-        <PathHistory
-          pathHistory={pathHistory}
-          onHomeClick={() => handleHomeClick(rootDirectoryId)}
-          onPathClick={handlePathClick}
+        {fileEncryptModalProps && (
+          <FileEncryptModal {...fileEncryptModalProps} />
+        )}
+
+        <DownloadManager
+          downloads={downloadTasks}
+          onCancel={handleCancelDownload}
+          onClear={handleClearDownloads}
+          onCollapse={handleDownloadCollapse}
         />
-      </div>
-
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-        <FileList
-          loading={loading}
-          filteredFiles={filteredFiles}
-          searchText={searchText}
-          handleFolderClick={handleFolderClick}
-          handlePreview={handlePreview}
-          handleDelete={handleDelete}
-          handleBatchDelete={handleBatchDelete}
-          handleBatchDownload={handleBatchDownload}
-          selectedRowKeys={selectedRowKeys}
-          onSelectChange={handleSelectChange}
-          onDownload={startDownload}
-          pagination={pagination}
-          onPageChange={handlePageChange}
-          newFolderModalVisible={newFolderModalVisible}
-          setNewFolderModalVisible={setNewFolderModalVisible}
-          newFolderName={newFolderName}
-          setNewFolderName={setNewFolderName}
-          handleCreateFolder={handleCreateFolder}
-          previewImage={previewImage}
-          handlePreviewClose={handlePreviewClose}
-          currentParentId={currentParentId}
-          setLoading={setLoading}
-          setFiles={setFiles}
-          setFilteredFiles={setFilteredFiles}
-          setSearchText={setSearchText}
-          setPagination={setPagination}
-        />
-      </div>
-
-      <FileUploadModal
-        visible={fileUploadModalVisible}
-        uploadingFiles={uploadStates.files}
-        isUploading={uploadStates.isUploading}
-        onStartUpload={uploadFiles}
-        onCancel={handleCloseUploadModal}
-        onDuplicateDecision={handleDuplicateDecision}
-        onRemoveFiles={handleRemoveFiles}
-        onAddFiles={handleAddFiles}
-        onEncryptFiles={handleEncryptFiles}
-        onEncryptComplete={handleEncryptComplete}
-        existingFiles={files}
-        onPauseUpload={handlePauseUpload}
-        onResumeUpload={handleResumeUpload}
-        setUploadStates={setUploadStates}
-        onUploadComplete={() => {
-          loadFiles(
-            currentParentId,
-            setLoading,
-            setFiles,
-            setFilteredFiles,
-            setSearchText,
-            setPagination,
-            pagination
-          );
-        }}
-      />
-
-      {fileEncryptModalProps && (
-        <FileEncryptModal {...fileEncryptModalProps} />
-      )}
-
-      <DownloadManager
-        downloads={downloadTasks}
-        onCancel={handleCancelDownload}
-        onClear={handleClearDownloads}
-        onCollapse={handleDownloadCollapse}
-      />
+      </FileProvider>
     </Content>
   );
 };
