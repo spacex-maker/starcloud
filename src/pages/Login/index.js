@@ -91,7 +91,7 @@ const LoginPage = () => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Helmet>
       <PageContainer>
-        <VersionTag>v1.0.2</VersionTag>
+        <VersionTag>v1.4.3</VersionTag>
         
         <TopControls 
           isDark={isDark} 
