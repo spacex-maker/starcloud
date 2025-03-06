@@ -92,6 +92,7 @@ export const RightSection = ({
   const countrySelectorRef = React.useRef(null);
   const emailInputRef = React.useRef(null);
   const emailDropdownRef = React.useRef(null);
+  const [isChangingCountry, setIsChangingCountry] = React.useState(false);
 
   const validateUsername = (value) => {
     setUsernameRules({
@@ -140,6 +141,17 @@ export const RightSection = ({
     setShowSuffixDropdown(false);
   };
 
+  const handleCountryChange = (country) => {
+    setIsChangingCountry(true);
+    setTimeout(() => {
+      setCountryCode(country.code);
+      setTimeout(() => {
+        setIsChangingCountry(false);
+      }, 50);
+    }, 300);
+    setShowCountryDropdown(false);
+  };
+
   React.useEffect(() => {
     const handleClickOutside = (event) => {
       // 处理国家选择器下拉框
@@ -182,7 +194,7 @@ export const RightSection = ({
                 ref={countrySelectorRef}
                 onClick={() => setShowCountryDropdown(!showCountryDropdown)}
               >
-                <SelectedCountryContent className={!countryCode ? 'placeholder' : ''}>
+                <SelectedCountryContent className={`${!countryCode ? 'placeholder' : ''} ${isChangingCountry ? 'changing' : ''}`}>
                   {countryCode && countries.find(c => c.code === countryCode) ? (
                     <>
                       <CountryFlag 
@@ -191,6 +203,7 @@ export const RightSection = ({
                         onError={(e) => {
                           e.target.src = '/default-flag.png';
                         }}
+                        className={isChangingCountry ? 'changing' : ''}
                       />
                       <span>{countries.find(c => c.code === countryCode)?.name}</span>
                     </>
@@ -211,14 +224,12 @@ export const RightSection = ({
                 ref={countryDropdownRef}
                 className={showCountryDropdown ? "show" : ""}
               >
-                {countries.map(country => (
+                {countries.map((country, index) => (
                   <CountryOption
                     key={country.code}
                     type="button"
-                    onClick={() => {
-                      setCountryCode(country.code);
-                      setShowCountryDropdown(false);
-                    }}
+                    index={index}
+                    onClick={() => handleCountryChange(country)}
                   >
                     <CountryOptionContent>
                       <CountryFlag 
