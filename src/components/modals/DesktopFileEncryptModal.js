@@ -219,24 +219,28 @@ const DesktopFileEncryptModal = ({
             percent: 30
           }));
 
-          // 将文件内容转换为 WordArray
+          // 1. 创建校验块（将密码本身加密作为校验块）
+          const validationContent = CryptoJS.AES.encrypt(
+            "VALID",  // 固定的校验字符串
+            password  // 使用相同的密码
+          ).toString();
+
+          // 2. 将文件内容转换为 WordArray
           const contentArray = CryptoJS.lib.WordArray.create(e.target.result);
           
-          // 使用 CryptoJS 加密文件内容
-          const encrypted = CryptoJS.AES.encrypt(contentArray, password, {
-            mode: CryptoJS.mode.CBC,
-            padding: CryptoJS.pad.Pkcs7
-          });
+          // 3. 加密文件内容
+          const encryptedContent = CryptoJS.AES.encrypt(contentArray, password).toString();
           
-          // 创建加密文件头标记
+          // 4. 创建加密文件头标记
           const headerText = "MSTCRYPT";
           const headerBase64 = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(headerText));
           
-          // 合并头部和加密内容
-          const encryptedContent = encrypted.toString();
-          const finalContent = headerBase64 + encryptedContent;
+          // 5. 合并头部、校验块和加密内容
+          // 格式：MSTCRYPT + 校验块长度(4字节) + 校验块 + 加密内容
+          const validationLength = validationContent.length.toString().padStart(4, '0');
+          const finalContent = headerBase64 + validationLength + validationContent + encryptedContent;
 
-          // 创建新的加密文件
+          // 6. 创建新的加密文件
           const encryptedBlob = new Blob([finalContent], { type: 'application/encrypted' });
           const encryptedFile = new File([encryptedBlob], `${file.name}.encrypted`, {
             type: 'application/encrypted',

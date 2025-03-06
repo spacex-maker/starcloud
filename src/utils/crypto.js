@@ -11,48 +11,51 @@ export const decryptChunk = async (chunk, password) => {
     // 1. 将 ArrayBuffer 转换为字符串
     const decoder = new TextDecoder();
     const content = decoder.decode(chunk);
-    console.log('解密 - 原始内容前32个字符:', content.substring(0, 32));
     
-    // 2. 提取头部（前12个字符，因为"MSTCRYPT"的Base64编码长度为12）
+    // 2. 提取并验证头部（前12个字符）
     const headerBase64 = content.slice(0, 12);
-    console.log('解密 - 提取的头部Base64:', headerBase64);
     const header = CryptoJS.enc.Base64.parse(headerBase64);
     const headerText = CryptoJS.enc.Utf8.stringify(header);
-    console.log('解密 - 解码后的头部文本:', headerText);
     
-    // 3. 检查文件头
     if (headerText !== "MSTCRYPT") {
-      console.error('解密 - 头部不匹配:', headerText);
       throw new Error('不是有效的加密文件');
     }
     
-    // 4. 提取加密内容
-    const encryptedData = content.slice(12);
-    console.log('解密 - 加密内容前20个字符:', encryptedData.substring(0, 20));
-    
-    // 5. 解密内容
-    const decrypted = CryptoJS.AES.decrypt(
-      encryptedData,
-      password,
-      {
-        mode: CryptoJS.mode.CBC,
-        padding: CryptoJS.pad.Pkcs7
-      }
-    );
-    
-    // 6. 转换为 Uint8Array
-    const words = decrypted.words;
-    const sigBytes = decrypted.sigBytes;
-    const result = new Uint8Array(sigBytes);
-    
-    for (let i = 0; i < sigBytes; i++) {
-      result[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+    // 3. 提取校验块长度（4字节）
+    const validationLength = parseInt(content.slice(12, 16));
+    if (isNaN(validationLength) || validationLength <= 0) {
+      throw new Error('文件格式错误');
     }
     
+    // 4. 提取校验块
+    const validationContent = content.slice(16, 16 + validationLength);
+    
+    // 5. 验证密码
+    try {
+      const decryptedValidation = CryptoJS.AES.decrypt(validationContent, password).toString(CryptoJS.enc.Utf8);
+      if (decryptedValidation !== "VALID") {
+        throw new Error('密码错误，请确认后重试');
+      }
+    } catch (error) {
+      throw new Error('密码错误，请确认后重试');
+    }
+    
+    // 6. 提取并解密文件内容
+    const encryptedData = content.slice(16 + validationLength);
+    const decrypted = CryptoJS.AES.decrypt(encryptedData, password);
+    
+    // 7. 转换为二进制
+    const result = new Uint8Array(decrypted.sigBytes);
+    const words = decrypted.words;
+    
+    for (let i = 0; i < decrypted.sigBytes; i++) {
+      result[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+    }
+
     return result;
   } catch (error) {
-    console.error('解密错误详情:', error);
-    throw new Error('密码错误，请确认后重试');
+    console.error('解密错误:', error);
+    throw new Error(error.message || '密码错误，请确认后重试');
   }
 };
 
