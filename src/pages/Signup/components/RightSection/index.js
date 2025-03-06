@@ -88,6 +88,10 @@ export const RightSection = ({
     number: false,
     special: false
   });
+  const countryDropdownRef = React.useRef(null);
+  const countrySelectorRef = React.useRef(null);
+  const emailInputRef = React.useRef(null);
+  const emailDropdownRef = React.useRef(null);
 
   const validateUsername = (value) => {
     setUsernameRules({
@@ -136,6 +140,35 @@ export const RightSection = ({
     setShowSuffixDropdown(false);
   };
 
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      // 处理国家选择器下拉框
+      if (
+        countryDropdownRef.current && 
+        countrySelectorRef.current &&
+        !countryDropdownRef.current.contains(event.target) &&
+        !countrySelectorRef.current.contains(event.target)
+      ) {
+        setShowCountryDropdown(false);
+      }
+
+      // 处理邮箱后缀下拉框
+      if (
+        emailDropdownRef.current && 
+        emailInputRef.current &&
+        !emailDropdownRef.current.contains(event.target) &&
+        !emailInputRef.current.contains(event.target)
+      ) {
+        setShowSuffixDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <StyledRightSection>
       <LoginBox>
@@ -144,8 +177,9 @@ export const RightSection = ({
         </Logo>
         <Form onSubmit={handleSubmit} autoComplete="off">
           <FormItem index={0}>
-            <InputWrapper>
+            <InputWrapper isCountrySelector={true}>
               <CountrySelector
+                ref={countrySelectorRef}
                 onClick={() => setShowCountryDropdown(!showCountryDropdown)}
               >
                 <SelectedCountryContent className={!countryCode ? 'placeholder' : ''}>
@@ -174,6 +208,7 @@ export const RightSection = ({
                 <DownOutlined />
               </EmailSuffixButton>
               <CountryDropdown 
+                ref={countryDropdownRef}
                 className={showCountryDropdown ? "show" : ""}
               >
                 {countries.map(country => (
@@ -230,6 +265,7 @@ export const RightSection = ({
           <FormItem index={2}>
             <InputWrapper>
               <Input
+                ref={emailInputRef}
                 type="text"
                 value={email}
                 onChange={handleEmailChange}
@@ -239,8 +275,8 @@ export const RightSection = ({
                 onFocus={() => setEmailFocused(true)}
                 onBlur={(e) => {
                   if (
-                    emailSuffixButtonRef.current && 
-                    !emailSuffixButtonRef.current.contains(e.relatedTarget)
+                    emailDropdownRef.current && 
+                    !emailDropdownRef.current.contains(e.relatedTarget)
                   ) {
                     setEmailFocused(false);
                   }
@@ -249,7 +285,6 @@ export const RightSection = ({
               <BorderGlow className={emailFocused ? "active" : ""} />
               {!email.includes('@') && (
                 <EmailSuffixButton
-                  ref={emailSuffixButtonRef}
                   type="button"
                   onClick={() => setShowSuffixDropdown(!showSuffixDropdown)}
                 >
@@ -257,7 +292,7 @@ export const RightSection = ({
                 </EmailSuffixButton>
               )}
               <EmailSuffixDropdown 
-                ref={dropdownRef}
+                ref={emailDropdownRef}
                 className={showSuffixDropdown ? "show" : ""}
               >
                 {emailSuffixes.map(suffix => (
