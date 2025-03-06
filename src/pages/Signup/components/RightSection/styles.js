@@ -78,11 +78,14 @@ export const FormItem = styled.div`
   opacity: 0;
   animation: ${slideUpFade} 0.8s ease-out forwards;
   animation-delay: ${props => 0.4 + props.index * 0.1}s;
+  position: relative;
+  z-index: ${props => 1000 - props.index};
 `;
 
 export const InputWrapper = styled.div`
   position: relative;
   width: 100%;
+  z-index: ${props => props.isCountrySelector ? '1000' : '1'};
 `;
 
 export const Input = styled.input`
@@ -194,20 +197,43 @@ export const EmailSuffixDropdown = styled.div`
   left: 0;
   right: 0;
   background: ${props => props.theme.mode === 'dark' 
-    ? 'rgba(255, 255, 255, 0.08)' 
-    : '#ffffff'};
-  backdrop-filter: blur(10px);
+    ? 'rgba(31, 31, 31, 0.8)'
+    : 'rgba(255, 255, 255, 0.8)'};
+  backdrop-filter: blur(10px) saturate(180%);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
   border: 1px solid ${props => props.theme.mode === 'dark' 
-    ? 'var(--ant-color-border)' 
-    : '#e5e7eb'};
-  border-radius: 0.5rem;
+    ? 'rgba(255, 255, 255, 0.08)'
+    : 'rgba(255, 255, 255, 0.3)'};
+  border-radius: 0.75rem;
   box-shadow: ${props => props.theme.mode === 'dark' 
-    ? '0 4px 12px rgba(0, 0, 0, 0.2)' 
-    : '0 4px 12px rgba(0, 0, 0, 0.1)'};
+    ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+    : '0 8px 32px rgba(0, 0, 0, 0.1)'};
   max-height: 200px;
   overflow-y: auto;
-  z-index: 1000;
+  z-index: 99999;
   display: none;
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.2)'
+      : 'rgba(0, 0, 0, 0.2)'};
+    border-radius: 4px;
+    
+    &:hover {
+      background: ${props => props.theme.mode === 'dark'
+        ? 'rgba(255, 255, 255, 0.3)'
+        : 'rgba(0, 0, 0, 0.3)'};
+    }
+  }
   
   &.show {
     display: block;
@@ -223,12 +249,19 @@ export const EmailSuffixOption = styled.button`
   color: var(--ant-color-text);
   cursor: pointer;
   transition: all 0.3s;
+  display: flex;
+  align-items: center;
 
   &:hover {
-    background: ${props => props.theme.mode === 'dark' 
-      ? 'rgba(255, 255, 255, 0.12)' 
-      : 'var(--ant-color-primary-bg)'};
-    color: var(--ant-color-primary);
+    background: ${props => props.theme.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.08)'
+      : 'rgba(0, 0, 0, 0.05)'};
+  }
+
+  &:active {
+    background: ${props => props.theme.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.12)'
+      : 'rgba(0, 0, 0, 0.08)'};
   }
 `;
 
@@ -309,7 +342,7 @@ export const Footer = styled.div`
   }
 `;
 
-export const CountrySelector = styled.div`
+export const CountrySelector = styled.div.attrs({ tabIndex: 0 })`
   width: 100%;
   height: 50px;
   border-radius: 9999px;
@@ -321,13 +354,18 @@ export const CountrySelector = styled.div`
   font-size: 0.875rem;
   transition: all 0.3s;
   position: relative;
-  z-index: 1;
+  z-index: 1000;
   cursor: pointer;
   display: flex;
   align-items: center;
+  outline: none;
 
   &:hover {
     border-color: var(--ant-color-primary);
+  }
+
+  &:focus-within {
+    z-index: 1001;
   }
 
   &::before,
@@ -377,13 +415,86 @@ export const CountryFlag = styled.img`
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 `;
 
-export const CountryDropdown = styled(EmailSuffixDropdown)``;
+export const CountryDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  background: ${props => props.theme.mode === 'dark' 
+    ? 'rgba(31, 31, 31, 0.8)'
+    : 'rgba(255, 255, 255, 0.8)'};
+  backdrop-filter: blur(10px) saturate(180%);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  border: 1px solid ${props => props.theme.mode === 'dark' 
+    ? 'rgba(255, 255, 255, 0.08)'
+    : 'rgba(255, 255, 255, 0.3)'};
+  border-radius: 0.75rem;
+  box-shadow: ${props => props.theme.mode === 'dark' 
+    ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+    : '0 8px 32px rgba(0, 0, 0, 0.1)'};
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 99999;
+  display: none;
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
 
-export const CountryOption = styled(EmailSuffixOption)``;
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.2)'
+      : 'rgba(0, 0, 0, 0.2)'};
+    border-radius: 4px;
+    
+    &:hover {
+      background: ${props => props.theme.mode === 'dark'
+        ? 'rgba(255, 255, 255, 0.3)'
+        : 'rgba(0, 0, 0, 0.3)'};
+    }
+  }
+  
+  &.show {
+    display: block;
+  }
+`;
+
+export const CountryOption = styled.button`
+  width: 100%;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--ant-color-text);
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  &:hover {
+    background: ${props => props.theme.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.08)'
+      : 'rgba(0, 0, 0, 0.05)'};
+  }
+
+  &:active {
+    background: ${props => props.theme.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.12)'
+      : 'rgba(0, 0, 0, 0.08)'};
+  }
+`;
 
 export const CountryOptionContent = styled.div`
   display: flex;
   align-items: center;
+  gap: 12px;
+  width: 100%;
 `;
 
 export const VerifyCodeButton = styled.button`
@@ -436,10 +547,12 @@ export const RuleHint = styled.div`
   left: 0;
   right: 0;
   background: ${props => props.theme.mode === 'dark' 
-    ? 'var(--ant-color-bg-container)' 
+    ? '#1f1f1f' 
     : '#ffffff'};
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: ${props => props.theme.mode === 'dark' 
+    ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+    : '0 4px 12px rgba(0, 0, 0, 0.1)'};
   padding: 0.75rem;
   z-index: 1000;
   opacity: 0;
@@ -451,12 +564,16 @@ export const RuleHint = styled.div`
     position: fixed;
     left: 1rem;
     right: 1rem;
-    bottom: 1rem;
-    transform: translateY(100%);
+    top: auto;
+    bottom: 4rem;
+    transform: translateY(0);
     margin-top: 0;
+    max-width: calc(100% - 2rem);
     
     &.show {
       transform: translateY(0);
+      opacity: 1;
+      visibility: visible;
     }
   }
   
