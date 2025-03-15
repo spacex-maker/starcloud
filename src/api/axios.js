@@ -3,7 +3,7 @@ import axios from 'axios';
 // 创建 axios 实例
 const instance = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'https://app.anakkix.cn',
-  timeout: 10000,
+  timeout: 30000,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

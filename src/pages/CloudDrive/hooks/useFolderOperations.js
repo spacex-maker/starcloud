@@ -107,7 +107,8 @@ export const useFolderOperations = (
             ...pagination,
             currentPage: 1
           }
-        }
+        },
+        selectedNodeId
       );
     } catch (error) {
       console.error('Failed to navigate to folder:', error);
@@ -131,7 +132,8 @@ export const useFolderOperations = (
       
       await loadFiles(
         targetPath.id,
-        { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
+        { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination },
+        selectedNodeId
       );
     } catch (error) {
       console.error('Failed to navigate to path:', error);
@@ -162,7 +164,8 @@ export const useFolderOperations = (
             ...pagination,
             currentPage: 1
           }
-        }
+        },
+        selectedNodeId
       );
     } catch (error) {
       console.error('Failed to navigate to home:', error);
