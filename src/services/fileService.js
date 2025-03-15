@@ -105,58 +105,55 @@ export const fetchRootDirectory = async (
 };
 
 // 修改加载文件的函数以支持分页
-export const loadFiles = async (parentId, state, nodeId) => {
-  const {
-    setLoading,
-    setFiles,
-    setFilteredFiles,
-    setSearchText,
-    setPagination,
-    pagination
-  } = state;
-
+export const loadFiles = async (
+  parentId,
+  { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination },
+  nodeId
+) => {
   try {
     setLoading(true);
     const response = await instance.post('/productx/file-storage/list', {
-      parentId: parentId,
+      parentId,
       pageSize: pagination.pageSize,
       currentPage: pagination.currentPage,
       nodeId: nodeId
     });
 
     if (response.data && response.data.success) {
-      const fileList = response.data.data.data.map(file => ({
-        key: file.id,
+      const fileList = response.data.data.data || [];
+      
+      // 转换数据格式
+      const newFiles = fileList.map(file => ({
+        key: file.id.toString(),
         id: file.id,
         name: file.name,
+        type: file.isDirectory ? 'folder' : 'file',
         size: file.size,
         rawSize: file.size,
-        type: file.isDirectory ? 'folder' : 'file',
+        downloadUrl: file.downloadUrl,
         createTime: file.createTime ? new Date(file.createTime).toLocaleString() : '-',
         updateTime: file.updateTime ? new Date(file.updateTime).toLocaleString() : '-',
-        downloadUrl: file.downloadUrl,
         storagePath: file.storagePath,
         isDirectory: file.isDirectory,
         extension: file.extension,
         nodeId: file.nodeId
       }));
 
-      setFiles(fileList);
-      setFilteredFiles(fileList);
+      setFiles(newFiles);
+      setFilteredFiles(newFiles);
       setSearchText('');
-      
+
+      // 更新分页信息
       setPagination({
         ...pagination,
         total: response.data.data.totalNum,
         currentPage: pagination.currentPage,
         pageSize: pagination.pageSize
       });
-    } else {
-      throw new Error(response.data.message || '加载文件失败');
     }
   } catch (error) {
-    console.error('加载文件失败:', error);
-    message.error('加载文件失败: ' + (error?.message || '未知错误'));
+    console.error('加载文件列表失败:', error);
+    message.error('加载文件列表失败: ' + (error.message || '未知错误'));
   } finally {
     setLoading(false);
   }

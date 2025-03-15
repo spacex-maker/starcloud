@@ -144,7 +144,8 @@ const AllFiles = () => {
     setSearchText,
     setLoading,
     setCurrentParentId,
-    setCurrentFolder
+    setCurrentFolder,
+    selectedNodeId
   );
 
   const {

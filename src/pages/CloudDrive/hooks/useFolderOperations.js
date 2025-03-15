@@ -15,7 +15,8 @@ export const useFolderOperations = (
   setSearchText, 
   setLoading,
   setCurrentParentId,
-  setCurrentFolder
+  setCurrentFolder,
+  selectedNodeId
 ) => {
   const [newFolderModalVisible, setNewFolderModalVisible] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -25,6 +26,11 @@ export const useFolderOperations = (
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) {
       message.error('文件夹名称不能为空');
+      return;
+    }
+
+    if (!selectedNodeId) {
+      message.error('请先选择存储节点');
       return;
     }
     
@@ -42,7 +48,8 @@ export const useFolderOperations = (
         name: newFolderName,
         size: 0,
         storagePath: fullPath,
-        visibility: 'PRIVATE'
+        visibility: 'PRIVATE',
+        nodeId: selectedNodeId
       });
       
       if (response.data && response.data.success) {
@@ -53,7 +60,8 @@ export const useFolderOperations = (
         // 刷新文件列表
         await loadFiles(
           currentParentId, 
-          { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
+          { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination },
+          selectedNodeId
         );
       } else {
         throw new Error(response.data.message || '创建文件夹失败');
