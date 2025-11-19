@@ -15,7 +15,8 @@ export const useFolderOperations = (
   setSearchText, 
   setLoading,
   setCurrentParentId,
-  setCurrentFolder
+  setCurrentFolder,
+  nodeId
 ) => {
   const [newFolderModalVisible, setNewFolderModalVisible] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -33,7 +34,7 @@ export const useFolderOperations = (
       const fullPath = userInfo ? `${userInfo.username}/${currentPath}${newFolderName}/` : '';
       
       // 1. 先在对象存储创建文件夹
-      await cosService.createFolder(fullPath);
+      await cosService.createFolder(fullPath, null, nodeId);
       
       // 2. 调用后端接口保存信息
       const response = await instance.post('/productx/file-storage/create-directory', {
@@ -42,7 +43,8 @@ export const useFolderOperations = (
         name: newFolderName,
         size: 0,
         storagePath: fullPath,
-        visibility: 'PRIVATE'
+        visibility: 'PRIVATE',
+        nodeId: nodeId
       });
       
       if (response.data && response.data.success) {
@@ -53,7 +55,8 @@ export const useFolderOperations = (
         // 刷新文件列表
         await loadFiles(
           currentParentId, 
-          { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
+          { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination },
+          nodeId
         );
       } else {
         throw new Error(response.data.message || '创建文件夹失败');
@@ -99,7 +102,8 @@ export const useFolderOperations = (
             ...pagination,
             currentPage: 1
           }
-        }
+        },
+        nodeId
       );
     } catch (error) {
       console.error('Failed to navigate to folder:', error);
@@ -123,7 +127,8 @@ export const useFolderOperations = (
       
       await loadFiles(
         targetPath.id,
-        { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
+        { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination },
+        nodeId
       );
     } catch (error) {
       console.error('Failed to navigate to path:', error);
@@ -154,7 +159,8 @@ export const useFolderOperations = (
             ...pagination,
             currentPage: 1
           }
-        }
+        },
+        nodeId
       );
     } catch (error) {
       console.error('Failed to navigate to home:', error);
@@ -169,6 +175,7 @@ export const useFolderOperations = (
     setNewFolderName,
     creatingFolder,
     pathHistory,
+    setPathHistory,
     handleCreateFolder,
     handleFolderClick,
     handlePathClick,

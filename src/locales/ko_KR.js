@@ -276,5 +276,25 @@ export default {
   'common.storageAvailable': '사용 가능한 공간',
   'common.storageLimit': '총 용량',
   'common.storageUsageDetail': '사용 {used} / 전체 {total}',
-  'common.defaultNode': '기본 노드'
+  'common.defaultNode': '기본 노드',
+  'cloudDrive.nodeSelect.title': '스토리지 노드 선택',
+  'cloudDrive.nodeSelect.addNode': '스토리지 노드 추가',
+  'cloudDrive.nodeSelect.deleteConfirm.title': '노드 삭제 확인',
+  'cloudDrive.nodeSelect.deleteConfirm.content': '노드 "{nodeName}"을(를) 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다!',
+  'cloudDrive.nodeSelect.deleteSuccess': '노드가 성공적으로 삭제되었습니다',
+  'cloudDrive.nodeSelect.deleteFailed': '노드 삭제에 실패했습니다',
+  
+  // 노드 생성
+  'cloudDrive.nodeCreate.title': '스토리지 노드 추가',
+  'cloudDrive.nodeCreate.selectProvider': '클라우드 공급자 선택',
+  'cloudDrive.nodeCreate.nodeName': '노드 이름',
+  'cloudDrive.nodeCreate.nodeNamePlaceholder': '비워두면 기본 이름을 사용합니다',
+  'cloudDrive.nodeCreate.nameMaxLength': '노드 이름은 50자를 초과할 수 없습니다',
+  'cloudDrive.nodeCreate.noProviders': '사용 가능한 클라우드 공급자가 없습니다',
+  
+  // 노드 편집
+  'cloudDrive.nodeEdit.title': '노드 편집',
+  'cloudDrive.nodeEdit.name': '노드 이름',
+  'cloudDrive.nodeEdit.nameRequired': '노드 이름을 입력하세요',
+  'cloudDrive.nodeEdit.nameMaxLength': '노드 이름은 50자를 초과할 수 없습니다'
 }; 

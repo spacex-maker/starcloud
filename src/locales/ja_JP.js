@@ -295,5 +295,25 @@ export default {
   'common.storageAvailable': '利用可能容量',
   'common.storageLimit': '総容量',
   'common.storageUsageDetail': '使用中 {used} / 合計 {total}',
-  'common.defaultNode': 'デフォルトノード'
+  'common.defaultNode': 'デフォルトノード',
+  'cloudDrive.nodeSelect.title': 'ストレージノードを選択',
+  'cloudDrive.nodeSelect.addNode': 'ストレージノードを追加',
+  'cloudDrive.nodeSelect.deleteConfirm.title': 'ノード削除の確認',
+  'cloudDrive.nodeSelect.deleteConfirm.content': 'ノード「{nodeName}」を削除してもよろしいですか？この操作は元に戻せません！',
+  'cloudDrive.nodeSelect.deleteSuccess': 'ノードが正常に削除されました',
+  'cloudDrive.nodeSelect.deleteFailed': 'ノードの削除に失敗しました',
+  
+  // ノード作成
+  'cloudDrive.nodeCreate.title': 'ストレージノードを追加',
+  'cloudDrive.nodeCreate.selectProvider': 'クラウドプロバイダーを選択',
+  'cloudDrive.nodeCreate.nodeName': 'ノード名',
+  'cloudDrive.nodeCreate.nodeNamePlaceholder': '空欄の場合はデフォルト名を使用します',
+  'cloudDrive.nodeCreate.nameMaxLength': 'ノード名は50文字を超えることはできません',
+  'cloudDrive.nodeCreate.noProviders': '利用可能なクラウドプロバイダーがありません',
+  
+  // ノード編集
+  'cloudDrive.nodeEdit.title': 'ノードを編集',
+  'cloudDrive.nodeEdit.name': 'ノード名',
+  'cloudDrive.nodeEdit.nameRequired': 'ノード名を入力してください',
+  'cloudDrive.nodeEdit.nameMaxLength': 'ノード名は50文字を超えることはできません'
 }; 

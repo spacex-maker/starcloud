@@ -203,5 +203,25 @@ export default {
   'common.storageAvailable': 'Espacio disponible',
   'common.storageLimit': 'Capacidad total',
   'common.storageUsageDetail': 'Usado {used} / Total {total}',
-  'common.defaultNode': 'Nodo predeterminado'
+  'common.defaultNode': 'Nodo predeterminado',
+  'cloudDrive.nodeSelect.title': 'Seleccionar nodo de almacenamiento',
+  'cloudDrive.nodeSelect.addNode': 'Agregar nodo de almacenamiento',
+  'cloudDrive.nodeSelect.deleteConfirm.title': 'Confirmar eliminación del nodo',
+  'cloudDrive.nodeSelect.deleteConfirm.content': '¿Está seguro de que desea eliminar el nodo "{nodeName}"? ¡Esta acción no se puede deshacer!',
+  'cloudDrive.nodeSelect.deleteSuccess': 'Nodo eliminado exitosamente',
+  'cloudDrive.nodeSelect.deleteFailed': 'Error al eliminar el nodo',
+  
+  // Creación de nodo
+  'cloudDrive.nodeCreate.title': 'Agregar nodo de almacenamiento',
+  'cloudDrive.nodeCreate.selectProvider': 'Seleccionar proveedor de nube',
+  'cloudDrive.nodeCreate.nodeName': 'Nombre del nodo',
+  'cloudDrive.nodeCreate.nodeNamePlaceholder': 'Dejar vacío para usar el nombre predeterminado',
+  'cloudDrive.nodeCreate.nameMaxLength': 'El nombre del nodo no puede exceder los 50 caracteres',
+  'cloudDrive.nodeCreate.noProviders': 'No hay proveedores de nube disponibles',
+  
+  // Edición de nodo
+  'cloudDrive.nodeEdit.title': 'Editar nodo',
+  'cloudDrive.nodeEdit.name': 'Nombre del nodo',
+  'cloudDrive.nodeEdit.nameRequired': 'Por favor ingrese el nombre del nodo',
+  'cloudDrive.nodeEdit.nameMaxLength': 'El nombre del nodo no puede exceder los 50 caracteres'
 }; 

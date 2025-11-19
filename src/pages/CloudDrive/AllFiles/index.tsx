@@ -120,7 +120,8 @@ const AllFiles = () => {
     setFiles,
     setFilteredFiles,
     setSearchText,
-    setLoading
+    setLoading,
+    selectedNodeId
   );
 
   const {
@@ -129,6 +130,7 @@ const AllFiles = () => {
     newFolderName,
     setNewFolderName,
     pathHistory,
+    setPathHistory,
     handleCreateFolder,
     handleFolderClick,
     handlePathClick,
@@ -144,7 +146,8 @@ const AllFiles = () => {
     setSearchText,
     setLoading,
     setCurrentParentId,
-    setCurrentFolder
+    setCurrentFolder,
+    selectedNodeId
   );
 
   const {
@@ -202,20 +205,53 @@ const AllFiles = () => {
   }, []);
 
   // 修改 loadFiles 调用，添加 nodeId 参数
-  const handleLoadFiles = (parentId: number) => {
+  const handleLoadFiles = (parentId: number, nodeId?: number) => {
     loadFiles(
       parentId,
       { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination },
-      selectedNodeId
+      nodeId ?? selectedNodeId
     );
   };
 
   // 处理节点选择
-  const handleNodeSelect = (nodeId: number) => {
+  const handleNodeSelect = async (nodeId: number) => {
     setSelectedNodeId(nodeId);
     setNodeSelectModalVisible(false);
-    // 重新加载当前目录的文件
-    handleLoadFiles(currentParentId);
+    
+    // 切换节点时，重置到根目录
+    setLoading(true);
+    try {
+      // 重置所有导航相关状态
+      setPathHistory([]);
+      setCurrentFolder(null);
+      setCurrentPath('');
+      setSearchText('');
+      
+      // 重置分页
+      setPagination({
+        currentPage: 1,
+        pageSize: 10,
+        total: 0
+      });
+      
+      // 加载新节点的根目录
+      await fetchRootDirectory(
+        setLoading,
+        setRootDirectoryId,
+        setCurrentParentId,
+        setFiles,
+        setFilteredFiles,
+        setSearchText,
+        setPagination,
+        { currentPage: 1, pageSize: 10, total: 0 },
+        nodeId
+      );
+    } catch (error) {
+      console.error('切换节点失败:', error);
+      message.error('切换节点失败');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 修改 handlePageChange
@@ -282,10 +318,7 @@ const AllFiles = () => {
       if (response.success) {
         message.success('节点信息更新成功');
         // 重新获取节点列表
-        const nodesResponse = await getUserStorageNodes();
-        if (nodesResponse.success && nodesResponse.data) {
-          setUserNodes(nodesResponse.data);
-        }
+        await refreshUserNodes();
         return true;
       } else {
         message.error(response.message || '更新失败');
@@ -298,6 +331,49 @@ const AllFiles = () => {
     }
   };
 
+  // 刷新用户节点列表
+  const refreshUserNodes = async () => {
+    try {
+      const response = await getUserStorageNodes();
+      if (response.success && response.data) {
+        setUserNodes(response.data);
+        // 如果当前选中的节点不存在了，选择默认节点或第一个节点
+        const currentNode = response.data.find(node => node.id === selectedNodeId);
+        if (!currentNode) {
+          const defaultNode = response.data.find(node => node.isDefault);
+          const nodeId = defaultNode ? defaultNode.id : response.data[0]?.id;
+          if (nodeId) {
+            setSelectedNodeId(nodeId);
+            // 重新加载文件列表
+            await fetchRootDirectory(
+              setLoading,
+              setRootDirectoryId,
+              setCurrentParentId,
+              setFiles,
+              setFilteredFiles,
+              setSearchText,
+              setPagination,
+              pagination,
+              nodeId
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error('刷新节点列表失败:', error);
+    }
+  };
+
+  // 处理节点创建成功
+  const handleNodeCreated = async () => {
+    await refreshUserNodes();
+  };
+
+  // 处理节点删除成功
+  const handleNodeDeleted = async () => {
+    await refreshUserNodes();
+  };
+
   return (
     <Content style={{ 
       display: 'flex',
@@ -306,7 +382,7 @@ const AllFiles = () => {
       overflow: 'hidden',
       padding: '10px 10px 0 10px'
     }}>
-      <FileProvider initialParentId={rootDirectoryId || 0}>
+      <FileProvider initialParentId={currentParentId} nodeId={selectedNodeId}>
         <ActionBar>
           <Space size={screens.md ? 8 : 4} className="flex-nowrap">
             <RoundedButton
@@ -375,7 +451,7 @@ const AllFiles = () => {
             placeholder={intl.formatMessage({ id: 'filelist.action.search' })}
             prefix={<SearchOutlined />}
             value={searchText}
-            onChange={e => handleSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSearch(e.target.value)}
             allowClear
           />
         </ActionBar>
@@ -457,6 +533,8 @@ const AllFiles = () => {
           selectedNodeId={selectedNodeId}
           onNodeSelect={handleNodeSelect}
           onNodeUpdate={handleNodeUpdate}
+          onNodeCreated={handleNodeCreated}
+          onNodeDeleted={handleNodeDeleted}
         />
       </FileProvider>
     </Content>

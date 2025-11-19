@@ -6,12 +6,24 @@ class COSService {
     this.cos = null;
     this.host = '';
     this.uploadTasks = new Map(); // 存储上传任务
+    this.bucketName = 'px-1258150206'; // 默认存储桶名称
+    this.nodeId = null; // 节点ID
   }
 
-  async init(useAccelerate = false) {
+  async init(useAccelerate = false, bucketName = null, nodeId = null) {
     try {
-      const { data } = await axios.get('/productx/tencent/cos-credential', {
-        params: { bucketName: 'px-1258150206' },
+      // 使用传入的参数或默认值
+      const requestBucketName = bucketName || this.bucketName;
+      const requestNodeId = nodeId || this.nodeId;
+
+      if (!requestNodeId) {
+        throw new Error('nodeId is required');
+      }
+
+      const { data } = await axios.post('/productx/tencent/cos-credential', {
+        bucketName: requestBucketName,
+        nodeId: requestNodeId
+      }, {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
@@ -24,10 +36,14 @@ class COSService {
       if (data.success) {
         const { secretId, secretKey, sessionToken, host } = data.data;
         
+        // 保存存储桶名称和节点ID
+        this.bucketName = requestBucketName;
+        this.nodeId = requestNodeId;
+        
         // 根据是否使用全球加速选择不同的域名
         const domain = useAccelerate 
-          ? `px-1258150206.cos.accelerate.myqcloud.com`
-          : `px-1258150206.cos.ap-nanjing.myqcloud.com`;
+          ? `${requestBucketName}.cos.accelerate.myqcloud.com`
+          : `${requestBucketName}.cos.ap-nanjing.myqcloud.com`;
         
         this.cos = new COS({
           SecretId: secretId,
@@ -65,10 +81,10 @@ class COSService {
     }
   }
 
-  async uploadFile(file, path = '', onProgress, useChunkUpload = false, useAccelerate = false, resumeData = null) {
+  async uploadFile(file, path = '', onProgress, useChunkUpload = false, useAccelerate = false, resumeData = null, bucketName = null, nodeId = null) {
     try {
       if (!this.cos || (this.cos.options.UseAccelerate !== useAccelerate)) {
-        const initialized = await this.init(useAccelerate);
+        const initialized = await this.init(useAccelerate, bucketName, nodeId);
         if (!initialized) {
           throw new Error('COS 初始化失败');
         }
@@ -109,7 +125,7 @@ class COSService {
         // 根据是否使用分片上传选择不同的上传方法
         const uploadMethod = useChunkUpload ? this.cos.sliceUploadFile : this.cos.putObject;
         const uploadOptions = {
-          Bucket: 'px-1258150206',
+          Bucket: this.bucketName,
           Region: 'ap-nanjing',
           Key: key,
           Body: file,
@@ -317,9 +333,12 @@ class COSService {
     return taskInfo ? taskInfo.status : null;
   }
 
-  async createFolder(path) {
+  async createFolder(path, bucketName = null, nodeId = null) {
     if (!this.cos) {
-      await this.init();
+      const initialized = await this.init(false, bucketName, nodeId);
+      if (!initialized) {
+        throw new Error('COS 初始化失败');
+      }
     }
 
     // 确保路径以 / 结尾，这是对象存储中表示文件夹的方式
@@ -327,7 +346,7 @@ class COSService {
 
     return new Promise((resolve, reject) => {
       this.cos.putObject({
-        Bucket: 'px-1258150206',
+        Bucket: this.bucketName,
         Region: 'ap-nanjing',
         Key: folderPath,
         Body: '',  // 空内容，只创建路径
@@ -346,14 +365,17 @@ class COSService {
     });
   }
 
-  async listFiles(prefix = '') {
+  async listFiles(prefix = '', bucketName = null, nodeId = null) {
     if (!this.cos) {
-      await this.init();
+      const initialized = await this.init(false, bucketName, nodeId);
+      if (!initialized) {
+        throw new Error('COS 初始化失败');
+      }
     }
 
     return new Promise((resolve, reject) => {
       this.cos.getBucket({
-        Bucket: 'px-1258150206',
+        Bucket: this.bucketName,
         Region: 'ap-nanjing',
         Prefix: prefix,
         Delimiter: '/',
@@ -373,14 +395,17 @@ class COSService {
     });
   }
 
-  async deleteFile(key) {
+  async deleteFile(key, bucketName = null, nodeId = null) {
     if (!this.cos) {
-      await this.init();
+      const initialized = await this.init(false, bucketName, nodeId);
+      if (!initialized) {
+        throw new Error('COS 初始化失败');
+      }
     }
 
     return new Promise((resolve, reject) => {
       this.cos.deleteObject({
-        Bucket: 'px-1258150206',
+        Bucket: this.bucketName,
         Region: 'ap-nanjing',
         Key: key
       }, (err, data) => {
@@ -393,19 +418,22 @@ class COSService {
     });
   }
 
-  async renameFile(oldKey, newKey) {
+  async renameFile(oldKey, newKey, bucketName = null, nodeId = null) {
     if (!this.cos) {
-      await this.init();
+      const initialized = await this.init(false, bucketName, nodeId);
+      if (!initialized) {
+        throw new Error('COS 初始化失败');
+      }
     }
 
     try {
       // 1. 复制文件到新的位置
       await new Promise((resolve, reject) => {
         this.cos.putObjectCopy({
-          Bucket: 'px-1258150206',
+          Bucket: this.bucketName,
           Region: 'ap-nanjing',
           Key: newKey,
-          CopySource: encodeURIComponent('px-1258150206.cos.ap-nanjing.myqcloud.com/' + oldKey)
+          CopySource: encodeURIComponent(`${this.bucketName}.cos.ap-nanjing.myqcloud.com/${oldKey}`)
         }, (err, data) => {
           if (err) {
             reject(err);

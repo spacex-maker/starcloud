@@ -12,7 +12,8 @@ export const useFileOperations = (
   setFiles,
   setFilteredFiles,
   setSearchText,
-  setLoading
+  setLoading,
+  nodeId
 ) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [previewImage, setPreviewImage] = useState({
@@ -30,12 +31,13 @@ export const useFileOperations = (
         try {
           setModalDeletingId(record.id);
           setLoading(true);
-          await deleteFile(record);
+          await deleteFile(record, nodeId);
           message.success('删除成功');
           // 刷新文件列表
           await loadFiles(
             currentParentId,
-            { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
+            { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination },
+            nodeId
           );
         } catch (error) {
           message.error('删除失败: ' + (error.message || '未知错误'));
@@ -62,7 +64,7 @@ export const useFileOperations = (
       onConfirm: async () => {
         try {
           setLoading(true);
-          await Promise.all(selectedItems.map(item => deleteFile(item)));
+          await Promise.all(selectedItems.map(item => deleteFile(item, nodeId)));
           
           message.success(`成功删除 ${selectedItems.length} 个文件`);
           setSelectedRowKeys([]);
@@ -70,7 +72,8 @@ export const useFileOperations = (
           // 刷新文件列表
           await loadFiles(
             currentParentId,
-            { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
+            { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination },
+            nodeId
           );
         } catch (error) {
           console.error('批量删除失败:', error);

@@ -207,5 +207,25 @@ export default {
   'common.storageAvailable': 'Доступно',
   'common.storageLimit': 'Общая емкость',
   'common.storageUsageDetail': 'Использовано {used} / Всего {total}',
-  'common.defaultNode': 'Узел по умолчанию'
+  'common.defaultNode': 'Узел по умолчанию',
+  'cloudDrive.nodeSelect.title': 'Выбрать узел хранения',
+  'cloudDrive.nodeSelect.addNode': 'Добавить узел хранения',
+  'cloudDrive.nodeSelect.deleteConfirm.title': 'Подтвердите удаление узла',
+  'cloudDrive.nodeSelect.deleteConfirm.content': 'Вы уверены, что хотите удалить узел "{nodeName}"? Это действие нельзя отменить!',
+  'cloudDrive.nodeSelect.deleteSuccess': 'Узел успешно удален',
+  'cloudDrive.nodeSelect.deleteFailed': 'Не удалось удалить узел',
+  
+  // Создание узла
+  'cloudDrive.nodeCreate.title': 'Добавить узел хранения',
+  'cloudDrive.nodeCreate.selectProvider': 'Выберите облачного провайдера',
+  'cloudDrive.nodeCreate.nodeName': 'Имя узла',
+  'cloudDrive.nodeCreate.nodeNamePlaceholder': 'Оставьте пустым для использования имени по умолчанию',
+  'cloudDrive.nodeCreate.nameMaxLength': 'Имя узла не может превышать 50 символов',
+  'cloudDrive.nodeCreate.noProviders': 'Нет доступных облачных провайдеров',
+  
+  // Редактирование узла
+  'cloudDrive.nodeEdit.title': 'Редактировать узел',
+  'cloudDrive.nodeEdit.name': 'Имя узла',
+  'cloudDrive.nodeEdit.nameRequired': 'Пожалуйста, введите имя узла',
+  'cloudDrive.nodeEdit.nameMaxLength': 'Имя узла не может превышать 50 символов'
 }; 

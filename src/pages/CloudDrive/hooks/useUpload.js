@@ -180,7 +180,11 @@ export const useUpload = (
                 return prev;
               });
             },
-            fileState.useChunkUpload
+            fileState.useChunkUpload,
+            fileState.useAccelerate || false,
+            null, // resumeData
+            null, // bucketName (使用默认值)
+            nodeId // 当前选择的节点ID
           );
 
           // 在状态更新中计算平均速度

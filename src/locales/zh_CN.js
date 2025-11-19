@@ -353,4 +353,28 @@ export default {
   'common.storageLimit': '总容量',
   'common.storageUsageDetail': '已用 {used} / 总容量 {total}',
   'common.defaultNode': '默认节点',
+  'common.confirm': '确认',
+  'common.cancel': '取消',
+  
+  // 节点选择
+  'cloudDrive.nodeSelect.title': '选择存储节点',
+  'cloudDrive.nodeSelect.addNode': '新增存储节点',
+  'cloudDrive.nodeSelect.deleteConfirm.title': '确认删除节点',
+  'cloudDrive.nodeSelect.deleteConfirm.content': '确定要删除节点 "{nodeName}" 吗？删除后无法恢复！',
+  'cloudDrive.nodeSelect.deleteSuccess': '节点删除成功',
+  'cloudDrive.nodeSelect.deleteFailed': '删除节点失败',
+  
+  // 节点创建
+  'cloudDrive.nodeCreate.title': '新增存储节点',
+  'cloudDrive.nodeCreate.selectProvider': '选择云厂商',
+  'cloudDrive.nodeCreate.nodeName': '节点名称',
+  'cloudDrive.nodeCreate.nodeNamePlaceholder': '留空将使用默认名称',
+  'cloudDrive.nodeCreate.nameMaxLength': '节点名称不能超过50个字符',
+  'cloudDrive.nodeCreate.noProviders': '暂无可用云厂商',
+  
+  // 节点编辑
+  'cloudDrive.nodeEdit.title': '编辑节点',
+  'cloudDrive.nodeEdit.name': '节点名称',
+  'cloudDrive.nodeEdit.nameRequired': '请输入节点名称',
+  'cloudDrive.nodeEdit.nameMaxLength': '节点名称不能超过50个字符',
 }; 

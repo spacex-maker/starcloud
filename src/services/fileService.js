@@ -183,11 +183,11 @@ export const checkDuplicates = (files, existingFiles = []) => {
 };
 
 // 删除文件的核心功能
-export const deleteFile = async (record) => {
+export const deleteFile = async (record, nodeId = null) => {
   try {
     // 1. Delete from object storage if storagePath exists
     if (record.storagePath) {
-      await cosService.deleteFile(record.storagePath);
+      await cosService.deleteFile(record.storagePath, null, nodeId);
     }
     
     // 2. Move file to recycle bin through backend API

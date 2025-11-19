@@ -1,8 +1,22 @@
 import axios from 'axios';
 
+// 获取基础URL：本地测试环境使用 localhost:8080，否则使用环境变量或默认值
+const getBaseURL = () => {
+  // 判断是否为本地开发环境
+  const isLocalhost = window.location.hostname === 'localhost' || 
+                      window.location.hostname === '127.0.0.1' ||
+                      window.location.hostname === '';
+  
+  if (isLocalhost) {
+    return process.env.REACT_APP_API_URL || 'http://localhost:8080';
+  }
+  
+  return process.env.REACT_APP_API_URL || 'https://app.anakkix.cn';
+};
+
 // 创建 axios 实例
 const instance = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'https://app.anakkix.cn',
+  baseURL: getBaseURL(),
   timeout: 10000,
   withCredentials: true,
   headers: {

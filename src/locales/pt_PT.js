@@ -268,5 +268,25 @@ export default {
   'common.storageAvailable': 'Espaço disponível',
   'common.storageLimit': 'Capacidade total',
   'common.storageUsageDetail': 'Usado {used} / Total {total}',
-  'common.defaultNode': 'Nó padrão'
+  'common.defaultNode': 'Nó padrão',
+  'cloudDrive.nodeSelect.title': 'Selecionar nó de armazenamento',
+  'cloudDrive.nodeSelect.addNode': 'Adicionar nó de armazenamento',
+  'cloudDrive.nodeSelect.deleteConfirm.title': 'Confirmar exclusão do nó',
+  'cloudDrive.nodeSelect.deleteConfirm.content': 'Tem certeza de que deseja excluir o nó "{nodeName}"? Esta ação não pode ser desfeita!',
+  'cloudDrive.nodeSelect.deleteSuccess': 'Nó excluído com sucesso',
+  'cloudDrive.nodeSelect.deleteFailed': 'Falha ao excluir o nó',
+  
+  // Criação de nó
+  'cloudDrive.nodeCreate.title': 'Adicionar nó de armazenamento',
+  'cloudDrive.nodeCreate.selectProvider': 'Selecionar provedor de nuvem',
+  'cloudDrive.nodeCreate.nodeName': 'Nome do nó',
+  'cloudDrive.nodeCreate.nodeNamePlaceholder': 'Deixe em branco para usar o nome padrão',
+  'cloudDrive.nodeCreate.nameMaxLength': 'O nome do nó não pode exceder 50 caracteres',
+  'cloudDrive.nodeCreate.noProviders': 'Nenhum provedor de nuvem disponível',
+  
+  // Edição de nó
+  'cloudDrive.nodeEdit.title': 'Editar nó',
+  'cloudDrive.nodeEdit.name': 'Nome do nó',
+  'cloudDrive.nodeEdit.nameRequired': 'Por favor, insira o nome do nó',
+  'cloudDrive.nodeEdit.nameMaxLength': 'O nome do nó não pode exceder 50 caracteres'
 }; 

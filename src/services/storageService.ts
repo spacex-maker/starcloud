@@ -159,4 +159,82 @@ export const updateUserStorageNode = async (nodeId: number, data: { nodeName: st
       message: error.response?.data?.message || '更新节点信息失败'
     };
   }
+};
+
+export interface StorageRegion {
+  createTime: string;
+  updateTime: string;
+  id: number;
+  providerId: number;
+  countryCode: string;
+  regionCode: string;
+  regionName: string;
+  isDefault: boolean;
+  status: string;
+}
+
+export interface StorageCredential {
+  id: number;
+  credentialName: string;
+  providerId: number;
+  providerName: string;
+  status: string;
+  createTime: string;
+}
+
+export const getStorageRegions = async (providerId: number): Promise<ApiResponse<StorageRegion[]>> => {
+  try {
+    const response = await instance.get(`/productx/user-storage/regions/${providerId}`);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '获取地域列表失败'
+    };
+  }
+};
+
+export const getUserCredentials = async (providerId: number): Promise<ApiResponse<StorageCredential[]>> => {
+  try {
+    const response = await instance.get(`/productx/user-storage/credentials/${providerId}`);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '获取凭证列表失败'
+    };
+  }
+};
+
+export interface CreateNodeParams {
+  providerId: number;
+  regionId: number;
+  credentialId: number;
+  nodeName: string;
+  nodeType: 'STANDARD' | 'HIGH_PERFORMANCE' | 'ARCHIVE';
+  storageLimit: number;
+}
+
+export const createUserStorageNode = async (data: CreateNodeParams): Promise<ApiResponse<UserStorageNode>> => {
+  try {
+    const response = await instance.post('/productx/user-storage/node/create', data);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '创建存储节点失败'
+    };
+  }
+};
+
+export const deleteUserStorageNode = async (nodeId: number): Promise<ApiResponse<any>> => {
+  try {
+    const response = await instance.delete(`/productx/user-storage/node/${nodeId}`);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '删除存储节点失败'
+    };
+  }
 }; 

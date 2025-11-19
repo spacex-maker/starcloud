@@ -221,5 +221,25 @@ export default {
   'common.storageAvailable': 'المساحة المتاحة',
   'common.storageLimit': 'السعة الإجمالية',
   'common.storageUsageDetail': 'مستخدم {used} / الإجمالي {total}',
-  'common.defaultNode': 'العقدة الافتراضية'
+  'common.defaultNode': 'العقدة الافتراضية',
+  'cloudDrive.nodeSelect.title': 'اختيار عقدة التخزين',
+  'cloudDrive.nodeSelect.addNode': 'إضافة عقدة تخزين',
+  'cloudDrive.nodeSelect.deleteConfirm.title': 'تأكيد حذف العقدة',
+  'cloudDrive.nodeSelect.deleteConfirm.content': 'هل أنت متأكد من حذف العقدة "{nodeName}"؟ لا يمكن التراجع عن هذا الإجراء!',
+  'cloudDrive.nodeSelect.deleteSuccess': 'تم حذف العقدة بنجاح',
+  'cloudDrive.nodeSelect.deleteFailed': 'فشل حذف العقدة',
+  
+  // إنشاء العقدة
+  'cloudDrive.nodeCreate.title': 'إضافة عقدة تخزين',
+  'cloudDrive.nodeCreate.selectProvider': 'اختر مزود السحابة',
+  'cloudDrive.nodeCreate.nodeName': 'اسم العقدة',
+  'cloudDrive.nodeCreate.nodeNamePlaceholder': 'اترك فارغاً لاستخدام الاسم الافتراضي',
+  'cloudDrive.nodeCreate.nameMaxLength': 'لا يمكن أن يتجاوز اسم العقدة 50 حرفاً',
+  'cloudDrive.nodeCreate.noProviders': 'لا يوجد مزودي سحابة متاحين',
+  
+  // تحرير العقدة
+  'cloudDrive.nodeEdit.title': 'تحرير العقدة',
+  'cloudDrive.nodeEdit.name': 'اسم العقدة',
+  'cloudDrive.nodeEdit.nameRequired': 'يرجى إدخال اسم العقدة',
+  'cloudDrive.nodeEdit.nameMaxLength': 'لا يمكن أن يتجاوز اسم العقدة 50 حرفاً'
 }; 

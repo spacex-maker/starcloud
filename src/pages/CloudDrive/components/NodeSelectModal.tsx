@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Modal, Card, Tag, Typography, Tooltip } from 'antd';
-import { FormattedMessage } from 'react-intl';
+import { Modal, Card, Tag, Typography, Tooltip, Button, message } from 'antd';
+import { FormattedMessage, useIntl } from 'react-intl';
 import styled from 'styled-components';
-import { CheckCircleFilled, EditOutlined } from '@ant-design/icons';
+import { CheckCircleFilled, EditOutlined, PlusOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { formatFileSize } from 'utils/format';
+import { deleteUserStorageNode } from 'services/storageService';
 import type { UserStorageNode } from 'services/storageService';
 import NodeEditModal from './NodeEditModal';
+import NodeCreateModal from './NodeCreateModal';
 
 const { Text } = Typography;
 
@@ -16,6 +18,8 @@ interface NodeSelectModalProps {
   selectedNodeId: number | null;
   onNodeSelect: (nodeId: number) => void;
   onNodeUpdate: (nodeId: number, values: { nodeName: string }) => Promise<boolean>;
+  onNodeCreated?: () => void;
+  onNodeDeleted?: () => void;
 }
 
 const NodeGrid = styled.div`
@@ -25,7 +29,7 @@ const NodeGrid = styled.div`
   padding: 16px;
 `;
 
-const NodeCard = styled(Card)<{ $isSelected: boolean }>`
+const NodeCard = styled(Card as any)<{ $isSelected: boolean }>`
   cursor: pointer;
   transition: all 0.3s ease;
   background: ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#fff'};
@@ -65,7 +69,16 @@ const NodeCard = styled(Card)<{ $isSelected: boolean }>`
   }
 `;
 
-const EditIconButton = styled.span`
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 4px;
+  position: absolute;
+  right: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+`;
+
+const IconButton = styled.span<{ $danger?: boolean }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -74,17 +87,24 @@ const EditIconButton = styled.span`
   border-radius: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
-  opacity: 0;
   background: ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)'};
-  position: absolute;
-  right: 12px;
 
   &:hover {
-    background: ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'};
+    background: ${props => {
+      if (props.$danger) {
+        return props.theme.mode === 'dark' ? 'rgba(255, 77, 79, 0.2)' : 'rgba(255, 77, 79, 0.1)';
+      }
+      return props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
+    }};
   }
 
   .anticon {
-    color: ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)'};
+    color: ${props => {
+      if (props.$danger) {
+        return props.theme.mode === 'dark' ? '#ff4d4f' : '#ff4d4f';
+      }
+      return props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)';
+    }};
     font-size: 16px;
   }
 `;
@@ -93,9 +113,9 @@ const CardTitle = styled.div`
   position: relative;
   display: flex;
   align-items: center;
-  padding-right: 40px;
+  padding-right: 80px;
 
-  &:hover ${EditIconButton} {
+  &:hover ${ActionButtons} {
     opacity: 1;
   }
 `;
@@ -107,15 +127,65 @@ const NodeSelectModal: React.FC<NodeSelectModalProps> = ({
   selectedNodeId,
   onNodeSelect,
   onNodeUpdate,
+  onNodeCreated,
+  onNodeDeleted,
 }) => {
+  const intl = useIntl();
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
   const [currentEditNode, setCurrentEditNode] = useState<UserStorageNode | null>(null);
+  const [deletingNodeId, setDeletingNodeId] = useState<number | null>(null);
 
-  const handleEditClick = (e: React.MouseEvent, node: UserStorageNode) => {
+  const handleEditClick = (e: React.MouseEvent<HTMLElement>, node: UserStorageNode) => {
     e.preventDefault();
     e.stopPropagation();
     setCurrentEditNode(node);
     setEditModalVisible(true);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent<HTMLElement>, node: UserStorageNode) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    Modal.confirm({
+      title: intl.formatMessage({ id: 'cloudDrive.nodeSelect.deleteConfirm.title', defaultMessage: '确认删除节点' }),
+      icon: <ExclamationCircleOutlined />,
+      content: intl.formatMessage(
+        { id: 'cloudDrive.nodeSelect.deleteConfirm.content', defaultMessage: '确定要删除节点 "{nodeName}" 吗？删除后无法恢复！' },
+        { nodeName: node.nodeName }
+      ),
+      okText: intl.formatMessage({ id: 'common.confirm', defaultMessage: '确定' }),
+      cancelText: intl.formatMessage({ id: 'common.cancel', defaultMessage: '取消' }),
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        setDeletingNodeId(node.id);
+        try {
+          const response = await deleteUserStorageNode(node.id);
+          if (response.success) {
+            message.success(intl.formatMessage({ id: 'cloudDrive.nodeSelect.deleteSuccess', defaultMessage: '节点删除成功' }));
+            if (onNodeDeleted) {
+              onNodeDeleted();
+            }
+          } else {
+            message.error(response.message || intl.formatMessage({ id: 'cloudDrive.nodeSelect.deleteFailed', defaultMessage: '删除节点失败' }));
+          }
+        } catch (error) {
+          console.error('删除节点失败:', error);
+          message.error(intl.formatMessage({ id: 'cloudDrive.nodeSelect.deleteFailed', defaultMessage: '删除节点失败' }));
+        } finally {
+          setDeletingNodeId(null);
+        }
+      }
+    });
+  };
+
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>, nodeId: number) => {
+    // 检查是否点击了操作按钮或其子元素
+    const target = e.target as HTMLElement;
+    if (target.closest('.action-buttons') || target.closest('.anticon-edit') || target.closest('.anticon-delete')) {
+      return;
+    }
+    onNodeSelect(nodeId);
   };
 
   const renderCardTitle = (node: UserStorageNode) => (
@@ -138,11 +208,34 @@ const NodeSelectModal: React.FC<NodeSelectModalProps> = ({
           )}
         </span>
       </Tooltip>
-      <EditIconButton onClick={(e) => handleEditClick(e, node)}>
-        <EditOutlined />
-      </EditIconButton>
+      <ActionButtons className="action-buttons">
+        <Tooltip title={<FormattedMessage id="common.edit" defaultMessage="编辑" />}>
+          <IconButton 
+            onClick={(e) => handleEditClick(e, node)}
+          >
+            <EditOutlined />
+          </IconButton>
+        </Tooltip>
+        {!node.isDefault && (
+          <Tooltip title={<FormattedMessage id="common.delete" defaultMessage="删除" />}>
+            <IconButton 
+              $danger
+              onClick={(e) => handleDeleteClick(e, node)}
+            >
+              <DeleteOutlined />
+            </IconButton>
+          </Tooltip>
+        )}
+      </ActionButtons>
     </CardTitle>
   );
+
+  const handleNodeCreated = () => {
+    setCreateModalVisible(false);
+    if (onNodeCreated) {
+      onNodeCreated();
+    }
+  };
 
   return (
     <>
@@ -150,7 +243,15 @@ const NodeSelectModal: React.FC<NodeSelectModalProps> = ({
         title={<FormattedMessage id="cloudDrive.nodeSelect.title" defaultMessage="选择存储节点" />}
         open={open}
         onCancel={onClose}
-        footer={null}
+        footer={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setCreateModalVisible(true)}
+          >
+            <FormattedMessage id="cloudDrive.nodeSelect.addNode" defaultMessage="新增存储节点" />
+          </Button>
+        }
         width={800}
       >
         <NodeGrid>
@@ -159,7 +260,7 @@ const NodeSelectModal: React.FC<NodeSelectModalProps> = ({
               key={node.id}
               $isSelected={node.id === selectedNodeId}
               size="small"
-              onClick={() => onNodeSelect(node.id)}
+              onClick={(e: React.MouseEvent<HTMLDivElement>) => handleCardClick(e, node.id)}
               title={renderCardTitle(node)}
             >
               <div className="storage-info">
@@ -200,8 +301,14 @@ const NodeSelectModal: React.FC<NodeSelectModalProps> = ({
         node={currentEditNode}
         onSave={onNodeUpdate}
       />
+
+      <NodeCreateModal
+        open={createModalVisible}
+        onClose={() => setCreateModalVisible(false)}
+        onSuccess={handleNodeCreated}
+      />
     </>
   );
 };
 
-export default NodeSelectModal; 
+export default NodeSelectModal;

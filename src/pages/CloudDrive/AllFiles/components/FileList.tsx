@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useState } from 'react';
+import React, { memo, useMemo, useState, useContext } from 'react';
 import type { FC } from 'react';
 import { Table, Space, Button, Typography, TablePaginationConfig, theme, Pagination, Grid, Modal, Input, Image, Dropdown, Tooltip, message } from 'antd';
 import type { MenuProps } from 'antd';
@@ -130,7 +130,7 @@ const FileList: FC<FileListProps> = memo(({
 }) => {
   const { token } = useToken();
   const screens = Grid.useBreakpoint();
-  const themeContext = React.useContext(ThemeContext);
+  const themeContext = useContext(ThemeContext as React.Context<any>);
   const isDark = themeContext?.mode === 'dark';
   const intl = useIntl();
   

@@ -275,5 +275,25 @@ export default {
   'common.storageAvailable': 'Verfügbarer Speicher',
   'common.storageLimit': 'Gesamtkapazität',
   'common.storageUsageDetail': 'Belegt {used} / Gesamt {total}',
-  'common.defaultNode': 'Standardknoten'
+  'common.defaultNode': 'Standardknoten',
+  'cloudDrive.nodeSelect.title': 'Speicherknoten auswählen',
+  'cloudDrive.nodeSelect.addNode': 'Speicherknoten hinzufügen',
+  'cloudDrive.nodeSelect.deleteConfirm.title': 'Löschung des Knotens bestätigen',
+  'cloudDrive.nodeSelect.deleteConfirm.content': 'Möchten Sie den Knoten "{nodeName}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden!',
+  'cloudDrive.nodeSelect.deleteSuccess': 'Knoten erfolgreich gelöscht',
+  'cloudDrive.nodeSelect.deleteFailed': 'Fehler beim Löschen des Knotens',
+  
+  // Knoten erstellen
+  'cloudDrive.nodeCreate.title': 'Speicherknoten hinzufügen',
+  'cloudDrive.nodeCreate.selectProvider': 'Cloud-Anbieter auswählen',
+  'cloudDrive.nodeCreate.nodeName': 'Knotenname',
+  'cloudDrive.nodeCreate.nodeNamePlaceholder': 'Leer lassen, um Standardnamen zu verwenden',
+  'cloudDrive.nodeCreate.nameMaxLength': 'Knotenname darf 50 Zeichen nicht überschreiten',
+  'cloudDrive.nodeCreate.noProviders': 'Keine Cloud-Anbieter verfügbar',
+  
+  // Knoten bearbeiten
+  'cloudDrive.nodeEdit.title': 'Knoten bearbeiten',
+  'cloudDrive.nodeEdit.name': 'Knotenname',
+  'cloudDrive.nodeEdit.nameRequired': 'Bitte Knotennamen eingeben',
+  'cloudDrive.nodeEdit.nameMaxLength': 'Knotenname darf 50 Zeichen nicht überschreiten'
 }; 

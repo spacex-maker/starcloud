@@ -290,5 +290,25 @@ export default {
   'common.storageAvailable': 'Espace disponible',
   'common.storageLimit': 'Capacité totale',
   'common.storageUsageDetail': 'Utilisé {used} / Total {total}',
-  'common.defaultNode': 'Nœud par défaut'
+  'common.defaultNode': 'Nœud par défaut',
+  'cloudDrive.nodeSelect.title': 'Sélectionner un nœud de stockage',
+  'cloudDrive.nodeSelect.addNode': 'Ajouter un nœud de stockage',
+  'cloudDrive.nodeSelect.deleteConfirm.title': 'Confirmer la suppression du nœud',
+  'cloudDrive.nodeSelect.deleteConfirm.content': 'Êtes-vous sûr de vouloir supprimer le nœud "{nodeName}" ? Cette action ne peut pas être annulée !',
+  'cloudDrive.nodeSelect.deleteSuccess': 'Nœud supprimé avec succès',
+  'cloudDrive.nodeSelect.deleteFailed': 'Échec de la suppression du nœud',
+  
+  // Création de nœud
+  'cloudDrive.nodeCreate.title': 'Ajouter un nœud de stockage',
+  'cloudDrive.nodeCreate.selectProvider': 'Sélectionner un fournisseur cloud',
+  'cloudDrive.nodeCreate.nodeName': 'Nom du nœud',
+  'cloudDrive.nodeCreate.nodeNamePlaceholder': 'Laisser vide pour utiliser le nom par défaut',
+  'cloudDrive.nodeCreate.nameMaxLength': 'Le nom du nœud ne peut pas dépasser 50 caractères',
+  'cloudDrive.nodeCreate.noProviders': 'Aucun fournisseur cloud disponible',
+  
+  // Édition de nœud
+  'cloudDrive.nodeEdit.title': 'Modifier le nœud',
+  'cloudDrive.nodeEdit.name': 'Nom du nœud',
+  'cloudDrive.nodeEdit.nameRequired': 'Veuillez entrer le nom du nœud',
+  'cloudDrive.nodeEdit.nameMaxLength': 'Le nom du nœud ne peut pas dépasser 50 caractères'
 }; 

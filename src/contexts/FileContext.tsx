@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { FileModel } from 'models/file/FileModel';
 import { loadFiles, updateFileName } from 'services/fileService';
 
@@ -14,12 +14,14 @@ interface FileContextType {
   searchText: string;
   loading: boolean;
   currentParentId: number;
+  nodeId: number | null;
   pagination: PaginationState;
   setFiles: (files: FileModel[]) => void;
   setFilteredFiles: (files: FileModel[]) => void;
   setSearchText: (text: string) => void;
   setLoading: (loading: boolean) => void;
   setPagination: (pagination: PaginationState) => void;
+  setNodeId: (nodeId: number | null) => void;
   refreshFiles: () => Promise<void>;
   renameFile: (fileId: number, newName: string) => Promise<boolean>;
 }
@@ -37,24 +39,41 @@ export const useFileContext = () => {
 interface FileProviderProps {
   children: ReactNode;
   initialParentId: number;
+  nodeId?: number | null;
 }
 
-export const FileProvider: React.FC<FileProviderProps> = ({ children, initialParentId }) => {
+export const FileProvider: React.FC<FileProviderProps> = ({ children, initialParentId, nodeId: initialNodeId }) => {
   const [files, setFiles] = useState<FileModel[]>([]);
   const [filteredFiles, setFilteredFiles] = useState<FileModel[]>([]);
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentParentId, setCurrentParentId] = useState(initialParentId);
+  const [nodeId, setNodeId] = useState<number | null>(initialNodeId || null);
   const [pagination, setPagination] = useState<PaginationState>({
     currentPage: 1,
     pageSize: 10,
     total: 0
   });
 
+  // 同步外部传入的 nodeId
+  useEffect(() => {
+    if (initialNodeId !== undefined && initialNodeId !== nodeId) {
+      setNodeId(initialNodeId);
+    }
+  }, [initialNodeId]);
+
+  // 同步外部传入的 parentId
+  useEffect(() => {
+    if (initialParentId !== currentParentId) {
+      setCurrentParentId(initialParentId);
+    }
+  }, [initialParentId]);
+
   const refreshFiles = async () => {
     await loadFiles(
       currentParentId,
-      { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination }
+      { setLoading, setFiles, setFilteredFiles, setSearchText, setPagination, pagination },
+      nodeId
     );
   };
 
@@ -78,12 +97,14 @@ export const FileProvider: React.FC<FileProviderProps> = ({ children, initialPar
     searchText,
     loading,
     currentParentId,
+    nodeId,
     pagination,
     setFiles,
     setFilteredFiles,
     setSearchText,
     setLoading,
     setPagination,
+    setNodeId,
     refreshFiles,
     renameFile
   };
