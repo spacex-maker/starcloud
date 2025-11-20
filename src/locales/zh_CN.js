@@ -191,6 +191,7 @@ export default {
   
   // 文件信息弹窗
   'decrypt.fileInfo.modal.title': '文件信息',
+  'decrypt.fileInfo.modal.close': '关闭',
   'decrypt.fileInfo.name': '文件名',
   'decrypt.fileInfo.size': '文件大小',
   'decrypt.fileInfo.type': '文件类型',
@@ -355,6 +356,8 @@ export default {
   'common.defaultNode': '默认节点',
   'common.confirm': '确认',
   'common.cancel': '取消',
+  'common.latency': '延迟',
+  'common.retry': '重试',
   
   // 节点选择
   'cloudDrive.nodeSelect.title': '选择存储节点',
@@ -371,6 +374,29 @@ export default {
   'cloudDrive.nodeCreate.nodeNamePlaceholder': '留空将使用默认名称',
   'cloudDrive.nodeCreate.nameMaxLength': '节点名称不能超过50个字符',
   'cloudDrive.nodeCreate.noProviders': '暂无可用云厂商',
+  'cloudDrive.nodeCreate.pingLatency': '延迟 {value} ms',
+  'cloudDrive.nodeCreate.pingTesting': '延迟测试中...',
+  'cloudDrive.nodeCreate.pingFailed': '延迟测试失败',
+  'cloudDrive.nodeCreate.pingUnavailable': '暂不支持延迟测试',
+  'cloudDrive.nodeCreate.sortByLatency': '按延迟排序',
+  'cloudDrive.nodeCreate.selectRegion': '选择地域',
+  'cloudDrive.nodeCreate.selectedRegion': '已选地域',
+  'cloudDrive.nodeCreate.noRegions': '暂无可用地域',
+  'cloudDrive.nodeCreate.selectProviderPlaceholder': '请选择云厂商',
+  'cloudDrive.nodeCreate.selectProviderRequired': '请先选择云厂商',
+  'cloudDrive.nodeCreate.selectRegionRequired': '请先选择地域',
+  'cloudDrive.nodeCreate.loadProvidersFailed': '获取云厂商列表失败',
+  'cloudDrive.nodeCreate.loadRegionsFailed': '获取地域列表失败',
+  'cloudDrive.nodeCreate.nodeType': '节点类型',
+  'cloudDrive.nodeCreate.nodeType.standard': '标准存储',
+  'cloudDrive.nodeCreate.nodeType.lowFreq': '低频存储',
+  'cloudDrive.nodeCreate.nodeType.archive': '归档存储',
+  'cloudDrive.nodeCreate.storageLimit': '存储限制',
+  'cloudDrive.nodeCreate.storageLimitRequired': '请输入存储限制',
+  'cloudDrive.nodeCreate.storageLimitMin': '存储限制不能小于1GB',
+  'cloudDrive.nodeCreate.storageLimitPlaceholder': '请输入存储限制（GB）',
+  'cloudDrive.nodeCreate.success': '存储节点创建成功',
+  'cloudDrive.nodeCreate.failed': '创建存储节点失败',
   
   // 节点编辑
   'cloudDrive.nodeEdit.title': '编辑节点',

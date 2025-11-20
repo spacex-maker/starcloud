@@ -171,6 +171,7 @@ export interface StorageRegion {
   regionName: string;
   isDefault: boolean;
   status: string;
+  pingEndpoint?: string;
 }
 
 export interface StorageCredential {

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, message, Spin, Empty, Select, InputNumber, Row, Col } from 'antd';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Modal, Form, Input, message, Spin, Empty, Select, InputNumber, Button, Tooltip } from 'antd';
 import { FormattedMessage, useIntl } from 'react-intl';
 import styled from 'styled-components';
+import { ReloadOutlined, SortAscendingOutlined, CheckCircleFilled, CloseCircleFilled, ClockCircleFilled } from '@ant-design/icons';
 import { 
   getActiveCloudProviders, 
   createUserStorageNode, 
@@ -19,16 +20,16 @@ interface NodeCreateModalProps {
 
 const RegionGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 12px;
   margin-top: 12px;
-  max-height: 300px;
+  max-height: 320px;
   overflow-y: auto;
   padding: 8px;
 `;
 
 const RegionCard = styled.div<{ $isSelected: boolean }>`
-  padding: 12px;
+  padding: 16px;
   border: 1px solid ${props => {
     if (props.$isSelected) {
       return props.theme.mode === 'dark' ? '#177ddc' : '#1890ff';
@@ -44,6 +45,9 @@ const RegionCard = styled.div<{ $isSelected: boolean }>`
     }
     return props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#fff';
   }};
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 
   &:hover {
     border-color: ${props => props.theme.mode === 'dark' ? '#177ddc' : '#1890ff'};
@@ -51,16 +55,105 @@ const RegionCard = styled.div<{ $isSelected: boolean }>`
   }
 `;
 
+const RegionCardContent = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  width: 100%;
+`;
+
+const RegionInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+`;
+
+const RegionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+`;
+
+const RegionMeta = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+`;
+
 const RegionName = styled.div`
   font-weight: 500;
   color: ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)'};
-  margin-bottom: 4px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const RegionCode = styled.div`
   font-size: 12px;
   color: ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)'};
 `;
+
+const RegionCodeTag = styled.span`
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'};
+  color: ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'};
+`;
+
+const RegionLatencyBox = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+`;
+
+const SortButton = styled(Button as any)<{ $active: boolean }>`
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: ${props => props.$active ? (props.theme.mode === 'dark' ? '#177ddc' : '#1890ff') : 'inherit'} !important;
+  border-color: ${props => props.$active ? (props.theme.mode === 'dark' ? '#177ddc' : '#1890ff') : ''} !important;
+  background: ${props => props.$active ? (props.theme.mode === 'dark' ? 'rgba(23, 125, 220, 0.1)' : '#e6f7ff') : ''} !important;
+  
+  .anticon {
+    font-size: 16px;
+  }
+`;
+
+const RetryButton = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)'};
+  transition: all 0.3s ease;
+  margin-left: 8px;
+
+  &:hover {
+    background: ${props => props.theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)'};
+    color: ${props => props.theme.mode === 'dark' ? '#177ddc' : '#1890ff'};
+  }
+`;
+
+
+type RegionLatencyStatus = 'testing' | 'success' | 'error' | 'unavailable';
+
+interface RegionLatencyState {
+  status: RegionLatencyStatus;
+  latency?: number;
+}
 
 const StyledSelect = styled(Select as any)`
   .ant-select-selector {
@@ -84,6 +177,45 @@ const ProviderIcon = styled.img`
   height: 20px;
   object-fit: contain;
   flex-shrink: 0;
+`;
+
+const RegionLatency = styled.div<{ $status?: RegionLatencyStatus }>`
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: ${props => {
+    switch (props.$status) {
+      case 'success':
+        return props.theme.mode === 'dark' ? '#95de64' : '#52c41a';
+      case 'error':
+      case 'unavailable':
+        return props.theme.mode === 'dark' ? '#ff7875' : '#ff4d4f';
+      case 'testing':
+      default:
+        return props.theme.mode === 'dark' ? '#faad14' : '#fa8c16';
+    }
+  }};
+`;
+
+const LatencyDot = styled.span<{ $status?: RegionLatencyStatus }>`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  background: ${props => {
+    switch (props.$status) {
+      case 'success':
+        return '#52c41a';
+      case 'error':
+      case 'unavailable':
+        return '#ff4d4f';
+      case 'testing':
+      default:
+        return '#faad14';
+    }
+  }};
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
 `;
 
 const SelectedRegionBox = styled.div`
@@ -118,12 +250,16 @@ const NodeCreateModal: React.FC<NodeCreateModalProps> = ({
   const [loadingRegions, setLoadingRegions] = useState(false);
   const [selectedRegionId, setSelectedRegionId] = useState<number | undefined>(undefined);
   const [nodeName, setNodeName] = useState<string>('');
+  const [regionLatencies, setRegionLatencies] = useState<Record<number, RegionLatencyState>>({});
+  const [sortByLatency, setSortByLatency] = useState(false);
   const intl = useIntl();
+  const mountedRef = useRef<boolean>(true);
 
   // 默认值常量
   const DEFAULT_CREDENTIAL_ID = 1;
   const DEFAULT_NODE_TYPE = 'STANDARD';
   const DEFAULT_STORAGE_LIMIT = 10737418240; // 10GB
+  const PING_TIMEOUT = 5000;
 
   // 加载提供商列表
   useEffect(() => {
@@ -138,6 +274,8 @@ const NodeCreateModal: React.FC<NodeCreateModalProps> = ({
       setSelectedRegionId(undefined);
       setRegions([]);
       setNodeName('');
+      setRegionLatencies({});
+      setSortByLatency(false);
     }
   }, [open]);
 
@@ -148,8 +286,17 @@ const NodeCreateModal: React.FC<NodeCreateModalProps> = ({
     } else {
       setRegions([]);
       setSelectedRegionId(undefined);
+      setRegionLatencies({});
+      setSortByLatency(false);
     }
   }, [selectedProviderId]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const loadProviders = async () => {
     setLoadingProviders(true);
@@ -193,6 +340,120 @@ const NodeCreateModal: React.FC<NodeCreateModalProps> = ({
 
   const handleRegionSelect = (regionId: number) => {
     setSelectedRegionId(regionId);
+  };
+
+  const runLatencyTest = useCallback(async (region: StorageRegion) => {
+    if (!region?.id) {
+      return;
+    }
+
+    if (!region.pingEndpoint) {
+      setRegionLatencies(prev => ({
+        ...prev,
+        [region.id]: { status: 'unavailable' },
+      }));
+      return;
+    }
+
+    setRegionLatencies(prev => ({
+      ...prev,
+      [region.id]: { status: 'testing' },
+    }));
+
+    const fetchOptions: RequestInit = {
+      method: 'GET',
+      mode: 'no-cors',
+      cache: 'no-store',
+    };
+
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : undefined;
+    if (controller) {
+      fetchOptions.signal = controller.signal;
+    }
+
+    const pingUrl = region.pingEndpoint.includes('?')
+      ? `${region.pingEndpoint}&_ping=${Date.now()}`
+      : `${region.pingEndpoint}?_ping=${Date.now()}`;
+
+    const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {
+      controller?.abort();
+    }, PING_TIMEOUT);
+
+    try {
+      await fetch(pingUrl, fetchOptions);
+      if (!mountedRef.current) {
+        return;
+      }
+      const endTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const latency = Math.max(1, Math.round(endTime - startTime));
+      setRegionLatencies(prev => ({
+        ...prev,
+        [region.id]: { status: 'success', latency },
+      }));
+    } catch {
+      if (!mountedRef.current) {
+        return;
+      }
+      setRegionLatencies(prev => ({
+        ...prev,
+        [region.id]: { status: 'error' },
+      }));
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }, [PING_TIMEOUT]);
+
+  useEffect(() => {
+    if (!regions || regions.length === 0) {
+      setRegionLatencies({});
+      return;
+    }
+    regions.forEach(region => {
+      runLatencyTest(region);
+    });
+  }, [regions, runLatencyTest]);
+
+  const sortedRegions = React.useMemo(() => {
+    if (!sortByLatency) {
+      return regions;
+    }
+    return [...regions].sort((a, b) => {
+      const latencyA = regionLatencies[a.id]?.latency;
+      const latencyB = regionLatencies[b.id]?.latency;
+      
+      // 如果都有延迟数据，按延迟升序排序
+      if (latencyA !== undefined && latencyB !== undefined) {
+        return latencyA - latencyB;
+      }
+      
+      // 有延迟数据的排前面
+      if (latencyA !== undefined) return -1;
+      if (latencyB !== undefined) return 1;
+      
+      // 都没有延迟数据，保持原序
+      return 0;
+    });
+  }, [regions, regionLatencies, sortByLatency]);
+
+  const renderLatencyText = (state?: RegionLatencyState) => {
+    if (!state) {
+      return intl.formatMessage({ id: 'cloudDrive.nodeCreate.pingTesting', defaultMessage: '延迟测试中...' });
+    }
+    switch (state.status) {
+      case 'success':
+        return intl.formatMessage(
+          { id: 'cloudDrive.nodeCreate.pingLatency', defaultMessage: '延迟 {value} ms' },
+          { value: state.latency ?? '--' }
+        );
+      case 'error':
+        return intl.formatMessage({ id: 'cloudDrive.nodeCreate.pingFailed', defaultMessage: '延迟测试失败' });
+      case 'unavailable':
+        return intl.formatMessage({ id: 'cloudDrive.nodeCreate.pingUnavailable', defaultMessage: '暂不支持延迟测试' });
+      case 'testing':
+      default:
+        return intl.formatMessage({ id: 'cloudDrive.nodeCreate.pingTesting', defaultMessage: '延迟测试中...' });
+    }
   };
 
   const handleSubmit = async () => {
@@ -327,9 +588,22 @@ const NodeCreateModal: React.FC<NodeCreateModalProps> = ({
 
           {selectedProviderId && (
             <div style={{ marginBottom: 24 }}>
-              <div style={{ marginBottom: 8, fontWeight: 500 }}>
-                <FormattedMessage id="cloudDrive.nodeCreate.selectRegion" defaultMessage="选择地域" />
-                <span style={{ color: '#ff4d4f', marginLeft: 4 }}>*</span>
+              <div style={{ marginBottom: 8, fontWeight: 500, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <FormattedMessage id="cloudDrive.nodeCreate.selectRegion" defaultMessage="选择地域" />
+                  <span style={{ color: '#ff4d4f', marginLeft: 4 }}>*</span>
+                </div>
+                <Tooltip title={intl.formatMessage({ id: 'cloudDrive.nodeCreate.sortByLatency', defaultMessage: '按延迟排序' })}>
+                  <SortButton 
+                    size="small" 
+                    type="text" 
+                    $active={sortByLatency}
+                    onClick={() => setSortByLatency(!sortByLatency)}
+                    icon={<SortAscendingOutlined />}
+                  >
+                    {intl.formatMessage({ id: 'common.latency', defaultMessage: '延迟' })}
+                  </SortButton>
+                </Tooltip>
               </div>
               <Spin spinning={loadingRegions}>
                 {regions.length === 0 ? (
@@ -339,16 +613,39 @@ const NodeCreateModal: React.FC<NodeCreateModalProps> = ({
                   />
                 ) : (
                   <RegionGrid>
-                    {regions.map(region => {
+                    {sortedRegions.map(region => {
                       const isSelected = selectedRegionId === region.id;
+                      const latencyState = regionLatencies[region.id];
                       return (
                         <RegionCard
                           key={region.id}
                           $isSelected={isSelected}
                           onClick={() => handleRegionSelect(region.id)}
                         >
-                          <RegionName>{region.regionName}</RegionName>
-                          <RegionCode>{region.regionCode}</RegionCode>
+                          <RegionInfo>
+                            <RegionHeader>
+                              <RegionName>{region.regionName}</RegionName>
+                            </RegionHeader>
+                            <RegionCode>{region.regionCode}</RegionCode>
+                          </RegionInfo>
+                          <RegionLatencyBox>
+                            <RegionLatency $status={latencyState?.status}>
+                              <LatencyDot $status={latencyState?.status} />
+                              <span>{renderLatencyText(latencyState)}</span>
+                            </RegionLatency>
+                            {latencyState?.status === 'error' && (
+                              <Tooltip title={intl.formatMessage({ id: 'common.retry', defaultMessage: '重试' })}>
+                                <RetryButton
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    runLatencyTest(region);
+                                  }}
+                                >
+                                  <ReloadOutlined />
+                                </RetryButton>
+                              </Tooltip>
+                            )}
+                          </RegionLatencyBox>
                         </RegionCard>
                       );
                     })}
