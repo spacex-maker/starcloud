@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Modal, Form, Input, message, Spin, Empty, Select, InputNumber, Button, Tooltip } from 'antd';
+import { Modal, Form, Input, message, Spin, Empty, Select, InputNumber, Button, Tooltip, Row, Col, Slider } from 'antd';
 import { FormattedMessage, useIntl } from 'react-intl';
 import styled from 'styled-components';
 import { ReloadOutlined, SortAscendingOutlined, CheckCircleFilled, CloseCircleFilled, ClockCircleFilled } from '@ant-design/icons';
@@ -158,12 +158,51 @@ interface RegionLatencyState {
 const StyledSelect = styled(Select as any)`
   .ant-select-selector {
     border-radius: 999px !important;
+    height: 32px !important;
   }
   
   .ant-select-selection-item {
     display: flex;
     align-items: center;
+    line-height: 30px !important;
   }
+  
+  .ant-select-selection-placeholder {
+    line-height: 30px !important;
+  }
+`;
+
+const StyledInput = styled(Input as any)`
+  border-radius: 999px !important;
+  height: 32px !important;
+  
+  &.ant-input {
+    height: 32px !important;
+    line-height: 30px !important;
+  }
+`;
+
+const QuickSelectButtons = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+`;
+
+const QuickSelectButton = styled(Button as any)`
+  border-radius: 6px;
+  height: 32px;
+`;
+
+const SliderContainer = styled.div`
+  margin-bottom: 16px;
+  padding: 0 4px;
+`;
+
+const StorageInputContainer = styled.div`
+  display: flex;
+  gap: 12px;
+  align-items: center;
 `;
 
 const ProviderOptionContent = styled.div`
@@ -252,6 +291,7 @@ const NodeCreateModal: React.FC<NodeCreateModalProps> = ({
   const [nodeName, setNodeName] = useState<string>('');
   const [regionLatencies, setRegionLatencies] = useState<Record<number, RegionLatencyState>>({});
   const [sortByLatency, setSortByLatency] = useState(false);
+  const [storageLimitGB, setStorageLimitGB] = useState<number>(10); // 默认10GB，用于Slider
   const intl = useIntl();
   const mountedRef = useRef<boolean>(true);
 
@@ -260,6 +300,7 @@ const NodeCreateModal: React.FC<NodeCreateModalProps> = ({
   const DEFAULT_NODE_TYPE = 'STANDARD';
   const DEFAULT_STORAGE_LIMIT = 10737418240; // 10GB
   const PING_TIMEOUT = 5000;
+  const GB_TO_BYTES = 1073741824; // 1GB = 1073741824 bytes
 
   // 加载提供商列表
   useEffect(() => {
@@ -276,6 +317,7 @@ const NodeCreateModal: React.FC<NodeCreateModalProps> = ({
       setNodeName('');
       setRegionLatencies({});
       setSortByLatency(false);
+      setStorageLimitGB(10); // 重置为10GB
     }
   }, [open]);
 
@@ -521,40 +563,55 @@ const NodeCreateModal: React.FC<NodeCreateModalProps> = ({
           form={form}
           layout="vertical"
         >
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ marginBottom: 8, fontWeight: 500 }}>
-              <FormattedMessage id="cloudDrive.nodeCreate.selectProvider" defaultMessage="选择云厂商" />
-              <span style={{ color: '#ff4d4f', marginLeft: 4 }}>*</span>
-            </div>
-            <StyledSelect
-              placeholder={intl.formatMessage({ id: 'cloudDrive.nodeCreate.selectProviderPlaceholder', defaultMessage: '请选择云厂商' })}
-              value={selectedProviderId}
-              onChange={(value: number) => handleProviderChange(value)}
-              loading={loadingProviders}
-              style={{ width: '100%' }}
-              getPopupContainer={(triggerNode: HTMLElement) => {
-                const container = triggerNode?.parentElement;
-                return container || document.body;
-              }}
-              dropdownMatchSelectWidth={false}
-              dropdownStyle={{
-                borderRadius: '12px',
-              }}
-              notFoundContent={
-                providers.length === 0 ? (
-                  <Empty 
-                    description={intl.formatMessage({ id: 'cloudDrive.nodeCreate.noProviders', defaultMessage: '暂无可用云厂商' })} 
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  />
-                ) : null
-              }
-              optionLabelProp="label"
-            >
-              {providers.map(provider => (
-                <Select.Option 
-                  key={provider.id} 
-                  value={provider.id}
-                  label={
+          <Row gutter={16} style={{ marginBottom: 24 }}>
+            <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+              <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                <FormattedMessage id="cloudDrive.nodeCreate.selectProvider" defaultMessage="选择云厂商" />
+                <span style={{ color: '#ff4d4f', marginLeft: 4 }}>*</span>
+              </div>
+              <StyledSelect
+                placeholder={intl.formatMessage({ id: 'cloudDrive.nodeCreate.selectProviderPlaceholder', defaultMessage: '请选择云厂商' })}
+                value={selectedProviderId}
+                onChange={(value: number) => handleProviderChange(value)}
+                loading={loadingProviders}
+                style={{ width: '100%' }}
+                getPopupContainer={(triggerNode: HTMLElement) => {
+                  const container = triggerNode?.parentElement;
+                  return container || document.body;
+                }}
+                dropdownMatchSelectWidth={false}
+                dropdownStyle={{
+                  borderRadius: '12px',
+                }}
+                notFoundContent={
+                  providers.length === 0 ? (
+                    <Empty 
+                      description={intl.formatMessage({ id: 'cloudDrive.nodeCreate.noProviders', defaultMessage: '暂无可用云厂商' })} 
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    />
+                  ) : null
+                }
+                optionLabelProp="label"
+              >
+                {providers.map(provider => (
+                  <Select.Option 
+                    key={provider.id} 
+                    value={provider.id}
+                    label={
+                      <ProviderOptionContent>
+                        {provider.iconImg && (
+                          <ProviderIcon 
+                            src={provider.iconImg} 
+                            alt={provider.providerName}
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )}
+                        <span>{provider.providerName}</span>
+                      </ProviderOptionContent>
+                    }
+                  >
                     <ProviderOptionContent>
                       {provider.iconImg && (
                         <ProviderIcon 
@@ -567,24 +624,35 @@ const NodeCreateModal: React.FC<NodeCreateModalProps> = ({
                       )}
                       <span>{provider.providerName}</span>
                     </ProviderOptionContent>
+                  </Select.Option>
+                ))}
+              </StyledSelect>
+            </Col>
+            <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+              <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                <FormattedMessage id="cloudDrive.nodeCreate.nodeName" defaultMessage="节点名称" />
+              </div>
+              <StyledInput 
+                placeholder={intl.formatMessage({ 
+                  id: 'cloudDrive.nodeCreate.nodeNamePlaceholder', 
+                  defaultMessage: '留空将使用默认名称' 
+                })}
+                value={nodeName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const value = e.target.value;
+                  if (value.length <= 50) {
+                    setNodeName(value);
                   }
-                >
-                  <ProviderOptionContent>
-                    {provider.iconImg && (
-                      <ProviderIcon 
-                        src={provider.iconImg} 
-                        alt={provider.providerName}
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    )}
-                    <span>{provider.providerName}</span>
-                  </ProviderOptionContent>
-                </Select.Option>
-              ))}
-            </StyledSelect>
-          </div>
+                }}
+                autoComplete="off"
+              />
+              {nodeName.length > 0 && nodeName.length >= 50 && (
+                <div style={{ marginTop: 4, fontSize: 12, color: '#ff4d4f' }}>
+                  {intl.formatMessage({ id: 'cloudDrive.nodeCreate.nameMaxLength', defaultMessage: '节点名称不能超过50个字符' })}
+                </div>
+              )}
+            </Col>
+          </Row>
 
           {selectedProviderId && (
             <div style={{ marginBottom: 24 }}>
@@ -667,31 +735,6 @@ const NodeCreateModal: React.FC<NodeCreateModalProps> = ({
             </div>
           )}
 
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ marginBottom: 8, fontWeight: 500 }}>
-              <FormattedMessage id="cloudDrive.nodeCreate.nodeName" defaultMessage="节点名称" />
-            </div>
-            <Input 
-              placeholder={intl.formatMessage({ 
-                id: 'cloudDrive.nodeCreate.nodeNamePlaceholder', 
-                defaultMessage: '留空将使用默认名称' 
-              })}
-              value={nodeName}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value.length <= 50) {
-                  setNodeName(value);
-                }
-              }}
-              autoComplete="off"
-            />
-            {nodeName.length > 0 && nodeName.length >= 50 && (
-              <div style={{ marginTop: 4, fontSize: 12, color: '#ff4d4f' }}>
-                {intl.formatMessage({ id: 'cloudDrive.nodeCreate.nameMaxLength', defaultMessage: '节点名称不能超过50个字符' })}
-              </div>
-            )}
-          </div>
-
           <Form.Item
             name="nodeType"
             label={<FormattedMessage id="cloudDrive.nodeCreate.nodeType" defaultMessage="节点类型" />}
@@ -721,31 +764,80 @@ const NodeCreateModal: React.FC<NodeCreateModalProps> = ({
             initialValue={DEFAULT_STORAGE_LIMIT}
             rules={[
               { required: true, message: intl.formatMessage({ id: 'cloudDrive.nodeCreate.storageLimitRequired', defaultMessage: '请输入存储限制' }) },
-              { type: 'number', min: 1073741824, message: intl.formatMessage({ id: 'cloudDrive.nodeCreate.storageLimitMin', defaultMessage: '存储限制不能小于1GB' }) }
+              { type: 'number', min: GB_TO_BYTES, message: intl.formatMessage({ id: 'cloudDrive.nodeCreate.storageLimitMin', defaultMessage: '存储限制不能小于1GB' }) }
             ]}
           >
-            <InputNumber
-              style={{ width: '100%' }}
-              min={1073741824}
-              step={1073741824}
-              formatter={(value) => {
-                if (value === undefined || value === null) return '';
-                const numValue = typeof value === 'string' ? parseFloat(value) : Number(value);
-                if (isNaN(numValue) || numValue <= 0) return '';
-                const gb = numValue / 1073741824;
-                return `${gb} GB`;
+            <Form.Item shouldUpdate={(prevValues, currentValues) => prevValues.storageLimit !== currentValues.storageLimit} noStyle>
+              {({ getFieldValue }) => {
+                const storageLimit = getFieldValue('storageLimit');
+                const currentGB = storageLimit ? Math.round(storageLimit / GB_TO_BYTES) : storageLimitGB;
+                return (
+                  <div>
+                    <QuickSelectButtons>
+                      {[1, 10, 100, 1000].map((gb) => (
+                        <QuickSelectButton
+                          key={gb}
+                          type={currentGB === gb ? 'primary' : 'default'}
+                          onClick={() => {
+                            const bytes = gb * GB_TO_BYTES;
+                            setStorageLimitGB(gb);
+                            form.setFieldsValue({ storageLimit: bytes });
+                          }}
+                        >
+                          {gb} GB
+                        </QuickSelectButton>
+                      ))}
+                    </QuickSelectButtons>
+                    
+                    <SliderContainer>
+                      <Slider
+                        min={1}
+                        max={1000}
+                        step={1}
+                        value={currentGB}
+                        onChange={(value: number) => {
+                          setStorageLimitGB(value);
+                          form.setFieldsValue({ storageLimit: value * GB_TO_BYTES });
+                        }}
+                        tooltip={{
+                          formatter: (value?: number) => `${value} GB`
+                        }}
+                      />
+                    </SliderContainer>
+                    
+                    <StorageInputContainer>
+                      <InputNumber
+                        style={{ flex: 1 }}
+                        min={1}
+                        max={10000}
+                        step={1}
+                        value={currentGB}
+                        onChange={(value: number | null) => {
+                          if (value !== null && value >= 1) {
+                            setStorageLimitGB(value);
+                            form.setFieldsValue({ storageLimit: value * GB_TO_BYTES });
+                          }
+                        }}
+                        formatter={(value) => {
+                          if (value === undefined || value === null) return '';
+                          return `${value} GB`;
+                        }}
+                        parser={(value: string | undefined) => {
+                          if (!value || typeof value !== 'string') return 0;
+                          const num = parseFloat(value.replace(/[^\d.]/g, ''));
+                          if (isNaN(num) || num <= 0) return 1;
+                          return Math.min(10000, Math.max(1, num));
+                        }}
+                        placeholder={intl.formatMessage({ 
+                          id: 'cloudDrive.nodeCreate.storageLimitPlaceholder', 
+                          defaultMessage: '请输入存储限制（GB）' 
+                        })}
+                      />
+                    </StorageInputContainer>
+                  </div>
+                );
               }}
-              parser={(value: string | undefined) => {
-                if (!value || typeof value !== 'string') return 0;
-                const num = parseFloat(value.replace(/[^\d.]/g, ''));
-                if (isNaN(num) || num <= 0) return 0;
-                return num * 1073741824;
-              }}
-              placeholder={intl.formatMessage({ 
-                id: 'cloudDrive.nodeCreate.storageLimitPlaceholder', 
-                defaultMessage: '请输入存储限制（GB）' 
-              })}
-            />
+            </Form.Item>
           </Form.Item>
         </Form>
       </Spin>
